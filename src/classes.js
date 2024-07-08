@@ -15,10 +15,6 @@ export class Player {
     addCard(card) {
         this.hand.push(card);
     }
-
-    selectCard(index) {
-        return this.hand.splice(index, 1)[0]; // Correctly remove and return the card
-    }
 }
 
 export class Game {

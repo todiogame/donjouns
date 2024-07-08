@@ -15,15 +15,17 @@ export class DisplayManager {
         this.backgroundContainer.add(background);
     }
 
-    updatePlayerHandsAndSelectedCards(players) {
+    updatePlayerHandsAndSelectedCards(players, currentPlayerId) {
+        console.log("updatePlayerHandsAndSelectedCards",players, currentPlayerId)
+
         this.clearPreviousDisplay();
         players.forEach(player => {
-            if (player.isPlayer) {
-                this.displayStuff(player.selectedCards, player.isPlayer, 'bottom', player.name);
+            if (player.name === currentPlayerId) {
+                this.displayStuff(player.selectedCards, true, 'bottom', player.name);
                 this.displayHand(player.hand);
             } else {
-                const position = player.id === 'AI' ? 'top-left' : 'top-right';
-                this.displayStuff(player.selectedCards, player.isPlayer, position, player.name);
+                const position = this.getOpponentPosition(player.id, currentPlayerId, players.length);
+                this.displayStuff(player.selectedCards, false, position, player.name);
             }
         });
     }
@@ -59,8 +61,13 @@ export class DisplayManager {
     
             cardImage.cardIndex = index;
             cardImage.isPlayer = true;
-            cardImage.isSelected = false; // Mark as not selectable for zoom
+            cardImage.isSelected = card.isSelected || false; // Mark as not selectable for zoom
             cardImage.isInStuff = false; // This card is not in stuff
+
+            if (card.isPicked) {
+                console.log("highlighting card",cardImage)
+                cardImage.setTint(0xff0000); // Highlight selected card
+            }
     
             this.scene.input.enableDebug(cardImage);
         });
@@ -135,6 +142,16 @@ export class DisplayManager {
         }
     }
     
+    getOpponentPosition(playerId, currentPlayerId, totalPlayers) {
+        if (totalPlayers === 2) {
+            return 'top-left';
+        } else {
+            const positions = ['top-left', 'top-right'];
+            const playerIndex = (playerId - currentPlayerId + totalPlayers) % totalPlayers - 1;
+            return positions[playerIndex];
+        }
+    }
+
     zoomCard(cardImage) {
         if (this.zoomedCard) {
             this.zoomedCard.destroy(); // Destroy any existing zoomed card
