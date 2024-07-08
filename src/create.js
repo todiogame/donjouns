@@ -67,7 +67,7 @@ export function create() {
                 displayManager.zoomCard(cardImage);
             } else if (cardImage.isPlayer) {
                 const cardIndex = cardImage.cardIndex;
-                const currentPlayer = cardGame.players.find(p => p.name === currentPlayerId);
+                const currentPlayer = cardGame.players.find(p => p.id === currentPlayerId);
     
                 if (!currentPlayer) {
                     console.error(`Player with id ${currentPlayerId} not found`);

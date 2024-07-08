@@ -38,6 +38,8 @@ class Player extends Schema {
             const card = this.hand.splice(this.selectedCardIndex, 1)[0];
             this.selectedCardIndex = -1;
             return card;
+        } else {
+            console.error("bug selectedCardIndex = -1")
         }
         return null;
     }
@@ -59,7 +61,7 @@ class GameState extends Schema {
     }
 
     initializeDeck() {
-        for (let i = 1; i <= 100; i++) {
+        for (let i = 1; i <= 22; i++) {
             this.deck.push(new Card(i));
         }
         this.shuffleDeck();
@@ -100,13 +102,29 @@ class GameState extends Schema {
     nextPlayer() {
         this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
     }
+
+    rotateHands() {
+        // Rotate hands among players
+        const lastHand = this.players[this.players.length - 1].hand;
+        for (let i = this.players.length - 1; i > 0; i--) {
+            this.players[i].hand = this.players[i - 1].hand;
+        }
+        this.players[0].hand = lastHand;
+
+        // Reset the isPicked property for each card in the new hands
+        this.players.forEach(player => {
+            player.hand.forEach(card => {
+                card.isPicked = false;
+            });
+        });
+    }
+
 }
 schema.defineTypes(GameState, {
     deck: [Card],
     players: [Player],
     currentPlayerIndex: "number"
 });
-
 class MyRoom extends colyseus.Room {
     onCreate(options) {
         console.log("Room created!", options);
@@ -122,6 +140,7 @@ class MyRoom extends colyseus.Room {
 
                 if (this.state.allPlayersSelected()) {
                     this.state.addSelectedCardsToStuff();
+                    // this.state.rotateHands();
                     this.broadcast("update_state", this.state);
                 }
             } else {

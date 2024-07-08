@@ -16,20 +16,20 @@ export class DisplayManager {
     }
 
     updatePlayerHandsAndSelectedCards(players, currentPlayerId) {
-        console.log("updatePlayerHandsAndSelectedCards",players, currentPlayerId)
-
+        console.log("updatePlayerHandsAndSelectedCards", players, currentPlayerId);
+    
         this.clearPreviousDisplay();
         players.forEach(player => {
-            if (player.name === currentPlayerId) {
-                this.displayStuff(player.selectedCards, true, 'bottom', player.name);
+            if (player.id === currentPlayerId) {
+                this.displayStuff(player.selectedCards, true, 'bottom', player.id);
                 this.displayHand(player.hand);
             } else {
-                const position = this.getOpponentPosition(player.id, currentPlayerId, players.length);
-                this.displayStuff(player.selectedCards, false, position, player.name);
+                const position = this.getOpponentPosition(player.id, currentPlayerId, players);
+                this.displayStuff(player.selectedCards, false, position, player.id);
             }
         });
     }
-
+    
     clearPreviousDisplay() {
         let childrenToRemove = this.scene.children.list.filter(child => child !== this.backgroundContainer && child !== this.zoomedCard && child !== this.blurryBackground);
         while (childrenToRemove.length > 0) {
@@ -66,7 +66,7 @@ export class DisplayManager {
 
             if (card.isPicked) {
                 console.log("highlighting card",cardImage)
-                cardImage.setTint(0xff0000); // Highlight selected card
+                cardImage.setTint(0xffff00); // Highlight selected card
             }
     
             this.scene.input.enableDebug(cardImage);
@@ -74,6 +74,7 @@ export class DisplayManager {
     }
     
     displayStuff(stuff, isPlayer, position, playerName) {
+        console.log("displayStuff",playerName, position)
         this.scene.playcardSound.play();
 
         const desiredWidth = isPlayer ? 125 : 90;
@@ -142,16 +143,23 @@ export class DisplayManager {
         }
     }
     
-    getOpponentPosition(playerId, currentPlayerId, totalPlayers) {
-        if (totalPlayers === 2) {
-            return 'top-left';
-        } else {
-            const positions = ['top-left', 'top-right'];
-            const playerIndex = (playerId - currentPlayerId + totalPlayers) % totalPlayers - 1;
-            return positions[playerIndex];
+    getOpponentPosition(playerId, currentPlayerId, players) {
+    console.log("getOpponentPosition(",playerId, currentPlayerId, players)
+
+        const positions = ['top-left', 'top-right'];
+        const currentIndex = players.findIndex(p => p.id === currentPlayerId);
+        const opponentIndex = players.findIndex(p => p.id === playerId);
+    
+        if (currentIndex === 0) {
+            return positions[opponentIndex == 1 ? 0 : 1];
+        } else if (currentIndex === 1) {
+            return positions[opponentIndex == 2 ? 0 : 1];
+        } else if (currentIndex === 2) {
+            return positions[opponentIndex == 0 ? 0 : 1];
         }
     }
-
+    
+    
     zoomCard(cardImage) {
         if (this.zoomedCard) {
             this.zoomedCard.destroy(); // Destroy any existing zoomed card

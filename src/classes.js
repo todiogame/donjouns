@@ -6,7 +6,8 @@ export class Card {
 }
 
 export class Player {
-    constructor(name) {
+    constructor(id, name) {
+        this.id = id;
         this.name = name;
         this.hand = [];
         this.selectedCards = [];
