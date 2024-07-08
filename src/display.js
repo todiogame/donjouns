@@ -19,11 +19,11 @@ export class DisplayManager {
         this.clearPreviousDisplay();
         players.forEach(player => {
             if (player.isPlayer) {
-                this.displayStuff(player.selectedCards, player.isPlayer, 'bottom');
+                this.displayStuff(player.selectedCards, player.isPlayer, 'bottom', player.name);
                 this.displayHand(player.hand);
             } else {
                 const position = player.id === 'AI' ? 'top-left' : 'top-right';
-                this.displayStuff(player.selectedCards, player.isPlayer, position);
+                this.displayStuff(player.selectedCards, player.isPlayer, position, player.name);
             }
         });
     }
@@ -38,6 +38,7 @@ export class DisplayManager {
             child.destroy();
         }
     }
+
     displayHand(hand) {
         const yPosition = this.scene.sys.game.config.height - 430; // Bottom of the screen for human player
         const desiredWidth = 175; // Adjust as needed
@@ -65,9 +66,9 @@ export class DisplayManager {
         });
     }
     
-    displayStuff(stuff, isPlayer, position) {
-        if (!stuff || stuff.length === 0) return;
-    
+    displayStuff(stuff, isPlayer, position, playerName) {
+        this.scene.playcardSound.play();
+
         const desiredWidth = isPlayer ? 125 : 90;
         const desiredHeight = isPlayer ? 175 : 126;
     
@@ -75,6 +76,7 @@ export class DisplayManager {
         const scaleY = desiredHeight / 1050;
     
         if (isPlayer) {
+            this.scene.add.text(75, this.scene.sys.game.config.height - 210, playerName, { fontSize: '20px', fill: '#fff' });
             stuff.forEach((card, index) => {
                 if (card) {
                     const xPosition = 75 + index * (desiredWidth + 10);
@@ -94,23 +96,27 @@ export class DisplayManager {
                 }
             });
         } else {
+            const nameYOffset = 35; // Adjust the offset for name display
+            const stuffYOffset = 5; // Adjust the offset for pushing down the stuff
             const maxItemsPerColumn = 2;
             const columnOffset = desiredWidth + 10;
             let xPosition, yOffset;
     
             if (position === 'top-left') {
                 xPosition = 75;
-                yOffset = 5;
+                yOffset = 5 + nameYOffset;
             } else if (position === 'top-right') {
                 xPosition = this.scene.sys.game.config.width - desiredWidth - 75;
-                yOffset = 5;
+                yOffset = 5 + nameYOffset;
             }
+            
+            this.scene.add.text(xPosition, yOffset - nameYOffset, playerName, { fontSize: '20px', fill: '#fff' });
     
             stuff.forEach((card, index) => {
                 if (card) {
                     const columnIndex = Math.floor(index / maxItemsPerColumn);
                     const rowIndex = index % maxItemsPerColumn;
-                    const yPosition = yOffset + rowIndex * (desiredHeight + 10);
+                    const yPosition = yOffset + rowIndex * (desiredHeight + 10) + stuffYOffset;
                     const actualXPosition = position === 'top-left' ? xPosition + columnIndex * columnOffset : xPosition - columnIndex * columnOffset;
     
                     const cardImage = this.scene.add.image(0, 0, card.texture)

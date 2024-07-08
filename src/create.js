@@ -9,6 +9,13 @@ let currentDraftRound = 0;
 export function create() {
     console.log("Creating the scene...");
 
+    this.playcardSound = this.sound.add('playcard');
+    this.drawSound = this.sound.add('draw');
+    this.shuffleSound = this.sound.add('shuffle');
+
+    this.shuffleSound.play();
+
+
     cardGame = new Game();
     cardGame.initializeDeck();
     cardGame.addPlayer(new Player('Player 1'));
@@ -21,6 +28,7 @@ export function create() {
     cardGame.players[2].id = 'AI2';
 
     cardGame.dealCards();
+
 
     displayManager = new DisplayManager(this);
     displayManager.initializeBackground();
