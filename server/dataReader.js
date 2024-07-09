@@ -1,67 +1,32 @@
 const fs = require('fs');
 const path = require('path');
 const csv = require('csv-parser');
+const { MonsterCard } = require('./models/MonsterCard');
+const { EventCard } = require('./models/EventCard');
 
-class DungeonCard {
-    constructor(id, title, description, effect = null) {
-        this.id = id;
-        this.texture = 'dungeon_' + String(id).padStart(3, '0');
-        this.title = title;
-        this.description = description;
-        this.effect = effect;
-    }
-}
+function loadCSV(filePath, type) {
 
-class MonsterCard extends DungeonCard {
-    constructor(id, title, power, types = [title], description = "", effect = null) {
-        super(id, title, description, effect);
-        this.power = power;
-        this.types = types;
-        this.executed = false;
-        this.damage = 0;
-    }
-}
+    // console.log('MonsterCard:', MonsterCard);
+    // console.log('EventCard:', EventCard);
 
-class EventCard extends DungeonCard {
-    constructor(id, title, description, effect = null) {
-        super(id, title, description, effect);
-        this.event = true;
-    }
-}
-
-const columnMapping = {
-    'ID': 'id',
-    'Title': 'title',
-    'Description': 'description',
-    'Power': 'power',
-    'Types': 'types',
-    'Effect': 'effect',
-    'Type': 'type'
-};
-
-function loadData(filePath) {
     return new Promise((resolve, reject) => {
         const results = [];
 
         fs.createReadStream(path.resolve(__dirname, filePath))
             .pipe(csv())
             .on('data', (row) => {
-                // Map CSV columns to object attributes
-                const mappedRow = {};
-                for (const key in columnMapping) {
-                    if (columnMapping.hasOwnProperty(key)) {
-                        mappedRow[columnMapping[key]] = row[key];
-                    }
-                }
-
                 // Only process rows where 'id' is set
-                if (mappedRow.id) {
-                    const { id, title, description, power, types, effect, type } = mappedRow;
+                if (row.id) {
                     if (type === 'Monster') {
-                        const monsterCard = new MonsterCard(id, title, parseInt(power, 10), types ? types.split(',') : [], description, effect);
+                        const { id, Title: title, Power: power, Description: description, Type: cardType } = row;
+                        const types = cardType ? cardType.split(',').map(t => t.trim()) : [];
+                        console.log('Creating card:', { id, title, power, types, description, cardType });
+                        const monsterCard = new MonsterCard(id, title, parseInt(power, 0), [types], description, null); //last row is effect
                         results.push(monsterCard);
                     } else if (type === 'Event') {
-                        const eventCard = new EventCard(id, title, description, effect);
+                        const { id, Title: title, Description: description } = row;
+                        console.log('Creating card:', { id, title, description });
+                        const eventCard = new EventCard(id, title, description);
                         results.push(eventCard);
                     }
                 }
@@ -75,4 +40,15 @@ function loadData(filePath) {
     });
 }
 
-module.exports = { loadData, DungeonCard, MonsterCard, EventCard };
+async function loadData() {
+    try {
+        const monsters = await loadCSV('gamedata/monsters.csv', 'Monster');
+        const events = await loadCSV('gamedata/events.csv', 'Event');
+        return [...monsters, ...events];
+    } catch (error) {
+        console.error('Error loading data:', error);
+        throw error;
+    }
+}
+
+module.exports = { loadData };

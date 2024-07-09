@@ -6,8 +6,8 @@ const ArraySchema = schema.ArraySchema;
 const fs = require('fs');
 const path = require('path');
 // const colyseus = require("colyseus");
-const GameState = require('../models/GameState');
-const Player = require('../models/Player');
+const { GameState } = require('../models/GameState');
+const { Player } = require('../models/Player');
 // Load config file
 const configPath = path.resolve(__dirname, '../config.json');
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));

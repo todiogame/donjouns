@@ -14,4 +14,4 @@ schema.defineTypes(ItemCard, {
     texture: "string"
 });
 
-module.exports = ItemCard;
+module.exports = { ItemCard };

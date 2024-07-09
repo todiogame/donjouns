@@ -4,6 +4,7 @@ const http = require("http");
 const path = require("path");
 const MyRoom = require("./rooms/room");
 const { monitor } = require("@colyseus/monitor");
+const { loadData } = require('./dataReader');
 
 const app = express();
 const server = http.createServer(app);
@@ -20,9 +21,22 @@ const gameServer = new colyseus.Server({
 // Define the room
 gameServer.define("my_room", MyRoom);
 
-// Register colyseus monitor (monitoring panel)
-app.use("/colyseus", monitor());
+// Load game data and start server
+async function startServer() {
+    try {
+        const cards = await loadData();
+        // console.log('Data loaded:', cards);
+        // Initialize your game state with the loaded data, if necessary
+    } catch (error) {
+        console.error('Error loading data:', error);
+    }
 
-// Start the server
-gameServer.listen(port);
-console.log(`Listening on ws://localhost:${port}`);
+    // Register colyseus monitor (monitoring panel)
+    app.use("/colyseus", monitor());
+
+    // Start the server
+    gameServer.listen(port);
+    console.log(`Listening on ws://localhost:${port}`);
+}
+
+startServer()

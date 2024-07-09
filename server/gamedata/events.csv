@@ -1,0 +1,12 @@
+Duplication,id,Title,Image,Description,Title_en,Description_en
+1,1,Echoppe secrète,secret_shop.png,"Si vous avez <b>moins de 4</b> objets intacts, <b>piochez</b> un objet. Sinon vous pouvez vous <b>défausser</b> d'un objet intact pour en <b>repiocher</b> un.",Secret Shop,"If you have <b>3 or less</b> intact items, you can <b>pick</b> a new item. Else, you can discard an item to pick a new one."
+1,2,Roue de la fortune,fortune_wheel.png,"Vous <b>pouvez</b> lancer le dé.\nSur un 1 ou 2, <b>perdez 2 PV</b>.\nSur un 5 ou 6, <b>gagnez 2 PV</b>.",Wheel of Fortune,"You <b>can</b> roll the dice. If you get 1 or 2, <b>lose 2 HP</b>. If you get 5 or 6, <b>heal 2 HP</b>."
+1,3,Descente angélique,healing_angel.png,"Vous <b>pouvez</b> gagner <b>3 PV</b>.\nSi vous le faites, les autres joueurs gagnent <b>2 PV</b>.",Healing Angel,
+1,4,Traquenard,evil_trap.png,"Si la prochaine carte est un monstre, vous ne pouvez pas <b>l'exécuter</b>.",Evil Trap,
+1,5,Allié,ally.png,"Si la prochaine carte est un monstre, vous pouvez <b>l'exécuter</b>.",Ally,
+1,6,Bricoleur,handyman.png,Vous pouvez <b>réparer</b> un de vos objets <b>brisé</b>.,Handyman,
+1,7,Inception,inception.png,Répétez l'effet de la dernière carte <b>Événement</b> de la défausse.,Inception,Repeat the effect of the last <b>Event>/b> card in the discard pile
+1,8,Dépeceur de Dragons,merchant.png,Les joueurs ayant des <b>Dragons</b> dans leur pile peuvent en défausser pour <b>piocher</b> autant d'objets.,,
+1,9,Injection argileuse,injection.png,Les joueurs gagnent <b>2 PV</b> pour chaque <b>Golem</b> dans leur pile.,,
+0,,,,,,
+1,10,Tempête des âmes,soulstorm.png,Tous les joueurs doivent remettre un monstre de leur pile de monstres vaincus dans le Donjon. Mélangez-le.,Soulstorm,

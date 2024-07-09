@@ -1,8 +1,8 @@
 const schema = require("@colyseus/schema");
 const { Schema, type, ArraySchema } = schema;
-const ItemCard = require('./ItemCard');
-const Player = require('./Player');
-const DungeonCard = require('./DungeonCard');
+const {ItemCard} = require('./ItemCard');
+const {Player} = require('./Player');
+const {DungeonCard} = require('./DungeonCard');
 
 const fs = require('fs');
 const path = require('path');
@@ -98,4 +98,4 @@ schema.defineTypes(GameState, {
     turnNumber: "number"
 });
 
-module.exports = GameState;
+module.exports = { GameState };

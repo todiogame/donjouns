@@ -1,11 +1,12 @@
-const DungeonCard = require('./DungeonCard');
+const schema = require("@colyseus/schema");
+const { Schema, type } = schema;
+const {DungeonCard} = require('./DungeonCard');
 
 class MonsterCard extends DungeonCard {
-    constructor(id, title, power, types = [title], description = "", effect = null) {
+    constructor(id, title, power, types = [], description = "", effect = null) {
         super(id, title, description, effect);
         this.power = power;
         this.types = types;
-        this.executed = false;
         this.damage = 0;
     }
 }
@@ -13,8 +14,7 @@ class MonsterCard extends DungeonCard {
 schema.defineTypes(MonsterCard, {
     power: "number",
     types: ["string"],
-    executed: "boolean",
     damage: "number"
 });
 
-module.exports = MonsterCard;
+module.exports = { MonsterCard };

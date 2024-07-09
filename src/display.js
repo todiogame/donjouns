@@ -227,7 +227,7 @@ export class DisplayManager {
                     targets: cardImage,
                     scaleX: scaleX * 1.4,
                     scaleY: scaleY * 1.4,
-                    duration: 100,
+                    duration: 50,
                     ease: 'Sine.easeInOut'
                 });
             });
@@ -238,7 +238,7 @@ export class DisplayManager {
                     targets: cardImage,
                     scaleX: scaleX,
                     scaleY: scaleY,
-                    duration: 100,
+                    duration: 50,
                     ease: 'Sine.easeInOut',
                 });
             });

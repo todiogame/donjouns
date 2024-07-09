@@ -20,4 +20,4 @@ schema.defineTypes(DungeonCard, {
     effect: "string"
 });
 
-module.exports = DungeonCard;
+module.exports = {DungeonCard};

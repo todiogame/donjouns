@@ -1,4 +1,6 @@
-const DungeonCard = require('./DungeonCard');
+const schema = require("@colyseus/schema");
+const { Schema, type } = schema;
+const {DungeonCard} = require('./DungeonCard');
 
 class EventCard extends DungeonCard {
     constructor(id, title, description, effect = null) {
@@ -11,4 +13,4 @@ schema.defineTypes(EventCard, {
     event: "boolean"
 });
 
-module.exports = EventCard;
+module.exports = { EventCard };

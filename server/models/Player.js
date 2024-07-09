@@ -1,7 +1,7 @@
 const schema = require("@colyseus/schema");
 const { Schema, type, ArraySchema } = schema;
-const ItemCard = require('./ItemCard');
-const DungeonCard = require('./DungeonCard');
+const {ItemCard} = require('./ItemCard');
+const {DungeonCard} = require('./DungeonCard');
 
 class Player extends Schema {
     constructor(id, name) {
@@ -55,4 +55,4 @@ schema.defineTypes(Player, {
     fled: "boolean"
 });
 
-module.exports = Player;
+module.exports = { Player };
