@@ -43,11 +43,6 @@ export function create() {
             displayManager.updatePlayerHandsAndSelectedCards(cardGame.players, currentPlayerId);
         });
 
-        room.onMessage("update_state", (state) => {
-            console.log("Received update_state message:", state);
-            updateGameState(state);
-        });
-
     }).catch(e => {
         console.error("join error", e);
     });
@@ -55,12 +50,10 @@ export function create() {
     displayManager = new DisplayManager(this);
     displayManager.initializeBackground();
 
-    let cardPicked = false; // Add this flag
-
     this.input.on('pointerdown', (pointer, gameObjects) => {
         if (displayManager.zoomedCard) {
             displayManager.closeZoom();
-        } else if (gameObjects.length > 0 && !cardPicked) { // Check if the card has already been picked
+        } else if (gameObjects.length > 0) { // Check if the card has already been picked
             const cardImage = gameObjects[0];
     
             if (cardImage.isInStuff) {
@@ -82,8 +75,6 @@ export function create() {
                 currentPlayer.hand[cardIndex].isPicked = true;
                 console.log(cardIndex, "picked")
                 displayManager.updatePlayerHandsAndSelectedCards(cardGame.players, currentPlayerId);
-    
-                cardPicked = true; // Set the flag to prevent picking another card
             }
         }
     });
@@ -91,7 +82,7 @@ export function create() {
     function updateGameState(state) {
         console.log("updateGameState")
         if (!cardGame) {
-            console.error("cardGame is not initialized");
+            console.log("cardGame is not yet initialized");
             return;
         }
     
@@ -103,9 +94,6 @@ export function create() {
         });
     
         displayManager.updatePlayerHandsAndSelectedCards(cardGame.players, currentPlayerId);
-    
-        // Reset the cardPicked flag after updating the game state
-        cardPicked = false;
     }
     
 }

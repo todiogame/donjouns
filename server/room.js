@@ -2,6 +2,7 @@ const colyseus = require("colyseus");
 const schema = require("@colyseus/schema");
 const Schema = schema.Schema;
 const type = schema.type;
+const ArraySchema = schema.ArraySchema;
 
 class Card extends Schema {
     constructor(id) {
@@ -20,8 +21,8 @@ class Player extends Schema {
         super();
         this.id = id;
         this.name = name;
-        this.hand = new schema.ArraySchema();
-        this.selectedCards = new schema.ArraySchema();
+        this.hand = new ArraySchema();
+        this.selectedCards = new ArraySchema();
         this.selectedCardIndex = -1;
     }
 
@@ -55,8 +56,8 @@ schema.defineTypes(Player, {
 class GameState extends Schema {
     constructor() {
         super();
-        this.deck = new schema.ArraySchema();
-        this.players = new schema.ArraySchema();
+        this.deck = new ArraySchema();
+        this.players = new ArraySchema();
         this.currentPlayerIndex = 0;
     }
 
@@ -105,12 +106,14 @@ class GameState extends Schema {
 
     rotateHands() {
         // Rotate hands among players
-        const lastHand = this.players[this.players.length - 1].hand;
+        const lastHand = this.players[this.players.length - 1].hand.slice(); // Create a copy of the last hand
         for (let i = this.players.length - 1; i > 0; i--) {
-            this.players[i].hand = this.players[i - 1].hand;
+            this.players[i].hand.clear();
+            this.players[i].hand.push(...this.players[i - 1].hand);
         }
-        this.players[0].hand = lastHand;
-
+        this.players[0].hand.clear();
+        this.players[0].hand.push(...lastHand);
+    
         // Reset the isPicked property for each card in the new hands
         this.players.forEach(player => {
             player.hand.forEach(card => {
@@ -118,6 +121,7 @@ class GameState extends Schema {
             });
         });
     }
+    
 
 }
 schema.defineTypes(GameState, {
@@ -140,8 +144,9 @@ class MyRoom extends colyseus.Room {
 
                 if (this.state.allPlayersSelected()) {
                     this.state.addSelectedCardsToStuff();
-                    // this.state.rotateHands();
-                    this.broadcast("update_state", this.state);
+                    this.state.rotateHands();
+                    // broadcast of the state change is automatic, no need to call this function
+                    // this.broadcast("update_state", this.state);
                 }
             } else {
                 console.error(`Player with id ${client.sessionId} not found`);
