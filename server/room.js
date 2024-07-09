@@ -3,6 +3,18 @@ const schema = require("@colyseus/schema");
 const Schema = schema.Schema;
 const type = schema.type;
 const ArraySchema = schema.ArraySchema;
+const fs = require('fs');
+const path = require('path');
+
+// Load config file
+const configPath = path.resolve(__dirname, 'config.json');
+const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+
+// Access config parameters
+const nb_players = config.nb_players;
+const nb_items_deck = config.nb_items_deck;
+const nb_items_draft = config.nb_items_draft;
+const nb_items_starting = config.nb_items_starting;
 
 class Card extends Schema {
     constructor(id) {
@@ -56,22 +68,22 @@ schema.defineTypes(Player, {
 class GameState extends Schema {
     constructor() {
         super();
-        this.deck = new ArraySchema();
+        this.itemDeck = new ArraySchema();
         this.players = new ArraySchema();
         this.currentPlayerIndex = 0;
     }
 
     initializeDeck() {
-        for (let i = 1; i <= 22; i++) {
-            this.deck.push(new Card(i));
+        for (let i = 1; i <= nb_items_deck; i++) {
+            this.itemDeck.push(new Card(i));
         }
         this.shuffleDeck();
     }
 
     shuffleDeck() {
-        for (let i = this.deck.length - 1; i > 0; i--) {
+        for (let i = this.itemDeck.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
-            [this.deck[i], this.deck[j]] = [this.deck[j], this.deck[i]];
+            [this.itemDeck[i], this.itemDeck[j]] = [this.itemDeck[j], this.itemDeck[i]];
         }
     }
 
@@ -80,9 +92,9 @@ class GameState extends Schema {
     }
 
     dealCards() {
-        for (let i = 0; i < 7; i++) {
+        for (let i = 0; i < nb_items_draft; i++) {
             this.players.forEach(player => {
-                player.addCard(this.deck.pop());
+                player.addCard(this.itemDeck.pop());
             });
         }
     }
@@ -113,19 +125,15 @@ class GameState extends Schema {
         }
         this.players[0].hand.clear();
         this.players[0].hand.push(...lastHand);
-    
-        // Reset the isPicked property for each card in the new hands
-        this.players.forEach(player => {
-            player.hand.forEach(card => {
-                card.isPicked = false;
-            });
-        });
     }
-    
+
+    discardHands(){
+        this.players.forEach(p => p.hand.clear());
+    }
 
 }
 schema.defineTypes(GameState, {
-    deck: [Card],
+    itemDeck: [Card],
     players: [Player],
     currentPlayerIndex: "number"
 });
@@ -144,9 +152,15 @@ class MyRoom extends colyseus.Room {
 
                 if (this.state.allPlayersSelected()) {
                     this.state.addSelectedCardsToStuff();
-                    this.state.rotateHands();
-                    // broadcast of the state change is automatic, no need to call this function
-                    // this.broadcast("update_state", this.state);
+                    if (this.state.players[0].selectedCards.length < nb_items_starting) {
+                        this.state.rotateHands();
+                        // broadcast of the state change is automatic, no need to call this function
+                        // this.broadcast("update_state", this.state);
+                    }
+                    else {
+                        this.state.discardHands();
+                        this.broadcast("end_draft", this.state);
+                    }
                 }
             } else {
                 console.error(`Player with id ${client.sessionId} not found`);
@@ -159,8 +173,7 @@ class MyRoom extends colyseus.Room {
         const player = new Player(client.sessionId, `Player ${this.state.players.length + 1}`);
         this.state.addPlayer(player);
 
-        const expectedNumberOfPlayers = 3; // Define the number of expected players here
-        if (this.state.players.length === expectedNumberOfPlayers) {
+        if (this.state.players.length === nb_players) {
             this.state.dealCards();
             this.broadcast("start_game", this.state);
         }
