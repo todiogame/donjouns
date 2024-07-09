@@ -1,0 +1,53 @@
+Duplication,id,Title,Image,Power,Color,Description,Type,Title_en,Description_en,Type_en
+0,,,,,,,,,,
+1,1,Gobelin,goblin1.png,1,1,,Gobelin,Goblin,,Goblin
+1,2,Gobelin,goblin2.png,1,1,,Gobelin,Goblin,,Goblin
+1,3,Gobelin,goblin3.png,1,1,,Gobelin,Goblin,,Goblin
+1,4,Gobelin,goblin4.png,1,1,,Gobelin,Goblin,,Goblin
+1,5,Squelette,skeleton1.png,2,2,,Squelette,Skeleton,,Skeleton
+1,6,Squelette,skeleton2.png,2,2,,Squelette,Skeleton,,Skeleton
+1,7,Squelette,skeleton3.png,2,2,,Squelette,Skeleton,,Skeleton
+1,8,Squelette,skeleton4.png,2,2,,Squelette,Skeleton,,Skeleton
+1,9,Orc,orc1.png,3,3,,Orc,Orc,,Orc
+1,10,Orc,orc2.png,3,3,,Orc,Orc,,Orc
+1,11,Orc,orc3.png,3,3,,Orc,Orc,,Orc
+1,12,Orc,orc4.png,3,3,,Orc,Orc,,Orc
+1,13,Vampire,vampire1.png,4,4,,Vampire,Vampire,,Vampire
+1,14,Vampire,vampire2.png,4,4,,Vampire,Vampire,,Vampire
+1,15,Vampire,vampire3.png,4,4,,Vampire,Vampire,,Vampire
+1,16,Vampire,vampire4.png,4,4,,Vampire,Vampire,,Vampire
+1,17,Golem,golem1.png,5,5,,Golem,Golem,,Golem
+1,18,Golem,golem2.png,5,5,,Golem,Golem,,Golem
+1,19,Golem,golem3.png,5,5,,Golem,Golem,,Golem
+1,20,Golem,golem4.png,5,5,,Golem,Golem,,Golem
+1,21,Liche,lich1.png,6,6,,Liche,Lich,,Lich
+1,22,Liche,lich2.png,6,6,,Liche,Lich,,Lich
+1,23,Démon,demon1.png,7,7,,Démon,Demon,,Demon
+1,24,Démon,demon2.png,7,7,,Démon,Demon,,Demon
+1,25,Dragon,dragon1.png,9,9,,Dragon,Dragon,,Dragon
+1,26,Dragon,dragon2.png,9,9,,Dragon,Dragon,,Dragon
+0,,,,,,,,,,
+0,,Monstres speciaux,,,,,,,,
+0,,,,,,,,,,
+1,27,Le Rongeur de Médailles,medal_grinder.png,X,0,"La <b>puissance</b> de ce monstre est égale au <b>nombre de Médailles</b> dans la partie. Si il vous inflige des dommages, perdez une Médaille.",Rat,Medal Grinder,,
+1,28,Chevaucheur de Rat,goblin_rider.png,1,0,Inflige <b>2 dommages</b> supplémentaires.,"Rat, Gobelin",Rar Rider,Deal 2 additional damage,"Rat, Goblin"
+1,29,L'Arracheur,puller.png,3,3,"Si l'Arracheur vous inflige des dommages, remettez la carte du dessus de votre pile de monstres vaincus <b>sur le Donjon</b>.",Orc,The Puller,,Orc
+1,30,Dragon endormi,dragon_sleeping.png,X,9,"Lancez un dé.\nSur <b>3 ou moins</b>, ce monstre est <b>puissance 9</b>.\nSur <b>4 ou plus</b>, ce monstre est <b>puissance 0</b>.",Dragon,Sleeping Dragon,"Roll a die. If you roll 3 or more, this monster gains <b>+9 power</b>",Dragon
+1,31,Limon glouton,gluttonous_ooze.png,0,8,"Si vous affrontez ce monstre, <b>brisez</b> un de vos objets intact.",,Gluttonous Ooze,<b>Break</b> one of your items,
+1,32,Mimique,mimic.png,X,8,La <b>puissance</b> de ce monstre est égale au nombre d'objets que vous possédez quand vous la rencontrez.,,Mimic,This monster's <b>power</b>is equal to your number of unbroken items,
+1,33,Fée,fairy.png,0,8,"Après avoir vaincu la Fée,\n<b>passez votre tour.</b>",,Fairy,,
+1,34,Miroir Maléfique,mirror.png,X,8,Copie le monstre au sommet de votre pile de monstres vaincus.,,Evil Mirror,Copies the monster on the top of your stack of killed monsters,
+1,35,Rat Liche,rat_lich.png,6,6,,"Rat, Liche",Pest Warlock,,"Rat, Lich"
+1,36,Golem d'or,gold_golem.png,5,5,Donne <b>1 Point de Victoire</b> supplémentaire.,Golem,Golden Golem,Worth <b>two victory points</b> instead of one.,Golem
+1,37,L'empaleur d'imprudent,noob_powner.png,7,7,"Si vous avez une <b>Médaille</b>, ce monstre est de <b>puissance 2</b>.","Squelette, Demon",Noob Powner,"If you own a <b>medal</b>, this monster's  <b>power</b> is <b>2</b>",
+1,38,Bon gros rat,big_rat.png,0,0,Inflige <b>2 dommages</b> supplémentaires.,Rat,Big disgusting rat,Deal 2 additional damage,Rat
+1,39,Rat charognard,scavenger.png,X,0,La <b>puissance</b> de ce monstre est égale au nombre de monstres dans votre pile de monstres vaincus.,Rat,Scavenger Rat,,
+1,40,Ange Guardien,guardian_angel.png,8,8,"Vous pouvez <b>défausser</b> l'Ange Gardien plutôt que le combattre.\nSi vous le battez, vous obtenez <b>l'Égide </b>.",,Guardian Angel,"You can <b>discard</b> the Guardian Angel insteqd of fighting.\nIf you defeat it, you get the <b>Aegis</b>.",
+1,41,Seigneur Vampire,lord_vampire.png,4,4,"Si vous avez une <b>Médaille</b>,\ninflige <b>4 dommages</b> supplémentaires.",Vampire,Vampire Lord,,Vampire
+0,,,,,,,,,,
+1,42,Gobelin Fantôme,ghost_goblin.png,1,1,<b>Défaussez</b> ce monstre après l'avoir vaincu.,Gobelin,,,
+1,43,Changeforme,shapeshifter.png,8,8,Attribuez à ce monstre un <b>type</b> de votre choix.\nIl perd ce type une fois vaincu.,?,,,
+1,44,Equipe de singes,monkeys.png,1,8,Lancez le dé.\nCe monstre inflige des dommages autant de fois.,,,,
+0,,,,,,,,,,
+1,45,Kraken,kraken.png,10,10,"Si c'est <b>la première fois</b> que le Kraken apparait, vous pouvez le remettre <b>sous le Donjon.</b>",,,,
+1,46,Faucheuse,spectre.png,X,8,"Inflige des <b>dommages</b> égaux à la <b>moitié de vos Points de Vie</b> quand vous la rencontrez,\narrondis à l'inférieur.",,,,

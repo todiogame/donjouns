@@ -83,27 +83,91 @@ export class DisplayManager {
                 this.displayHand(player.hand);
             }
         });
-    }
-    updateGameUI(players, currentPlayerId) {
-        console.log("updateGameUI", players, currentPlayerId);
+        //tests a supprimer
+        // this.displayDungeon();
+        // this.displayCurrentCard()
 
+
+    }
+    updateGameUI(game, currentPlayerId) {
+        console.log("updateGameUI", game, currentPlayerId);
         this.clearPreviousDisplay();
+
+        const players = game.players;
         players.forEach(player => {
             if (player.id === currentPlayerId) {
                 this.displayStuff(player.selectedItemCards, true, 'bottom', player.id);
-                this.displayMonstersPile(player.monstersPile, true, 'bottom', player.id);
-                this.displayHP(player.hp, true, 'bottom', player.id);
+                // this.displayMonstersPile(player.monstersPile, true, 'bottom', player.id);
+                // this.displayHP(player.hp, true, 'bottom', player.id);
             } else {
                 const position = this.getOpponentPosition(player.id, currentPlayerId, players);
                 this.displayStuff(player.selectedItemCards, false, position, player.id);
-                this.displayMonstersPile(player.monstersPile, true, position, player.id);
-                this.displayHP(player.hp, true, position, player.id);
+                // this.displayMonstersPile(player.monstersPile, true, position, player.id);
+                // this.displayHP(player.hp, true, position, player.id);
             }
         });
         this.displayCurrentCard();
-        this.displayDungeon();
-        this.displayDiscardPile();
-        
+        this.displayDungeon(game);
+
+    }
+
+    displayCurrentCard(game) {
+
+        const desiredWidth = 125
+        const desiredHeight = 175
+        const scaleX = desiredWidth / 750;
+        const scaleY = desiredHeight / 1050;
+        const cardSprite = this.scene.add.image(650, 300, "monster_33")
+            .setOrigin(0.5, 0.5)
+            // .setRotation(((i * 7 % 12)-6 )* 0.002 * Math.PI)
+            .setScale(scaleX, scaleY)
+            .setInteractive({ useHandCursor: true, pixelPerfect: true, alphaTolerance: 1 });
+
+
+        // Add hover effect with smooth transition
+        cardSprite.on('pointerover', () => {
+            cardSprite.setDepth(1);
+            this.scene.tweens.add({
+                targets: cardSprite,
+                scaleX: scaleX * 3,
+                scaleY: scaleY * 3,
+                duration: 50,
+                ease: 'Sine.easeInOut'
+            });
+        });
+
+        cardSprite.on('pointerout', () => {
+            cardSprite.setDepth(0);
+            this.scene.tweens.add({
+                targets: cardSprite,
+                scaleX: scaleX,
+                scaleY: scaleY,
+                duration: 50,
+                ease: 'Sine.easeInOut',
+            });
+        });
+
+    }
+    displayDungeon(game) {
+
+        const desiredWidth = 125
+        const desiredHeight = 175
+        const scaleX = desiredWidth / 750;
+        const scaleY = desiredHeight / 1050;
+        const numCards = 50
+        // const numCards =game.dungeonLength
+        let cardSprite;
+        for (let i = 0; i < 50; i++) {
+            cardSprite = this.scene.add.image(500 + 0.2 * i, 300 - 0.1 * i, "back_dungeon")
+                .setOrigin(0.5, 0.5)
+                // .setRotation(((i * 7 % 12)-6 )* 0.002 * Math.PI)
+                .setScale(scaleX, scaleY)
+        }
+        cardSprite?.setInteractive({ useHandCursor: true, pixelPerfect: true, alphaTolerance: 1 });
+            
+    }
+    displayDiscardPile() {
+
     }
 
     clearPreviousDisplay() {

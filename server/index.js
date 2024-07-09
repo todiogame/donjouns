@@ -2,7 +2,7 @@ const colyseus = require("colyseus");
 const express = require("express");
 const http = require("http");
 const path = require("path");
-const MyRoom = require("./room");
+const MyRoom = require("./rooms/room");
 const { monitor } = require("@colyseus/monitor");
 
 const app = express();
