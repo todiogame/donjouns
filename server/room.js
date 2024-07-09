@@ -16,14 +16,14 @@ const nb_items_deck = config.nb_items_deck;
 const nb_items_draft = config.nb_items_draft;
 const nb_items_starting = config.nb_items_starting;
 
-class Card extends Schema {
+class ItemCard extends Schema {
     constructor(id) {
         super();
         this.id = id;
         this.texture = 'items_' + String(id).padStart(3, '0');
     }
 }
-schema.defineTypes(Card, {
+schema.defineTypes(ItemCard, {
     id: "number",
     texture: "string"
 });
@@ -34,25 +34,25 @@ class Player extends Schema {
         this.id = id;
         this.name = name;
         this.hand = new ArraySchema();
-        this.selectedCards = new ArraySchema();
-        this.selectedCardIndex = -1;
+        this.selectedItemCards = new ArraySchema();
+        this.selectedItemCardIndex = -1;
     }
 
-    addCard(card) {
-        this.hand.push(card);
+    addItemCard(itemCard) {
+        this.hand.push(itemCard);
     }
 
     selectCard(index) {
-        this.selectedCardIndex = index;
+        this.selectedItemCardIndex = index;
     }
 
     pickCard() {
-        if (this.selectedCardIndex !== -1) {
-            const card = this.hand.splice(this.selectedCardIndex, 1)[0];
-            this.selectedCardIndex = -1;
-            return card;
+        if (this.selectedItemCardIndex !== -1) {
+            const itemCard = this.hand.splice(this.selectedItemCardIndex, 1)[0];
+            this.selectedItemCardIndex = -1;
+            return itemCard;
         } else {
-            console.error("bug selectedCardIndex = -1")
+            console.error("bug selectedItemCardIndex = -1")
         }
         return null;
     }
@@ -60,9 +60,9 @@ class Player extends Schema {
 schema.defineTypes(Player, {
     id: "string",
     name: "string",
-    hand: [Card],
-    selectedCards: [Card],
-    selectedCardIndex: "number"
+    hand: [ItemCard],
+    selectedItemCards: [ItemCard],
+    selectedItemCardIndex: "number"
 });
 
 class GameState extends Schema {
@@ -71,11 +71,12 @@ class GameState extends Schema {
         this.itemDeck = new ArraySchema();
         this.players = new ArraySchema();
         this.currentPlayerIndex = 0;
+        this.dungeon = new ArraySchema();
     }
 
     initializeDeck() {
         for (let i = 1; i <= nb_items_deck; i++) {
-            this.itemDeck.push(new Card(i));
+            this.itemDeck.push(new ItemCard(i));
         }
         this.shuffleDeck();
     }
@@ -94,20 +95,20 @@ class GameState extends Schema {
     dealCards() {
         for (let i = 0; i < nb_items_draft; i++) {
             this.players.forEach(player => {
-                player.addCard(this.itemDeck.pop());
+                player.addItemCard(this.itemDeck.pop());
             });
         }
     }
 
     allPlayersSelected() {
-        return this.players.every(player => player.selectedCardIndex !== -1);
+        return this.players.every(player => player.selectedItemCardIndex !== -1);
     }
 
-    addSelectedCardsToStuff() {
+    addSelectedItemCardsToStuff() {
         this.players.forEach(player => {
-            const card = player.pickCard();
-            if (card) {
-                player.selectedCards.push(card);
+            const itemCard = player.pickCard();
+            if (itemCard) {
+                player.selectedItemCards.push(itemCard);
             }
         });
     }
@@ -133,7 +134,7 @@ class GameState extends Schema {
 
 }
 schema.defineTypes(GameState, {
-    itemDeck: [Card],
+    itemDeck: [ItemCard],
     players: [Player],
     currentPlayerIndex: "number"
 });
@@ -151,8 +152,8 @@ class MyRoom extends colyseus.Room {
                 player.selectCard(message.cardIndex);
 
                 if (this.state.allPlayersSelected()) {
-                    this.state.addSelectedCardsToStuff();
-                    if (this.state.players[0].selectedCards.length < nb_items_starting) {
+                    this.state.addSelectedItemCardsToStuff();
+                    if (this.state.players[0].selectedItemCards.length < nb_items_starting) {
                         this.state.rotateHands();
                         // broadcast of the state change is automatic, no need to call this function
                         // this.broadcast("update_state", this.state);

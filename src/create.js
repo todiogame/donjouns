@@ -31,18 +31,16 @@ export function create() {
 
         room.onMessage("start_game", (state) => {
             console.log("Received start_game message:", state);
+            cardGame = new Game(); // Initialize the itemCard game
+            updateGameState(state);
 
-            cardGame = new Game(); // Initialize the card game
-            cardGame.players = state.players.map(playerState => {
-                const player = new Player(playerState.id, playerState.name);
-                player.hand = playerState.hand;
-                player.selectedCards = playerState.selectedCards;
-                return player;
-            });
-
-            displayManager.updatePlayerHandsAndSelectedCards(cardGame.players, currentPlayerId);
+            displayManager.displayTitle("Le Draft démarre !")
+        });
+        room.onMessage("end_draft", (state) => {
+            displayManager.displayTitle("Fin du Draft !")
         });
 
+        
     }).catch(e => {
         console.error("join error", e);
     });
@@ -51,9 +49,9 @@ export function create() {
     displayManager.initializeBackground();
 
     this.input.on('pointerdown', (pointer, gameObjects) => {
-        if (displayManager.zoomedCard) {
+        if (displayManager.zoomedItemCard) {
             displayManager.closeZoom();
-        } else if (gameObjects.length > 0) { // Check if the card has already been picked
+        } else if (gameObjects.length > 0) { // Check if the itemCard has already been picked
             const cardImage = gameObjects[0];
     
             if (cardImage.isInStuff) {
@@ -70,11 +68,11 @@ export function create() {
                 console.log(`Sending select_card message: { action: "select_card", cardIndex: ${cardIndex} }`);
                 room.send("select_card", { cardIndex: cardIndex });
     
-                // Highlight the selected card
+                // Highlight the selected itemCard
                 currentPlayer.hand.forEach(c => c.isPicked = false);
                 currentPlayer.hand[cardIndex].isPicked = true;
                 console.log(cardIndex, "picked")
-                displayManager.updatePlayerHandsAndSelectedCards(cardGame.players, currentPlayerId);
+                displayManager.updateDraftingUI(cardGame.players, currentPlayerId);
             }
         }
     });
@@ -89,11 +87,11 @@ export function create() {
         cardGame.players = state.players.map(playerState => {
             const player = new Player(playerState.id, playerState.name);
             player.hand = playerState.hand;
-            player.selectedCards = playerState.selectedCards;
+            player.selectedItemCards = playerState.selectedItemCards;
             return player;
         });
     
-        displayManager.updatePlayerHandsAndSelectedCards(cardGame.players, currentPlayerId);
+        displayManager.updateDraftingUI(cardGame.players, currentPlayerId);
     }
     
 }

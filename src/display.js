@@ -1,9 +1,60 @@
+export class TitleScene extends Phaser.Scene {
+    constructor() {
+        super({ key: 'TitleScene', active: true });
+    }
+
+    preload() {
+        // Preload any assets if needed
+    }
+
+    create() {
+        // Placeholder for title text
+        this.titleText = null;
+    }
+
+    displayTitle(message, duration = 5000, onComplete) {
+        if (this.titleText) {
+            this.titleText.destroy();
+        }
+
+        this.titleText = this.add.text(this.cameras.main.centerX, 100, message, { fontFamily: 'Arial Black', fontSize: 80 });
+
+        const gradient = this.titleText.context.createLinearGradient(0, 0, 0, this.titleText.height);
+        gradient.addColorStop(0, '#f26522');
+        gradient.addColorStop(0.5, '#fff200');
+        gradient.addColorStop(0.5, '#f7941d');
+        gradient.addColorStop(1, '#ed1c24');
+        this.titleText.setFill(gradient);
+        this.titleText.setOrigin(0.5, 0.5);
+
+        this.tweens.add({
+            targets: this.titleText,
+            alpha: 0,
+            duration: duration,
+            ease: 'Sine.easeInOut',
+            onComplete: () => {
+                this.titleText.destroy(); // Remove text after blending out
+                this.titleText = null;
+                if (onComplete) {
+                    onComplete();
+                }
+            }
+        });
+    }
+}
+
+
 export class DisplayManager {
     constructor(scene) {
         this.scene = scene;
         this.backgroundContainer = null;
-        this.zoomedCard = null; // To keep track of the zoomed-in card
+        this.zoomedItemCard = null; // To keep track of the zoomed-in itemCard
         this.blurryBackground = null; // To keep track of the blurry background
+    }
+
+    displayTitle(message, duration, onComplete) {
+        const titleScene = this.scene.scene.get('TitleScene');
+        titleScene.displayTitle(message, duration, onComplete);
     }
 
     initializeBackground() {
@@ -15,23 +66,48 @@ export class DisplayManager {
         this.backgroundContainer.add(background);
     }
 
-    updatePlayerHandsAndSelectedCards(players, currentPlayerId) {
-        console.log("updatePlayerHandsAndSelectedCards", players, currentPlayerId);
+    updateDraftingUI(players, currentPlayerId) {
+        console.log("updateDraftingUI", players, currentPlayerId);
 
         this.clearPreviousDisplay();
         players.forEach(player => {
             if (player.id === currentPlayerId) {
-                this.displayStuff(player.selectedCards, true, 'bottom', player.id);
-                this.displayHand(player.hand);
+                this.displayStuff(player.selectedItemCards, true, 'bottom', player.id);
             } else {
                 const position = this.getOpponentPosition(player.id, currentPlayerId, players);
-                this.displayStuff(player.selectedCards, false, position, player.id);
+                this.displayStuff(player.selectedItemCards, false, position, player.id);
+            }
+        });
+        players.forEach(player => {
+            if (player.id === currentPlayerId) {
+                this.displayHand(player.hand);
             }
         });
     }
+    updateGameUI(players, currentPlayerId) {
+        console.log("updateGameUI", players, currentPlayerId);
+
+        this.clearPreviousDisplay();
+        players.forEach(player => {
+            if (player.id === currentPlayerId) {
+                this.displayStuff(player.selectedItemCards, true, 'bottom', player.id);
+                this.displayMonstersPile(player.monstersPile, true, 'bottom', player.id);
+                this.displayHP(player.hp, true, 'bottom', player.id);
+            } else {
+                const position = this.getOpponentPosition(player.id, currentPlayerId, players);
+                this.displayStuff(player.selectedItemCards, false, position, player.id);
+                this.displayMonstersPile(player.monstersPile, true, position, player.id);
+                this.displayHP(player.hp, true, position, player.id);
+            }
+        });
+        this.displayCurrentCard();
+        this.displayDungeon();
+        this.displayDiscardPile();
+        
+    }
 
     clearPreviousDisplay() {
-        let childrenToRemove = this.scene.children.list.filter(child => child !== this.backgroundContainer && child !== this.zoomedCard && child !== this.blurryBackground);
+        let childrenToRemove = this.scene.children.list.filter(child => child !== this.backgroundContainer && child !== this.zoomedItemCard && child !== this.blurryBackground);
         while (childrenToRemove.length > 0) {
             const child = childrenToRemove.pop();
             if (child.input) {
@@ -52,13 +128,13 @@ export class DisplayManager {
         const totalWidth = hand.length * (desiredWidth - 20) + 20; // Total width of all cards including spacing
         const startX = (this.scene.game.config.width - totalWidth) / 2; // Center the cards
 
-        hand.forEach((card, index) => {
+        hand.forEach((itemCard, index) => {
             const rotationAngle = (index - (hand.length - 1) / 2) * 0.02; // Adjust the 0.1 value to your desired rotation amount
 
             const cardX = startX + index * (desiredWidth - 20) + desiredWidth / 2; // Adjusted for origin at 0.5
             const cardY = yPosition + desiredHeight / 2; // Adjusted for origin at 0.5
 
-            const cardImage = this.scene.add.image(cardX, cardY, card.texture)
+            const cardImage = this.scene.add.image(cardX, cardY, itemCard.texture)
                 .setOrigin(0.5, 0.5)
                 .setScale(scaleX, scaleY)
                 .setRotation(rotationAngle)
@@ -66,10 +142,10 @@ export class DisplayManager {
 
             cardImage.cardIndex = index;
             cardImage.isPlayer = true;
-            cardImage.isSelected = card.isSelected || false; // Mark as not selectable for zoom
-            cardImage.isInStuff = false; // This card is not in stuff
+            cardImage.isSelected = itemCard.isSelected || false; // Mark as not selectable for zoom
+            cardImage.isInStuff = false; // This itemCard is not in stuff
 
-            if (card.isPicked) {
+            if (itemCard.isPicked) {
                 cardImage.y -= 50;
                 const overlay = this.scene.add.rectangle(cardX, cardY - 50, desiredWidth + 10, desiredHeight + 10, 0x00ff00, 0.3);
                 overlay.setOrigin(0.5, 0.5);
@@ -93,7 +169,7 @@ export class DisplayManager {
             });
 
             cardImage.on('pointerout', () => {
-                cardImage.setDepth(card.isPicked ? 0.2 : 0);
+                cardImage.setDepth(itemCard.isPicked ? 0.2 : 0);
                 this.scene.tweens.add({
                     targets: cardImage,
                     scaleX: scaleX,
@@ -120,12 +196,12 @@ export class DisplayManager {
 
         if (isPlayer) {
             this.scene.add.text(75, this.scene.sys.game.config.height - 210, playerName, { fontSize: '20px', fill: '#fff' });
-            stuff.forEach((card, index) => {
-                if (card) {
+            stuff.forEach((itemCard, index) => {
+                if (itemCard) {
                     const xPosition = 75 + index * (desiredWidth + 10);
                     const yPosition = this.scene.sys.game.config.height - 180;
 
-                    const cardImage = this.scene.add.image(0, 0, card.texture)
+                    const cardImage = this.scene.add.image(0, 0, itemCard.texture)
                         .setOrigin(0, 0)
                         .setScale(scaleX, scaleY)
                         .setPosition(xPosition, yPosition)
@@ -133,7 +209,7 @@ export class DisplayManager {
 
                     cardImage.cardIndex = index;
                     cardImage.isSelected = true; // Mark as selectable for zoom
-                    cardImage.isInStuff = true; // This card is in stuff
+                    cardImage.isInStuff = true; // This itemCard is in stuff
 
                     this.scene.input.enableDebug(cardImage);
                 }
@@ -155,14 +231,14 @@ export class DisplayManager {
 
             this.scene.add.text(xPosition, yOffset - nameYOffset, playerName, { fontSize: '20px', fill: '#fff' });
 
-            stuff.forEach((card, index) => {
-                if (card) {
+            stuff.forEach((itemCard, index) => {
+                if (itemCard) {
                     const columnIndex = Math.floor(index / maxItemsPerColumn);
                     const rowIndex = index % maxItemsPerColumn;
                     const yPosition = yOffset + rowIndex * (desiredHeight + 10) + stuffYOffset;
                     const actualXPosition = position === 'top-left' ? xPosition + columnIndex * columnOffset : xPosition - columnIndex * columnOffset;
 
-                    const cardImage = this.scene.add.image(0, 0, card.texture)
+                    const cardImage = this.scene.add.image(0, 0, itemCard.texture)
                         .setOrigin(0, 0)
                         .setScale(scaleX, scaleY)
                         .setPosition(actualXPosition, yPosition)
@@ -170,7 +246,7 @@ export class DisplayManager {
 
                     cardImage.cardIndex = index;
                     cardImage.isSelected = true; // Mark as selectable for zoom
-                    cardImage.isInStuff = true; // This card is in stuff
+                    cardImage.isInStuff = true; // This itemCard is in stuff
 
                     this.scene.input.enableDebug(cardImage);
                 }
@@ -195,8 +271,8 @@ export class DisplayManager {
 
 
     zoomCard(cardImage) {
-        if (this.zoomedCard) {
-            this.zoomedCard.destroy(); // Destroy any existing zoomed card
+        if (this.zoomedItemCard) {
+            this.zoomedItemCard.destroy(); // Destroy any existing zoomed itemCard
         }
         if (this.blurryBackground) {
             this.blurryBackground.destroy(); // Destroy any existing blurry background
@@ -209,13 +285,13 @@ export class DisplayManager {
         const fixedWidth = 350;
         const fixedHeight = 490;
 
-        this.zoomedCard = this.scene.add.image(this.scene.sys.game.config.width / 2, this.scene.sys.game.config.height / 2, texture)
+        this.zoomedItemCard = this.scene.add.image(this.scene.sys.game.config.width / 2, this.scene.sys.game.config.height / 2, texture)
             .setOrigin(0.5, 0.5)
             .setDepth(3)
             .setDisplaySize(fixedWidth, fixedHeight)
             .setInteractive({ useHandCursor: true, pixelPerfect: true, alphaTolerance: 1 });
 
-        this.zoomedCard.on('pointerdown', () => {
+        this.zoomedItemCard.on('pointerdown', () => {
             this.closeZoom();
         });
 
@@ -223,9 +299,9 @@ export class DisplayManager {
     }
 
     closeZoom() {
-        if (this.zoomedCard) {
-            this.zoomedCard.destroy();
-            this.zoomedCard = null;
+        if (this.zoomedItemCard) {
+            this.zoomedItemCard.destroy();
+            this.zoomedItemCard = null;
         }
         if (this.blurryBackground) {
             this.blurryBackground.destroy();

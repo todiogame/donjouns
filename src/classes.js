@@ -1,4 +1,4 @@
-export class Card {
+export class ItemCard {
     constructor(id) {
         this.id = id;
         this.texture = 'items_' + String(id).padStart(3, '0');
@@ -10,7 +10,7 @@ export class Player {
         this.id = id;
         this.name = name;
         this.hand = [];
-        this.selectedCards = [];
+        this.selectedItemCards = [];
     }
 
 }
