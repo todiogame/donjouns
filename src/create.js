@@ -84,6 +84,11 @@ export function create() {
     });
 
     function updateGameState(state) {
+        console.log("playerstate");
+
+        state.players.forEach(playerState => {
+            console.log(playerState)
+        })
         if (!cardGame) {
             console.log("cardGame is not yet initialized");
             return;
@@ -97,6 +102,8 @@ export function create() {
         });
         cardGame.dungeon = state.dungeon;
 
+        console.log("stuff")
+        cardGame.players.forEach(p => console.log(p.stuff))
         if (cardGame.phase === "DRAFT") {
             displayManager.updateDraftingUI(cardGame.players, currentPlayerId);
         }

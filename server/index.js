@@ -22,7 +22,7 @@ const gameServer = new colyseus.Server({
 async function startServer() {
     const { dungeon, items } = await loadData();
     // Define the room with the loaded cards
-    gameServer.define("my_room", MyRoom, { dungeon: dungeon, items: items });
+    gameServer.define("my_room", MyRoom, { dungeon: dungeon, itemsCards: items });
 
     // Register colyseus monitor (monitoring panel)
     app.use("/colyseus", monitor());

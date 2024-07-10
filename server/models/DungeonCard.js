@@ -2,11 +2,12 @@ const schema = require("@colyseus/schema");
 const { Schema, type } = schema;
 
 class DungeonCard extends Schema {
-    constructor(id, title, description, effect = null) {
+    constructor(id, title, dungeonCardType, description, effect = null) {
         super();
         this.id = id;
-        this.texture = 'dungeon_' + String(id).padStart(3, '0');
+        this.texture = dungeonCardType + '_' + String(id).padStart(2, '0');
         this.title = title;
+        this.dungeonCardType = dungeonCardType;
         this.description = description;
         this.effect = effect;
     }
@@ -16,6 +17,7 @@ schema.defineTypes(DungeonCard, {
     id: "string",
     texture: "string",
     title: "string",
+    dungeonCardType: "string",
     description: "string",
     effect: "string"
 });

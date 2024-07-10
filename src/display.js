@@ -117,7 +117,7 @@ export class DisplayManager {
         const desiredHeight = 175
         const scaleX = desiredWidth / 750;
         const scaleY = desiredHeight / 1050;
-        const cardSprite = this.scene.add.image(650, 300, "monster_33")
+        const cardSprite = this.scene.add.image(650, 300, "monster_12")
             .setOrigin(0.5, 0.5)
             // .setRotation(((i * 7 % 12)-6 )* 0.002 * Math.PI)
             .setScale(scaleX, scaleY)

@@ -5,9 +5,9 @@ const type = schema.type;
 const ArraySchema = schema.ArraySchema;
 const fs = require('fs');
 const path = require('path');
-// const colyseus = require("colyseus");
 const { GameState } = require('../models/GameState');
 const { Player } = require('../models/Player');
+
 // Load config file
 const configPath = path.resolve(__dirname, '../config.json');
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
@@ -18,21 +18,18 @@ const nb_items_deck = config.nb_items_deck;
 const nb_items_draft = config.nb_items_draft;
 const nb_items_starting = config.nb_items_starting;
 
-
 class MyRoom extends colyseus.Room {
     onCreate(options) {
-        console.log("Room created!", options);
+        console.log("Room created!");
+        this.maxClients = nb_players;
         this.setState(new GameState());
 
-        // Store the dungeon and items in the game state or room instance
-        this.allDungeonCards = options.dungeon;
-        this.allItemsCards = options.items;
-        // console.log('Dungeon cards in room:', this.dungeon);
-        // console.log('Items in room:', this.items);
+        // Initialize room-specific data
+        this.allDungeonCards = options.dungeon || [];
+        this.allItemsCards = options.itemsCards || [];
 
-        this.maxClients = nb_players;
         this.state.initializeItemsDeck(this.allItemsCards);
-
+        
         // Listen to messages from clients
         this.onMessage("select_card", (client, message) => {
             console.log(`Received select_card message from ${client.sessionId}:`, message);
@@ -44,15 +41,12 @@ class MyRoom extends colyseus.Room {
                     this.state.addSelectedItemCardsToStuff();
                     if (this.state.players[0].stuff.length < nb_items_starting) {
                         this.state.rotateHands();
-                    }
-                    else {
+                    } else {
                         this.state.discardHands();
                         this.broadcast("end_draft", this.state);
 
                         setTimeout(() => {
-                            this.state.setUpDungeonGame(this.allDungeonCards)
-                            //start the ordonancer
-                            //todo
+                            this.state.setUpAndPlayDungeon(this.allDungeonCards);
                         }, 1000);
                     }
                 }
@@ -66,9 +60,11 @@ class MyRoom extends colyseus.Room {
         console.log(client.sessionId, "joined!");
         const player = new Player(client.sessionId, `Player ${this.state.players.length + 1}`);
         this.state.addPlayer(player);
+        console.log("player", player.id, player.name, player.stuff.length);
 
-        if (this.state.players.length === nb_players) {
-            this.state.phase = "DRAFT"
+        if (this.state.players.length === this.maxClients) {
+            console.log("start_game");
+            this.state.phase = "DRAFT";
             this.state.dealItemsCards();
             this.broadcast("start_game", this.state);
         }
@@ -76,7 +72,11 @@ class MyRoom extends colyseus.Room {
 
     onLeave(client, consented) {
         console.log(client.sessionId, "left!");
-        // Handle player leaving
+        const playerIndex = this.state.players.findIndex(p => p.id === client.sessionId);
+        if (playerIndex !== -1) {
+            this.state.players.splice(playerIndex, 1);
+        }
+        // Handle additional cleanup if necessary
     }
 
     onDispose() {

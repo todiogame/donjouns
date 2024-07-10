@@ -11,7 +11,8 @@ class ItemCard extends Schema {
         this.color = color;
         this.image = image;
         this.description = description;
-
+        this.hp = 0;
+        this.escapeRollModifier = 0;
         // Extract hp from description if it contains "PV + "
         const hpMatch = description.match(/PV \+ (\d+)/);
         this.hp = hpMatch ? parseInt(hpMatch[1], 10) : 0;

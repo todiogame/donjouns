@@ -48,7 +48,7 @@ class Player extends Schema {
     
     addItem(item) {
         this.stuff.push(item);
-        this.totalHP += item.hp;
+        this.hp += item.hp;
     }
 
     calculateEscapeRollModifiers() {
@@ -56,21 +56,19 @@ class Player extends Schema {
     }
 
     flee() {
-        this.fleeSuccessful = true;
-        this.inDungeon = false;
+        this.fled = true;
     }
 
     die() {
-        this.alive = false;
-        this.inDungeon = false;
+        this.dead = true;
     }
 
     calculateFinalScore(logDetails) {
         // logDetails.push(`Calculating score for ${this.name}: ${this.defeatedMonstersPile.length} defeated monsters.`);
-        this.finalScore = this.defeatedMonstersPile.length;
+        this.score = this.defeatedMonstersPile.length;
         if (this.defeatedMonstersPile.some(monster => monster.effect && monster.effect.includes("GOLD"))) {
             // logDetails.push("+1 for the Golden Golem");
-            this.finalScore += 1;
+            this.score += 1;
         }
         this.stuff.forEach(item => item.onScore(this, logDetails));
     }

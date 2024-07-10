@@ -1,8 +1,8 @@
 export class Game {
     constructor() {
         this.phase = "DRAFT";
-        this.itemDeck = [];
         this.players = [];
+        this.itemDeck = [];
         this.currentPlayerIndex = 0;
         this.dungeon = [];
         this.dungeonLength = 0;
@@ -28,6 +28,7 @@ export class Player {
         this.monstersAddedThisTurn = 0;
     }
 
+
 }
 
 export class ItemCard {
@@ -40,6 +41,8 @@ export class ItemCard {
         this.image = image;
         this.description = description;
 
+        this.hp = 0;
+        this.escapeRollModifier = 0;
         // Extract hp from description if it contains "PV + "
         const hpMatch = description.match(/PV \+ (\d+)/);
         this.hp = hpMatch ? parseInt(hpMatch[1], 10) : 0;
@@ -51,18 +54,19 @@ export class ItemCard {
 
 
 export class DungeonCard {
-    constructor(id) {
+    constructor(id, title, dungeonCardType, description, effect = null) {
         this.id = id;
-        this.texture = 'dungeon_' + String(id).padStart(3, '0');
+        this.texture = dungeonCardType + '_' + String(id).padStart(2, '0');
         this.title = title;
+        this.dungeonCardType = dungeonCardType;
         this.description = description;
         this.effect = effect;
     }
 }
 
 export class MonsterCard extends DungeonCard {
-    constructor(title, power, types = [title], description = "", effect = null) {
-        super(title, description, effect);
+    constructor(id, title, power, types = [], description = "", effect = null) {
+        super(id, title, "monster", description, effect);
         this.power = power;
         this.types = types;
         this.damage = 0;
@@ -70,9 +74,8 @@ export class MonsterCard extends DungeonCard {
 }
 
 export class EventCard extends DungeonCard {
-    constructor(title, description, effect = null) {
-        super(title, description, effect);
+    constructor(id, title, description, effect = null) {
+        super(id, title, "event", description, effect);
         this.event = true;
     }
 }
-
