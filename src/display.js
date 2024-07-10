@@ -71,10 +71,10 @@ export class DisplayManager {
         this.clearPreviousDisplay();
         players.forEach(player => {
             if (player.id === currentPlayerId) {
-                this.displayStuff(player.stuff, true, 'bottom', player.name);
+                this.displayStuff(player.stuff, true, 'bottom', player);
             } else {
                 const position = this.getOpponentPosition(player.id, currentPlayerId, players);
-                this.displayStuff(player.stuff, false, position, player.name);
+                this.displayStuff(player.stuff, false, position, player);
             }
         });
         players.forEach(player => {
@@ -95,12 +95,12 @@ export class DisplayManager {
         const players = game.players;
         players.forEach(player => {
             if (player.id === currentPlayerId) {
-                this.displayStuff(player.stuff, true, 'bottom', player.name);
+                this.displayStuff(player.stuff, true, 'bottom', player, game);
                 // this.displayMonstersPile(player.defeatedMonstersPile, true, 'bottom', player.id);
                 this.displayHP(player, true, 'bottom');
             } else {
                 const position = this.getOpponentPosition(player.id, currentPlayerId, players);
-                this.displayStuff(player.stuff, false, position, player.name);
+                this.displayStuff(player.stuff, false, position, player, game);
                 // this.displayMonstersPile(player.defeatedMonstersPile, true, position, player.id);
                 this.displayHP(player, false, position);
             }
@@ -157,7 +157,7 @@ export class DisplayManager {
             duration: 100 // Adjust the duration for quicker or slower wiggle
         });
     }
-    
+
 
     displayDungeon(game, currentPlayerId) {
         const desiredWidth = 125;
@@ -325,7 +325,8 @@ export class DisplayManager {
     }
 
 
-    displayStuff(stuff, isPlayer, position, playerName) {
+    displayStuff(stuff, isPlayer, position, player, game) {
+        const playerName = player.name
         this.scene.playcardSound.play();
 
         const desiredWidth = isPlayer ? 125 : 90;
@@ -333,9 +334,9 @@ export class DisplayManager {
 
         const scaleX = desiredWidth / 750;
         const scaleY = desiredHeight / 1050;
-
+        let playerNameText;
         if (isPlayer) {
-            this.scene.add.text(75, this.scene.sys.game.config.height - 210, playerName, { fontSize: '20px', fill: '#fff' });
+            playerNameText = this.scene.add.text(75, this.scene.sys.game.config.height - 210, playerName, { fontSize: '20px', fill: '#fff', fontStyle: 'bold' });
             stuff.forEach((itemCard, index) => {
                 if (itemCard) {
                     const xPosition = 75 + index * (desiredWidth + 10);
@@ -369,7 +370,7 @@ export class DisplayManager {
                 yOffset = 5 + nameYOffset;
             }
 
-            this.scene.add.text(xPosition, yOffset - nameYOffset, playerName, { fontSize: '20px', fill: '#fff' });
+            playerNameText = this.scene.add.text(xPosition, yOffset - nameYOffset, playerName, { fontSize: '20px', fill: '#fff', fontStyle: 'bold' });
 
             stuff.forEach((itemCard, index) => {
                 if (itemCard) {
@@ -392,6 +393,18 @@ export class DisplayManager {
                 }
             });
         }
+        if(game && game.players[game.currentPlayerIndex].id === player.id)
+        this.addShiningEffect(playerNameText)
+    }
+    addShiningEffect(text) {
+        this.scene.tweens.add({
+            targets: text,
+            alpha: { from: 0.5, to: 1 },
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut',
+            duration: 500
+        });
     }
 
     getOpponentPosition(playerId, currentPlayerId, players) {
