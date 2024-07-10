@@ -33,7 +33,7 @@ export class TitleScene extends Phaser.Scene {
             duration: duration,
             ease: 'Sine.easeInOut',
             onComplete: () => {
-                this.titleText.destroy(); // Remove text after blending out
+                if (this.titleText) this.titleText.destroy(); // Remove text after blending out
                 this.titleText = null;
                 if (onComplete) {
                     onComplete();
@@ -72,10 +72,10 @@ export class DisplayManager {
         this.clearPreviousDisplay();
         players.forEach(player => {
             if (player.id === currentPlayerId) {
-                this.displayStuff(player.selectedItemCards, true, 'bottom', player.id);
+                this.displayStuff(player.stuff, true, 'bottom', player.id);
             } else {
                 const position = this.getOpponentPosition(player.id, currentPlayerId, players);
-                this.displayStuff(player.selectedItemCards, false, position, player.id);
+                this.displayStuff(player.stuff, false, position, player.id);
             }
         });
         players.forEach(player => {
@@ -96,13 +96,13 @@ export class DisplayManager {
         const players = game.players;
         players.forEach(player => {
             if (player.id === currentPlayerId) {
-                this.displayStuff(player.selectedItemCards, true, 'bottom', player.id);
-                // this.displayMonstersPile(player.monstersPile, true, 'bottom', player.id);
+                this.displayStuff(player.stuff, true, 'bottom', player.id);
+                // this.displayMonstersPile(player.defeatedMonstersPile, true, 'bottom', player.id);
                 // this.displayHP(player.hp, true, 'bottom', player.id);
             } else {
                 const position = this.getOpponentPosition(player.id, currentPlayerId, players);
-                this.displayStuff(player.selectedItemCards, false, position, player.id);
-                // this.displayMonstersPile(player.monstersPile, true, position, player.id);
+                this.displayStuff(player.stuff, false, position, player.id);
+                // this.displayMonstersPile(player.defeatedMonstersPile, true, position, player.id);
                 // this.displayHP(player.hp, true, position, player.id);
             }
         });
@@ -164,7 +164,7 @@ export class DisplayManager {
                 .setScale(scaleX, scaleY)
         }
         cardSprite?.setInteractive({ useHandCursor: true, pixelPerfect: true, alphaTolerance: 1 });
-            
+
     }
     displayDiscardPile() {
 

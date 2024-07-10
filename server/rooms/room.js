@@ -23,8 +23,15 @@ class MyRoom extends colyseus.Room {
     onCreate(options) {
         console.log("Room created!", options);
         this.setState(new GameState());
+
+        // Store the dungeon and items in the game state or room instance
+        this.allDungeonCards = options.dungeon;
+        this.allItemsCards = options.items;
+        // console.log('Dungeon cards in room:', this.dungeon);
+        // console.log('Items in room:', this.items);
+
         this.maxClients = nb_players;
-        this.state.initializeDeck();
+        this.state.initializeItemsDeck(this.allItemsCards);
 
         // Listen to messages from clients
         this.onMessage("select_card", (client, message) => {
@@ -35,17 +42,17 @@ class MyRoom extends colyseus.Room {
 
                 if (this.state.allPlayersSelected()) {
                     this.state.addSelectedItemCardsToStuff();
-                    if (this.state.players[0].selectedItemCards.length < nb_items_starting) {
+                    if (this.state.players[0].stuff.length < nb_items_starting) {
                         this.state.rotateHands();
-                        // broadcast of the state change is automatic, no need to call this function
-                        // this.broadcast("update_state", this.state);
                     }
                     else {
                         this.state.discardHands();
                         this.broadcast("end_draft", this.state);
 
                         setTimeout(() => {
-                            this.state.setUpDungeonGame()
+                            this.state.setUpDungeonGame(this.allDungeonCards)
+                            //start the ordonancer
+                            //todo
                         }, 1000);
                     }
                 }
@@ -62,7 +69,7 @@ class MyRoom extends colyseus.Room {
 
         if (this.state.players.length === nb_players) {
             this.state.phase = "DRAFT"
-            this.state.dealCards();
+            this.state.dealItemsCards();
             this.broadcast("start_game", this.state);
         }
     }

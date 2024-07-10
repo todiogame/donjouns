@@ -18,18 +18,11 @@ const gameServer = new colyseus.Server({
     server: server,
 });
 
-// Define the room
-gameServer.define("my_room", MyRoom);
-
 // Load game data and start server
 async function startServer() {
-    try {
-        const cards = await loadData();
-        // console.log('Data loaded:', cards);
-        // Initialize your game state with the loaded data, if necessary
-    } catch (error) {
-        console.error('Error loading data:', error);
-    }
+    const { dungeon, items } = await loadData();
+    // Define the room with the loaded cards
+    gameServer.define("my_room", MyRoom, { dungeon: dungeon, items: items });
 
     // Register colyseus monitor (monitoring panel)
     app.use("/colyseus", monitor());

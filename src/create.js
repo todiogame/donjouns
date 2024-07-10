@@ -92,7 +92,7 @@ export function create() {
         cardGame.players = state.players.map(playerState => {
             const player = new Player(playerState.id, playerState.name);
             player.hand = playerState.hand;
-            player.selectedItemCards = playerState.selectedItemCards;
+            player.stuff = playerState.stuff;
             return player;
         });
         cardGame.dungeon = state.dungeon;

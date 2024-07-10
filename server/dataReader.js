@@ -3,6 +3,7 @@ const path = require('path');
 const csv = require('csv-parser');
 const { MonsterCard } = require('./models/MonsterCard');
 const { EventCard } = require('./models/EventCard');
+const { ItemCard } = require('./models/ItemCard');
 
 function loadCSV(filePath, type) {
 
@@ -20,14 +21,19 @@ function loadCSV(filePath, type) {
                     if (type === 'Monster') {
                         const { id, Title: title, Power: power, Description: description, Type: cardType } = row;
                         const types = cardType ? cardType.split(',').map(t => t.trim()) : [];
-                        console.log('Creating card:', { id, title, power, types, description, cardType });
-                        const monsterCard = new MonsterCard(id, title, parseInt(power, 0), [types], description, null); //last row is effect
+                        // console.log('Creating card:', { id, title, power, types, description, cardType });
+                        const monsterCard = new MonsterCard(id, title, parseInt(power, 10) || 0, types, description, null); //last row is effect
                         results.push(monsterCard);
                     } else if (type === 'Event') {
                         const { id, Title: title, Description: description } = row;
-                        console.log('Creating card:', { id, title, description });
+                        // console.log('Creating card:', { id, title, description });
                         const eventCard = new EventCard(id, title, description);
                         results.push(eventCard);
+                    } else if (type === 'Item') {
+                        const { id, Title: title, Active: active, Color: color, Image: image, Description: description } = row;
+                        // console.log('Creating item:', { id, title, active, color, image, description });
+                        const itemCard = new ItemCard(id, title, active, color, image, description);
+                        results.push(itemCard);
                     }
                 }
             })
@@ -44,7 +50,8 @@ async function loadData() {
     try {
         const monsters = await loadCSV('gamedata/monsters.csv', 'Monster');
         const events = await loadCSV('gamedata/events.csv', 'Event');
-        return [...monsters, ...events];
+        const items = await loadCSV('gamedata/items.csv', 'Item');
+        return {dungeon:[...monsters, ...events], items: items};
     } catch (error) {
         console.error('Error loading data:', error);
         throw error;
