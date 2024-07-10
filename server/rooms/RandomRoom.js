@@ -18,42 +18,22 @@ const nb_items_deck = config.nb_items_deck;
 const nb_items_draft = config.nb_items_draft;
 const nb_items_starting = config.nb_items_starting;
 
-class MyRoom extends colyseus.Room {
+class RandomRoom extends colyseus.Room {
     onCreate(options) {
         console.log("Room created!");
         this.maxClients = nb_players;
         this.setState(new GameState());
+        this.roomClosed = false;
 
         // Initialize room-specific data
         this.allDungeonCards = options.dungeon || [];
         this.allItemsCards = options.itemsCards || [];
 
         this.state.initializeItemsDeck(this.allItemsCards);
-        
-        // Listen to messages from clients
-        this.onMessage("select_card", (client, message) => {
-            console.log(`Received select_card message from ${client.sessionId}:`, message);
-            const player = this.state.players.find(p => p.id === client.sessionId);
-            if (player) {
-                player.selectCard(message.cardIndex);
+    }
 
-                if (this.state.allPlayersSelected()) {
-                    this.state.addSelectedItemCardsToStuff();
-                    if (this.state.players[0].stuff.length < nb_items_starting) {
-                        this.state.rotateHands();
-                    } else {
-                        this.state.discardHands();
-                        this.broadcast("end_draft", this.state);
-
-                        setTimeout(() => {
-                            this.state.setUpAndPlayDungeon(this.allDungeonCards);
-                        }, 1000);
-                    }
-                }
-            } else {
-                console.error(`Player with id ${client.sessionId} not found`);
-            }
-        });
+    onAuth() {
+        return !this.roomClosed
     }
 
     onJoin(client, options) {
@@ -63,10 +43,12 @@ class MyRoom extends colyseus.Room {
         console.log("player", player.id, player.name, player.stuff.length);
 
         if (this.state.players.length === this.maxClients) {
+            this.roomClosed = true;
             console.log("start_game");
-            this.state.phase = "DRAFT";
-            this.state.dealItemsCards();
-            this.broadcast("start_game", this.state);
+            this.state.dealItemsCardsRandom();
+            this.state.setUpDungeonGame(this.allDungeonCards);
+            this.broadcast("start_game_random", this.state);
+            this.state.gameLoop()
         }
     }
 
@@ -80,8 +62,8 @@ class MyRoom extends colyseus.Room {
     }
 
     onDispose() {
-        console.log("Dispose MyRoom");
+        console.log("Dispose RandomRoom");
     }
 }
 
-module.exports = MyRoom;
+module.exports = RandomRoom;

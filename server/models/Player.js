@@ -21,8 +21,11 @@ class Player extends Schema {
         this.monstersAddedThisTurn = 0;
     }
     // DRAFT PHASE
-    addItemCard(itemCard) {
+    addItemCardDraft(itemCard) {
         this.hand.push(itemCard);
+    }
+    addItemCardRandom(itemCard) {
+        this.stuff.push(itemCard);
     }
 
     selectCard(index) {
@@ -37,7 +40,6 @@ class Player extends Schema {
         } else {
             console.error("bug selectedItemCardIndex = -1");
         }
-        return null;
     }
 
     // DUNGEON PHASE

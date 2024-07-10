@@ -2,6 +2,7 @@ const schema = require("@colyseus/schema");
 const { Schema, type, ArraySchema } = schema;
 const { ItemCard } = require('./ItemCard');
 const { Player } = require('./Player');
+const { MonsterCard } = require('./MonsterCard');
 const { DungeonCard } = require('./DungeonCard');
 const fs = require('fs');
 const path = require('path');
@@ -29,7 +30,7 @@ class GameState extends Schema {
         // DEBUG ON NE VAS PLUS CREER DIRECT D'ITEMCARD DEPUIS LE DATA FEED
         this.itemDeck.clear();
         this.itemDeck.push(...itemsCards.filter(item => item.id > 0 && item.id <= nb_items_deck)
-            .map(i => new ItemCard(i.id)));
+            .map(i => new ItemCard(i.id, i.title, i.active, i.color, i.image, i.description )));
         this.shuffleItemsDeck();
     }
 
@@ -45,10 +46,17 @@ class GameState extends Schema {
         this.players.push(player);
     }
 
-    dealItemsCards() {
+    dealItemsCardsDraft() {
         for (let i = 0; i < nb_items_draft; i++) {
             this.players.forEach(player => {
-                player.addItemCard(this.itemDeck.pop());
+                player.addItemCardDraft(this.itemDeck.pop());
+            });
+        }
+    }
+    dealItemsCardsRandom() {
+        for (let i = 0; i < nb_items_starting; i++) {
+            this.players.forEach(player => {
+                player.addItemCardRandom(this.itemDeck.pop());
             });
         }
     }
@@ -88,10 +96,10 @@ class GameState extends Schema {
     }
 
     setUpDungeonGame(allDungeonCards) {
-        this.phase = "GAME";
+        this.phase = "GAME_SETUP";
         //set up dungeon cards      
         this.dungeon.clear();
-        this.dungeon.push(...allDungeonCards.filter(card => card.type === "monster")
+        this.dungeon.push(...allDungeonCards.filter(card => card.dungeonCardType === "monster")
         .map(d => new MonsterCard(d.id, d.title, d.power, d.types, d.description, d.effects)));
         this.shuffleDungeon();
         this.dungeonLength = this.dungeon.length;
@@ -101,7 +109,10 @@ class GameState extends Schema {
             player.hp = player.baseHp + player.stuff.reduce((totalHp, item) => totalHp + item.hp, 0);
             console.log(player.name, player.hp, " HP")
         })
+        this.currentPlayerIndex = Math.floor(Math.random() * this.players.length);
+        
         // todo do items effects "before entering" 
+        console.log("donjon set up ok")
     }
 
     shuffleDungeon() {
@@ -112,6 +123,7 @@ class GameState extends Schema {
     }
 
     gameLoop() {
+        this.phase = "GAME_LOOP";
         console.log("game loop")
     //     while (this.dungeon.length > 0 && this.players.some(player => player.inDungeon())) {
     //         this.turnNumber++;

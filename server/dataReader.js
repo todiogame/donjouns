@@ -22,7 +22,7 @@ function loadCSV(filePath, type) {
                         const { id, Title: title, Power: power, Description: description, Type: cardType } = row;
                         const types = cardType ? cardType.split(',').map(t => t.trim()) : [];
                         // console.log('Creating card:', { id, title, power, types, description, cardType });
-                        const monsterCard = new MonsterCard(id, title, parseInt(power, 10) || 0, types, description, null); //last row is effect
+                        const monsterCard = new MonsterCard(id, title, parseInt(power, 10) || 0, types, description, ""); //last row is effect
                         results.push(monsterCard);
                     } else if (type === 'Event') {
                         const { id, Title: title, Description: description } = row;

@@ -3,7 +3,7 @@ const { Schema, type } = schema;
 const {DungeonCard} = require('./DungeonCard');
 
 class EventCard extends DungeonCard {
-    constructor(id, title, description, effect = null) {
+    constructor(id, title, description, effect = "") {
         super(id, title, "event", description, effect);
         this.event = true;
     }

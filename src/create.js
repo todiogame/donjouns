@@ -19,7 +19,7 @@ export function create() {
 
     client = new Client("ws://localhost:2567");
 
-    client.joinOrCreate("my_room").then(roomInstance => {
+    client.joinOrCreate("room").then(roomInstance => {
         room = roomInstance;
         currentPlayerId = room.sessionId;
         console.log(room.sessionId, "joined", room.name);
@@ -36,10 +36,16 @@ export function create() {
 
             displayManager.displayTitle("Le Draft démarre !")
         });
+        room.onMessage("start_game_random", (state) => {
+            console.log("Received start_game_random message:", state);
+            cardGame = new Game(); // Initialize the itemCard game
+            updateGameState(state);
+
+            displayManager.displayTitle("La partie démarre !")
+        });
         room.onMessage("end_draft", (state) => {
             displayManager.displayTitle("Fin du Draft !")
         });
-
     }).catch(e => {
         console.error("join error", e);
     });
@@ -74,7 +80,7 @@ export function create() {
                     displayManager.updateDraftingUI(cardGame.players, currentPlayerId);
                 }
             }
-            else if (cardGame.phase === "GAME") {
+            else if (cardGame.phase.includes("GAME")) {
                 const cardImage = gameObjects[0];
                 if (cardImage.isInStuff) {
                     displayManager.zoomCard(cardImage);
@@ -82,34 +88,42 @@ export function create() {
             }
         }
     });
-
+    function copyPlayerState(playerState) {
+        const player = new Player(playerState.id, playerState.name);
+        player.hand = playerState.hand; // Direct assignment
+        player.stuff = playerState.stuff; // Direct assignment
+        player.selectedItemCardIndex = playerState.selectedItemCardIndex;
+        player.medals = playerState.medals;
+        player.hp = playerState.hp;
+        player.baseHp = playerState.baseHp;
+        player.defeatedMonstersPile = playerState.defeatedMonstersPile; // Direct assignment
+        player.score = playerState.score;
+        player.dead = playerState.dead;
+        player.fled = playerState.fled;
+        player.monstersAddedThisTurn = playerState.monstersAddedThisTurn;
+        return player;
+    }
     function updateGameState(state) {
-        console.log("playerstate");
-
-        state.players.forEach(playerState => {
-            console.log(playerState)
-        })
         if (!cardGame) {
             console.log("cardGame is not yet initialized");
             return;
         }
+    
         cardGame.phase = state.phase;
-        cardGame.players = state.players.map(playerState => {
-            const player = new Player(playerState.id, playerState.name);
-            player.hand = playerState.hand;
-            player.stuff = playerState.stuff;
-            return player;
-        });
-        cardGame.dungeon = state.dungeon;
-
-        console.log("stuff")
-        cardGame.players.forEach(p => console.log(p.stuff))
+        cardGame.players = state.players.map(copyPlayerState);
+        cardGame.itemDeck = state.itemDeck; // Direct assignment
+        cardGame.currentPlayerIndex = state.currentPlayerIndex;
+        cardGame.dungeon = state.dungeon; // Direct assignment
+        cardGame.dungeonLength = state.dungeonLength;
+        cardGame.discardPile = state.discardPile; // Direct assignment
+        cardGame.turnNumber = state.turnNumber;
+    
         if (cardGame.phase === "DRAFT") {
             displayManager.updateDraftingUI(cardGame.players, currentPlayerId);
-        }
-        else if (cardGame.phase === "GAME") {
+        } else if (cardGame.phase.includes("GAME")) {
             displayManager.updateGameUI(cardGame, currentPlayerId);
         }
     }
+        
 
 }

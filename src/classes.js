@@ -54,7 +54,7 @@ export class ItemCard {
 
 
 export class DungeonCard {
-    constructor(id, title, dungeonCardType, description, effect = null) {
+    constructor(id, title, dungeonCardType, description, effect = "") {
         this.id = id;
         this.texture = dungeonCardType + '_' + String(id).padStart(2, '0');
         this.title = title;
@@ -65,7 +65,7 @@ export class DungeonCard {
 }
 
 export class MonsterCard extends DungeonCard {
-    constructor(id, title, power, types = [], description = "", effect = null) {
+    constructor(id, title, power, types = [], description = "", effect = "") {
         super(id, title, "monster", description, effect);
         this.power = power;
         this.types = types;
@@ -74,7 +74,7 @@ export class MonsterCard extends DungeonCard {
 }
 
 export class EventCard extends DungeonCard {
-    constructor(id, title, description, effect = null) {
+    constructor(id, title, description, effect = "") {
         super(id, title, "event", description, effect);
         this.event = true;
     }

@@ -43,7 +43,6 @@ export class TitleScene extends Phaser.Scene {
     }
 }
 
-
 export class DisplayManager {
     constructor(scene) {
         this.scene = scene;
@@ -72,10 +71,10 @@ export class DisplayManager {
         this.clearPreviousDisplay();
         players.forEach(player => {
             if (player.id === currentPlayerId) {
-                this.displayStuff(player.stuff, true, 'bottom', player.id);
+                this.displayStuff(player.stuff, true, 'bottom', player.name);
             } else {
                 const position = this.getOpponentPosition(player.id, currentPlayerId, players);
-                this.displayStuff(player.stuff, false, position, player.id);
+                this.displayStuff(player.stuff, false, position, player.name);
             }
         });
         players.forEach(player => {
@@ -96,79 +95,156 @@ export class DisplayManager {
         const players = game.players;
         players.forEach(player => {
             if (player.id === currentPlayerId) {
-                this.displayStuff(player.stuff, true, 'bottom', player.id);
+                this.displayStuff(player.stuff, true, 'bottom', player.name);
                 // this.displayMonstersPile(player.defeatedMonstersPile, true, 'bottom', player.id);
-                // this.displayHP(player.hp, true, 'bottom', player.id);
+                this.displayHP(player, true, 'bottom');
             } else {
                 const position = this.getOpponentPosition(player.id, currentPlayerId, players);
-                this.displayStuff(player.stuff, false, position, player.id);
+                this.displayStuff(player.stuff, false, position, player.name);
                 // this.displayMonstersPile(player.defeatedMonstersPile, true, position, player.id);
-                // this.displayHP(player.hp, true, position, player.id);
+                this.displayHP(player, false, position);
             }
         });
-        this.displayCurrentCard();
-        this.displayDungeon(game);
+        this.displayCurrentCard(game, currentPlayerId);
+        this.displayDungeon(game, currentPlayerId);
+        this.displayDiscardPile(game);
 
     }
 
     displayCurrentCard(game) {
+        if (game.current_card) {
+            const desiredWidth = 125
+            const desiredHeight = 175
+            const scaleX = desiredWidth / 750;
+            const scaleY = desiredHeight / 1050;
+            const cardSprite = this.scene.add.image(650, 300, game.current_card.texture)
+                .setOrigin(0.5, 0.5)
+                .setRotation(((id * 7 % 12) - 6) * 0.002 * Math.PI)
+                .setScale(scaleX, scaleY)
+                .setInteractive({ useHandCursor: true, pixelPerfect: true, alphaTolerance: 1 });
 
-        const desiredWidth = 125
-        const desiredHeight = 175
-        const scaleX = desiredWidth / 750;
-        const scaleY = desiredHeight / 1050;
-        const cardSprite = this.scene.add.image(650, 300, "monster_12")
-            .setOrigin(0.5, 0.5)
-            // .setRotation(((i * 7 % 12)-6 )* 0.002 * Math.PI)
-            .setScale(scaleX, scaleY)
-            .setInteractive({ useHandCursor: true, pixelPerfect: true, alphaTolerance: 1 });
-
-
-        // Add hover effect with smooth transition
-        cardSprite.on('pointerover', () => {
-            cardSprite.setDepth(1);
-            this.scene.tweens.add({
-                targets: cardSprite,
-                scaleX: scaleX * 3,
-                scaleY: scaleY * 3,
-                duration: 50,
-                ease: 'Sine.easeInOut'
+            // Add hover effect with smooth transition
+            cardSprite.on('pointerover', () => {
+                cardSprite.setDepth(1);
+                this.scene.tweens.add({
+                    targets: cardSprite,
+                    scaleX: scaleX * 3,
+                    scaleY: scaleY * 3,
+                    duration: 50,
+                    ease: 'Sine.easeInOut'
+                });
             });
-        });
 
-        cardSprite.on('pointerout', () => {
-            cardSprite.setDepth(0);
-            this.scene.tweens.add({
-                targets: cardSprite,
-                scaleX: scaleX,
-                scaleY: scaleY,
-                duration: 50,
-                ease: 'Sine.easeInOut',
+            cardSprite.on('pointerout', () => {
+                cardSprite.setDepth(0);
+                this.scene.tweens.add({
+                    targets: cardSprite,
+                    scaleX: scaleX,
+                    scaleY: scaleY,
+                    duration: 50,
+                    ease: 'Sine.easeInOut',
+                });
             });
-        });
-
+        }
     }
-    displayDungeon(game) {
+    animateCard(card) {
+        this.scene.tweens.add({
+            targets: card,
+            angle: { from: -5, to: 5 }, // Adjust the angle values to control the wiggle
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut',
+            duration: 100 // Adjust the duration for quicker or slower wiggle
+        });
+    }
+    
 
-        const desiredWidth = 125
-        const desiredHeight = 175
+    displayDungeon(game, currentPlayerId) {
+        const desiredWidth = 125;
+        const desiredHeight = 175;
         const scaleX = desiredWidth / 750;
         const scaleY = desiredHeight / 1050;
-        const numCards = 50
-        // const numCards =game.dungeonLength
+        const numCards = game.dungeonLength;
         let cardSprite;
-        for (let i = 0; i < 50; i++) {
+
+        for (let i = 0; i < numCards; i++) {
             cardSprite = this.scene.add.image(500 + 0.2 * i, 300 - 0.1 * i, "back_dungeon")
                 .setOrigin(0.5, 0.5)
-                // .setRotation(((i * 7 % 12)-6 )* 0.002 * Math.PI)
-                .setScale(scaleX, scaleY)
+                .setRotation(((i * 7 % 12) - 6) * 0.002 * Math.PI)
+                .setScale(scaleX, scaleY);
         }
+        if (cardSprite && game.players[game.currentPlayerIndex].id === currentPlayerId) {
+            // Apply the "excited" animation
+            this.animateCard(cardSprite);
+            // Make the card interactive
+            cardSprite.setInteractive({ useHandCursor: true, pixelPerfect: true, alphaTolerance: 1 });
+
+            // Add click event to stop animation
+            cardSprite.on('pointerdown', () => {
+                this.scene.tweens.killTweensOf(cardSprite);
+                cardSprite.setScale(scaleX, scaleY); // Reset scale
+                // Add logic to handle card click
+            });
+        }
+    }
+
+
+    displayDiscardPile(game) {
+        const desiredWidth = 125;
+        const desiredHeight = 175;
+        const scaleX = desiredWidth / 750;
+        const scaleY = desiredHeight / 1050;
+        const numCards = game.discardPile.length;
+        let cardSprite;
+
+        if (numCards > 0) {
+            for (let i = 0; i < numCards; i++) {
+                cardSprite = this.scene.add.image(800 + 0.2 * i, 300 - 0.1 * i, "back_discard")
+                    .setOrigin(0.5, 0.5)
+                    .setRotation(((i * 7 % 12) - 6) * 0.002 * Math.PI)
+                    .setScale(scaleX, scaleY);
+            }
+        } else {
+            this.scene.add.rectangle(800, 300, desiredWidth, desiredHeight, 0x808080, 0.5)
+                .setOrigin(0.5, 0.5);
+            this.scene.add.text(800, 300, 'DISCARD', { fontSize: '16px', color: '#FFFFFF' })
+                .setOrigin(0.5, 0.5);
+        }
+
         cardSprite?.setInteractive({ useHandCursor: true, pixelPerfect: true, alphaTolerance: 1 });
-
     }
-    displayDiscardPile() {
+    displayHP(player, isPlayer, position) {
+        console.log(player)
+        const hp = player.hp
+        console.log("hp", player.id, player.hp)
+        const desiredWidth = 80;
+        const desiredHeight = 80;
+        const scaleX = desiredWidth / 500;
+        const scaleY = desiredHeight / 500;
+        let xPosition, yPosition;
 
+        if (position === 'bottom') {
+            xPosition = 40;
+            yPosition = this.scene.sys.game.config.height - 160;
+        } else if (position === 'top-left') {
+            xPosition = 40;
+            yPosition = 40;
+        } else if (position === 'top-right') {
+            xPosition = this.scene.sys.game.config.width - 40;
+            yPosition = 40;
+        }
+
+        const heartImage = this.scene.add.image(xPosition, yPosition, 'heart')
+            .setOrigin(0.5, 0.5)
+            .setScale(scaleX, scaleY);
+
+        this.scene.add.text(xPosition, yPosition, hp, {
+            fontSize: '40px',
+            fill: '#fff',
+            fontStyle: 'bold'
+        }).setOrigin(0.5, 0.5);
     }
+
 
     clearPreviousDisplay() {
         let childrenToRemove = this.scene.children.list.filter(child => child !== this.backgroundContainer && child !== this.zoomedItemCard && child !== this.blurryBackground);
