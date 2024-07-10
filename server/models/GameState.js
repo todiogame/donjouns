@@ -20,6 +20,7 @@ class GameState extends Schema {
         this.currentPlayerIndex = 0;
         this.dungeon = new ArraySchema();
         this.dungeonLength = 0;
+        this.currentCard = null;
         this.discardPile = new ArraySchema();
         this.turnNumber = 0;
     }
@@ -30,7 +31,7 @@ class GameState extends Schema {
         // DEBUG ON NE VAS PLUS CREER DIRECT D'ITEMCARD DEPUIS LE DATA FEED
         this.itemDeck.clear();
         this.itemDeck.push(...itemsCards.filter(item => item.id > 0 && item.id <= nb_items_deck)
-            .map(i => new ItemCard(i.id, i.title, i.active, i.color, i.image, i.description )));
+            .map(i => new ItemCard(i.id, i.title, i.active, i.color, i.image, i.description)));
         this.shuffleItemsDeck();
     }
 
@@ -90,7 +91,7 @@ class GameState extends Schema {
 
     // DUNGEON PHASE
 
-    setUpAndPlayDungeon(allDungeonCards){
+    setUpAndPlayDungeon(allDungeonCards) {
         this.setUpDungeonGame(allDungeonCards)
         this.gameLoop();
     }
@@ -99,8 +100,8 @@ class GameState extends Schema {
         this.phase = "GAME_SETUP";
         //set up dungeon cards      
         this.dungeon.clear();
-        this.dungeon.push(...allDungeonCards.filter(card => card.dungeonCardType === "monster")
-        .map(d => new MonsterCard(d.id, d.title, d.power, d.types, d.description, d.effects)));
+        this.dungeon.push(...allDungeonCards.filter(card => card.dungeonCardType === "monster" && card.id <= 26)
+            .map(d => new MonsterCard(d.id, d.title, d.power, d.types, d.description, d.effects)));
         this.shuffleDungeon();
         this.dungeonLength = this.dungeon.length;
         // set up HP
@@ -110,7 +111,7 @@ class GameState extends Schema {
             console.log(player.name, player.hp, " HP")
         })
         this.currentPlayerIndex = Math.floor(Math.random() * this.players.length);
-        
+
         // todo do items effects "before entering" 
         console.log("donjon set up ok")
     }
@@ -122,75 +123,83 @@ class GameState extends Schema {
         }
     }
 
+    pickDungeonCard(playerId, cardIndex) {
+        // Logic to handle picking a dungeon card
+        if (this.players[this.currentPlayerIndex].id === playerId) {
+            console.log(`${playerId} picked dungeon card at index ${cardIndex}`);
+            this.currentCard = this.dungeon.pop();
+        }
+    }
+
     gameLoop() {
         this.phase = "GAME_LOOP";
         console.log("game loop")
-    //     while (this.dungeon.length > 0 && this.players.some(player => player.inDungeon())) {
-    //         this.turnNumber++;
-    //         this.log(`Turn ${this.turnNumber}`);
-    //         this.currentPlayerIndex = this.currentPlayerIndex % this.players.length;
+        //     while (this.dungeon.length > 0 && this.players.some(player => player.inDungeon())) {
+        //         this.turnNumber++;
+        //         this.log(`Turn ${this.turnNumber}`);
+        //         this.currentPlayerIndex = this.currentPlayerIndex % this.players.length;
 
-    //         let player = this.players[this.currentPlayerIndex];
-    //         while (!player.inDungeon()) {
-    //             this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
-    //             player = this.players[this.currentPlayerIndex];
-    //         }
+        //         let player = this.players[this.currentPlayerIndex];
+        //         while (!player.inDungeon()) {
+        //             this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
+        //             player = this.players[this.currentPlayerIndex];
+        //         }
 
-    //         this.playerTurn(player);
+        //         this.playerTurn(player);
 
-    //         if (!this.players.some(player => player.inDungeon())) {
-    //             this.log("All players are out of the dungeon.");
-    //             break;
-    //         }
+        //         if (!this.players.some(player => player.inDungeon())) {
+        //             this.log("All players are out of the dungeon.");
+        //             break;
+        //         }
 
-    //         this.currentPlayerIndex++;
-    //     }
+        //         this.currentPlayerIndex++;
+        //     }
 
-    //     this.endGame();
-    // }
+        //     this.endGame();
+        // }
 
-    // playerTurn(player) {
-    //     this.log(`Player ${player.name}'s turn, ${player.hp} HP`);
-    //     const card = this.dungeon.shift();
-    //     this.log(`Drew card: ${card.title}`);
+        // playerTurn(player) {
+        //     this.log(`Player ${player.name}'s turn, ${player.hp} HP`);
+        //     const card = this.dungeon.shift();
+        //     this.log(`Drew card: ${card.title}`);
 
-    //     if (card.isEvent) {
-    //         this.handleEventCard(player, card);
-    //     } else if (card.isMonster) {
-    //         this.handleMonsterCard(player, card);
-    //     }
+        //     if (card.isEvent) {
+        //         this.handleEventCard(player, card);
+        //     } else if (card.isMonster) {
+        //         this.handleMonsterCard(player, card);
+        //     }
 
-    //     if (player.inDungeon()) {
-    //         this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
-    //     }
-    // }
+        //     if (player.inDungeon()) {
+        //         this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
+        //     }
+        // }
 
-    // handleEventCard(player, card) {
-    //     this.log(`Event: ${card.title}`);
-    //     switch (card.effect) {
-    //         case "HEAL":
-    //             player.hp += 3;
-    //             this.log(`${player.name} gains 3 HP from ${card.title}. Total HP: ${player.hp}`);
-    //             this.players.forEach(otherPlayer => {
-    //                 if (otherPlayer !== player && otherPlayer.inDungeon()) {
-    //                     otherPlayer.hp += 2;
-    //                     this.log(`${otherPlayer.name} gains 2 HP from ${card.title}. Total HP: ${otherPlayer.hp}`);
-    //                 }
-    //             });
-    //             break;
-    //         case "REPAIR":
-    //             const brokenItems = player.stuff.filter(item => !item.intact);
-    //             if (brokenItems.length > 0) {
-    //                 const repairedItem = brokenItems[Math.floor(Math.random() * brokenItems.length)];
-    //                 repairedItem.repair();
-    //                 player.hp += repairedItem.hpBonus;
-    //                 this.log(`Repaired ${repairedItem.name} with ${card.title}, gaining ${repairedItem.hpBonus} HP. Total HP: ${player.hp}`);
-    //             } else {
-    //                 this.log(`${card.title} has nothing to repair.`);
-    //             }
-    //             break;
-    //         // Handle other effects similarly...
-    //     }
+        // handleEventCard(player, card) {
+        //     this.log(`Event: ${card.title}`);
+        //     switch (card.effect) {
+        //         case "HEAL":
+        //             player.hp += 3;
+        //             this.log(`${player.name} gains 3 HP from ${card.title}. Total HP: ${player.hp}`);
+        //             this.players.forEach(otherPlayer => {
+        //                 if (otherPlayer !== player && otherPlayer.inDungeon()) {
+        //                     otherPlayer.hp += 2;
+        //                     this.log(`${otherPlayer.name} gains 2 HP from ${card.title}. Total HP: ${otherPlayer.hp}`);
+        //                 }
+        //             });
+        //             break;
+        //         case "REPAIR":
+        //             const brokenItems = player.stuff.filter(item => !item.intact);
+        //             if (brokenItems.length > 0) {
+        //                 const repairedItem = brokenItems[Math.floor(Math.random() * brokenItems.length)];
+        //                 repairedItem.repair();
+        //                 player.hp += repairedItem.hpBonus;
+        //                 this.log(`Repaired ${repairedItem.name} with ${card.title}, gaining ${repairedItem.hpBonus} HP. Total HP: ${player.hp}`);
+        //             } else {
+        //                 this.log(`${card.title} has nothing to repair.`);
+        //             }
+        //             break;
+        //         // Handle other effects similarly...
+        //     }
     }
 
     // handleMonsterCard(player, card) {
@@ -253,6 +262,7 @@ schema.defineTypes(GameState, {
     currentPlayerIndex: "number",
     dungeon: [DungeonCard],
     dungeonLength: "number",
+    currentCard: DungeonCard,
     discardPile: [DungeonCard],
     turnNumber: "number",
 });

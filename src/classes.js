@@ -6,8 +6,12 @@ export class Game {
         this.currentPlayerIndex = 0;
         this.dungeon = [];
         this.dungeonLength = 0;
+        this.currentCard = null;
         this.discardPile = [];
         this.turnNumber = 0;
+    }
+    noCurrentCard() {
+        return !this.currentCard || this.currentCard._id === undefined
     }
 }
 

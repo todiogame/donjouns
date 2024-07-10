@@ -30,6 +30,11 @@ class RandomRoom extends colyseus.Room {
         this.allItemsCards = options.itemsCards || [];
 
         this.state.initializeItemsDeck(this.allItemsCards);
+
+        this.onMessage("pick_dungeon", (client, message) => {
+            console.log(`Received select_card message from ${client.sessionId}:`, message);
+            this.state.pickDungeonCard(client.sessionId);
+        })
     }
 
     onAuth() {

@@ -112,14 +112,14 @@ export class DisplayManager {
     }
 
     displayCurrentCard(game) {
-        if (game.current_card) {
+        if (game.currentCard) {
             const desiredWidth = 125
             const desiredHeight = 175
             const scaleX = desiredWidth / 750;
             const scaleY = desiredHeight / 1050;
-            const cardSprite = this.scene.add.image(650, 300, game.current_card.texture)
+            const cardSprite = this.scene.add.image(650, 300, game.currentCard.texture)
                 .setOrigin(0.5, 0.5)
-                .setRotation(((id * 7 % 12) - 6) * 0.002 * Math.PI)
+                .setRotation(((game.currentCard.id * 7 % 12) - 6) * 0.002 * Math.PI)
                 .setScale(scaleX, scaleY)
                 .setInteractive({ useHandCursor: true, pixelPerfect: true, alphaTolerance: 1 });
 
@@ -173,18 +173,20 @@ export class DisplayManager {
                 .setRotation(((i * 7 % 12) - 6) * 0.002 * Math.PI)
                 .setScale(scaleX, scaleY);
         }
-        if (cardSprite && game.players[game.currentPlayerIndex].id === currentPlayerId) {
-            // Apply the "excited" animation
-            this.animateCard(cardSprite);
-            // Make the card interactive
-            cardSprite.setInteractive({ useHandCursor: true, pixelPerfect: true, alphaTolerance: 1 });
+        if (cardSprite) {
+            cardSprite.setData('type', 'dungeon');
+            if (game.players[game.currentPlayerIndex].id === currentPlayerId && game.noCurrentCard()) {
+                // Apply the "excited" animation
+                this.animateCard(cardSprite);
+                // Make the card interactive
+                cardSprite.setInteractive({ useHandCursor: true, pixelPerfect: true, alphaTolerance: 1 });
 
-            // Add click event to stop animation
-            cardSprite.on('pointerdown', () => {
-                this.scene.tweens.killTweensOf(cardSprite);
-                cardSprite.setScale(scaleX, scaleY); // Reset scale
-                // Add logic to handle card click
-            });
+                // Add click event to stop animation
+                cardSprite.on('pointerdown', () => {
+                    this.scene.tweens.killTweensOf(cardSprite);
+                    cardSprite.setRotation(0); // Reset scale
+                });
+            }
         }
     }
 
@@ -214,9 +216,7 @@ export class DisplayManager {
         cardSprite?.setInteractive({ useHandCursor: true, pixelPerfect: true, alphaTolerance: 1 });
     }
     displayHP(player, isPlayer, position) {
-        console.log(player)
         const hp = player.hp
-        console.log("hp", player.id, player.hp)
         const desiredWidth = 80;
         const desiredHeight = 80;
         const scaleX = desiredWidth / 500;
@@ -351,6 +351,7 @@ export class DisplayManager {
                     cardImage.cardIndex = index;
                     cardImage.isSelected = true; // Mark as selectable for zoom
                     cardImage.isInStuff = true; // This itemCard is in stuff
+                    cardImage.setData('type', 'stuff');
 
                     this.scene.input.enableDebug(cardImage);
                 }
@@ -393,8 +394,8 @@ export class DisplayManager {
                 }
             });
         }
-        if(game && game.players[game.currentPlayerIndex].id === player.id)
-        this.addShiningEffect(playerNameText)
+        if (game && game.players[game.currentPlayerIndex].id === player.id)
+            this.addShiningEffect(playerNameText)
     }
     addShiningEffect(text) {
         this.scene.tweens.add({

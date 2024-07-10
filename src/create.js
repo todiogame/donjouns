@@ -64,12 +64,6 @@ export function create() {
                 } else if (cardImage.isPlayer) {
                     const cardIndex = cardImage.cardIndex;
                     const currentPlayer = cardGame.players.find(p => p.id === currentPlayerId);
-
-                    if (!currentPlayer) {
-                        console.error(`Player with id ${currentPlayerId} not found`);
-                        return;
-                    }
-
                     console.log(`Sending select_card message: { action: "select_card", cardIndex: ${cardIndex} }`);
                     room.send("select_card", { cardIndex: cardIndex });
 
@@ -82,7 +76,12 @@ export function create() {
             }
             else if (cardGame.phase.includes("GAME")) {
                 const cardImage = gameObjects[0];
-                if (cardImage.isInStuff) {
+                console.log(cardImage)
+                if (cardImage.getData("type")==="dungeon") {
+                    console.log("pick donjon")
+                    room.send("pick_dungeon");
+
+                } else if (cardImage.getData("type")==="stuff") {
                     displayManager.zoomCard(cardImage);
                 } //todo use items
             }
@@ -115,6 +114,7 @@ export function create() {
         cardGame.currentPlayerIndex = state.currentPlayerIndex;
         cardGame.dungeon = state.dungeon; // Direct assignment
         cardGame.dungeonLength = state.dungeonLength;
+        cardGame.currentCard = state.currentCard;
         cardGame.discardPile = state.discardPile; // Direct assignment
         cardGame.turnNumber = state.turnNumber;
     
