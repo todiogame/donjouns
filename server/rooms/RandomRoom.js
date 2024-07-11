@@ -43,6 +43,11 @@ class RandomRoom extends colyseus.Room {
             console.log(`Received pass_turn message from ${client.sessionId}:`, message);
             this.state.wantToPassTurn(client.sessionId);
         })
+
+        this.onMessage("use_item", (client, message) => {
+            console.log(`Received use_item message from ${client.sessionId}:`, message.item_id);
+            this.state.wantToUseItem(client.sessionId, message.item_id);
+        })
     }
 
     onJoin(client, options) {

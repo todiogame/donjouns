@@ -54,12 +54,15 @@ class Player extends Schema {
         this.hp += item.hp;
     }
 
-    damagedByMonster(damage){
+    loseHP(damage){
         this.hp -= damage
         if(this.hp <=0){
             this.hp = 0;
             this.die()
         }
+    }
+    gainHP(heal){
+        this.hp += heal
     }
 
     addToPile(monsterCard){

@@ -83,16 +83,17 @@ export function create() {
                 } else if (cardImage.getData("type") === "take_damage") {
                     console.log(`Player takes ${cardGame.currentCardDamage} damage.`);
                     room.send("take_damage")
-                } else if (cardImage.getData("type") === "pass_turn") { 
+                } else if (cardImage.getData("type") === "pass_turn") {
                     room.send("pass_turn")
-                } else if (cardImage.getData("type") === "stuff") {
+                } else if (cardImage.getData("type") === "opponent_item") {
                     displayManager.zoomCard(cardImage);
-                } //todo use items
+                } else if (cardImage.getData("type") === "my_item") {
+                    room.send("use_item", { item_id: cardImage.getData("item_id") })
+                }
             }
         }
     });
-
-
+    
     function copyPlayerState(playerState) {
         const player = new Player(playerState.id, playerState.name);
         player.hand = playerState.hand; // Direct assignment

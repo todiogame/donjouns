@@ -50,7 +50,7 @@ export class ItemCard {
         this.title = title;
         this.active = active;
         this.color = color;
-        this.image = image;
+        this.key = key;
         this.description = description;
         this.broken = false;
         this.hp = 0;

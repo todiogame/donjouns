@@ -237,7 +237,7 @@ export class DisplayManager {
 
         const players = game.players;
         players.forEach(player => {
-            if (player.id === localPlayerId) { 
+            if (player.id === localPlayerId) {
                 this.displayStuff(player.stuff, true, 'bottom', player, game);
                 this.displayHP(player, true, 'bottom');
             } else {
@@ -381,16 +381,36 @@ export class DisplayManager {
 
                     if (itemCard.broken) {
                         itemCardImage.setRotation(Math.PI / 2);
-                        itemCardImage.setDepth(-1);
+                        itemCardImage.setDepth(-2);
                         const overlay = this.scene.add.rectangle(xPosition, yPosition, desiredWidth, desiredHeight, 0x444444, 0.3)
                             .setOrigin(0.5, 0.5)
                             .setRotation(Math.PI / 2)
                             .setDepth(-1); // Bring to foreground
                         itemCardImage.setData('overlay', overlay);
                     }
-
                     itemCardImage.setData("type", "my_item");
                     itemCardImage.setData("item_id", itemCard.id);
+                    // Add hover effect with smooth transition
+                    itemCardImage.on('pointerover', () => {
+                        itemCardImage.setDepth(1);
+                        this.scene.tweens.add({
+                            targets: itemCardImage,
+                            scaleX: scaleX * 1.1,
+                            scaleY: scaleY * 1.1,
+                            duration: 50,
+                            ease: 'Sine.easeInOut'
+                        });
+                    });
+                    itemCardImage.on('pointerout', () => {
+                        itemCardImage.setDepth(itemCard.broken ? -2 : 0);
+                        this.scene.tweens.add({
+                            targets: itemCardImage,
+                            scaleX: scaleX,
+                            scaleY: scaleY,
+                            duration: 50,
+                            ease: 'Sine.easeInOut',
+                        });
+                    });
                 }
             });
             playerNameText = this.scene.add.text(100, this.scene.sys.game.config.height - 310, playerName, { fontSize: '20px', fill: '#fff', fontStyle: 'bold' });
@@ -416,7 +436,9 @@ export class DisplayManager {
 
                     itemCardImage = this.scene.add.image(actualXPosition, yPosition, itemCard.texture)
                         .setOrigin(0.5, 0.5) // Center origin for correct rotation
-                        .setScale(scaleX, scaleY);
+                        .setScale(scaleX, scaleY)
+                        .setInteractive({ useHandCursor: true, pixelPerfect: true, alphaTolerance: 1 });
+                    itemCardImage.setData("type", "opponent_item");
 
                     if (itemCard.broken) {
                         itemCardImage.setRotation(Math.PI / 2);

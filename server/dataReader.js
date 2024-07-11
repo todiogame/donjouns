@@ -30,9 +30,9 @@ function loadCSV(filePath, type) {
                         const eventCard = new EventCard(id, title, description);
                         results.push(eventCard);
                     } else if (type === 'Item') {
-                        const { id, Title: title, Active: active, Color: color, Image: image, Description: description } = row;
-                        // console.log('Creating item:', { id, title, active, color, image, description });
-                        const itemCard = new ItemCard(id, title, active, color, image, description);
+                        const { id, Title: title, Active: active, Color: color, Key: key, Description: description } = row;
+                        // console.log('Creating item:', { id, title, active, color, key, description });
+                        const itemCard = new ItemCard(id, title, active, color, key, description);
                         results.push(itemCard);
                     }
                 }

@@ -26,7 +26,7 @@ class GameState extends Schema {
         this.turnNumber = 0;
     }
 
-    findPlayerById(id){
+    findPlayerById(id) {
         return this.players.find(p => p.id === id);
     }
 
@@ -130,17 +130,27 @@ class GameState extends Schema {
     noCurrentCard() {
         return !this.currentCard || this.currentCard._id === undefined
     }
-    isMyTurn(myId){
-        return this.players[this.currentPlayerIndex].id === myId
+    inFight(){
+        return this.currentCard?.dungeonCardType == "monster";
     }
-    getCurrentPlayer(){
+    inEvent(){
+        return this.currentCard?.dungeonCardType == "event";
+    }
+    getCurrentPlayer() {
         return this.players[this.currentPlayerIndex];
     }
+    isMyTurn(myId) {
+        return this.getCurrentPlayer().id === myId
+    }
+    discard(card){
+        this.discardPile.push(card);
+    }
+
     pickDungeonCard(playerId) {
         // Logic to handle picking a dungeon card
         if (this.dungeon.length && this.noCurrentCard() && this.isMyTurn(playerId)) {
             this.currentCard = this.dungeon.pop();
-            if (this.currentCard.dungeonCardType == "monster") 
+            if (this.inFight())
                 this.currentCardDamage = this.currentCard.calculateDamage()
             console.log(`${playerId} picked dungeon card ${this.currentCard.title} :  ${this.currentCardDamage} damage!`);
         }
@@ -152,25 +162,33 @@ class GameState extends Schema {
             this.currentCardDamage = this.currentCard.calculateDamage()
             console.log(`${playerId} takes ${this.currentCardDamage} damage!`);
             let player = this.findPlayerById(playerId)
-            player.damagedByMonster(this.currentCardDamage)
+            player.loseHP(this.currentCardDamage)
             player.addToPile(this.currentCard)
             this.currentCard = null;
             player.canPass = true;
         }
     }
 
-    wantToPassTurn(playerId){
+    wantToPassTurn(playerId) {
         let player = this.findPlayerById(playerId)
-        if(player.canPass){
+        if (player.canPass) {
             this.passTurn()
         }
     }
-    passTurn(){
+    passTurn() {
         let player = this.getCurrentPlayer()
         console.log(`${player} passes turn.`);
         this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
         let newPlayer = this.getCurrentPlayer()
         newPlayer.canPass = false;
+    }
+
+    wantToUseItem(playerId, itemId) {
+        let player = this.findPlayerById(playerId)
+        let item = player.stuff.find(i => i.id === itemId)
+        if (this.isMyTurn(playerId) && item ) { // it's his turn and he got the item
+            item.tryToUse(player,this)
+        }
     }
 
     gameLoop() {
