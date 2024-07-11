@@ -11,6 +11,7 @@ class ItemCard extends Schema {
         this.color = color;
         this.image = image;
         this.description = description;
+        this.broken = id % 3 == 0;
         this.hp = 0;
         this.escapeRollModifier = 0;
         // Extract hp from description if it contains "PV + "
@@ -31,6 +32,7 @@ schema.defineTypes(ItemCard, {
     color: "string",
     image: "string",
     description: "string",
+    broken: "boolean",
     hp: "number",
     escapeRollModifier : "number"
 });

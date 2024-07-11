@@ -1,6 +1,6 @@
 const schema = require("@colyseus/schema");
 const { Schema, type } = schema;
-const {DungeonCard} = require('./DungeonCard');
+const { DungeonCard } = require('./DungeonCard');
 
 class MonsterCard extends DungeonCard {
     constructor(id, title, power, types = [], description = "", effect = "") {
@@ -8,6 +8,10 @@ class MonsterCard extends DungeonCard {
         this.power = power;
         this.types = types;
         this.damage = 0;
+    }
+
+    calculateDamage() {
+        return this.power
     }
 }
 

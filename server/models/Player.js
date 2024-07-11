@@ -14,6 +14,7 @@ class Player extends Schema {
         this.medals = 0;
         this.hp = 0;
         this.baseHp = 0;
+        this.canPass = false;
         this.defeatedMonstersPile = new ArraySchema();
         this.score = 0;
         this.dead = false;
@@ -51,6 +52,18 @@ class Player extends Schema {
     addItem(item) {
         this.stuff.push(item);
         this.hp += item.hp;
+    }
+
+    damagedByMonster(damage){
+        this.hp -= damage
+        if(this.hp <=0){
+            this.hp = 0;
+            this.die()
+        }
+    }
+
+    addToPile(monsterCard){
+        this.defeatedMonstersPile.push(monsterCard)
     }
 
     calculateEscapeRollModifiers() {
@@ -108,6 +121,7 @@ schema.defineTypes(Player, {
     medals: "number",
     hp: "number",
     baseHp: "number",
+    canPass: "boolean",
     defeatedMonstersPile: [DungeonCard],
     score: "number",
     dead: "boolean",

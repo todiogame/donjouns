@@ -23,7 +23,6 @@ class RandomRoom extends colyseus.Room {
         console.log("Room created!");
         this.maxClients = nb_players;
         this.setState(new GameState());
-        this.roomClosed = false;
 
         // Initialize room-specific data
         this.allDungeonCards = options.dungeon || [];
@@ -32,13 +31,18 @@ class RandomRoom extends colyseus.Room {
         this.state.initializeItemsDeck(this.allItemsCards);
 
         this.onMessage("pick_dungeon", (client, message) => {
-            console.log(`Received select_card message from ${client.sessionId}:`, message);
+            console.log(`Received pick_dungeon message from ${client.sessionId}:`, message);
             this.state.pickDungeonCard(client.sessionId);
         })
-    }
-
-    onAuth() {
-        return !this.roomClosed
+        this.onMessage("take_damage", (client, message) => {
+            console.log(`Received take_damage message from ${client.sessionId}:`, message);
+            this.state.takeDamage(client.sessionId);
+        })
+        
+        this.onMessage("pass_turn", (client, message) => {
+            console.log(`Received pass_turn message from ${client.sessionId}:`, message);
+            this.state.wantToPassTurn(client.sessionId);
+        })
     }
 
     onJoin(client, options) {
@@ -48,7 +52,7 @@ class RandomRoom extends colyseus.Room {
         console.log("player", player.id, player.name, player.stuff.length);
 
         if (this.state.players.length === this.maxClients) {
-            this.roomClosed = true;
+            this.lock();
             console.log("start_game");
             this.state.dealItemsCardsRandom();
             this.state.setUpDungeonGame(this.allDungeonCards);
@@ -60,9 +64,9 @@ class RandomRoom extends colyseus.Room {
     onLeave(client, consented) {
         console.log(client.sessionId, "left!");
         const playerIndex = this.state.players.findIndex(p => p.id === client.sessionId);
-        if (playerIndex !== -1) {
-            this.state.players.splice(playerIndex, 1);
-        }
+        // if (playerIndex !== -1) {
+        //     this.state.players.splice(playerIndex, 1);
+        // }
         // Handle additional cleanup if necessary
     }
 

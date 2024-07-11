@@ -21,8 +21,13 @@ class GameState extends Schema {
         this.dungeon = new ArraySchema();
         this.dungeonLength = 0;
         this.currentCard = null;
+        this.currentCardDamage = 0;
         this.discardPile = new ArraySchema();
         this.turnNumber = 0;
+    }
+
+    findPlayerById(id){
+        return this.players.find(p => p.id === id);
     }
 
     // DRAFT PHASE
@@ -122,13 +127,50 @@ class GameState extends Schema {
             [this.dungeon[i], this.dungeon[j]] = [this.dungeon[j], this.dungeon[i]];
         }
     }
-
-    pickDungeonCard(playerId, cardIndex) {
+    noCurrentCard() {
+        return !this.currentCard || this.currentCard._id === undefined
+    }
+    isMyTurn(myId){
+        return this.players[this.currentPlayerIndex].id === myId
+    }
+    getCurrentPlayer(){
+        return this.players[this.currentPlayerIndex];
+    }
+    pickDungeonCard(playerId) {
         // Logic to handle picking a dungeon card
-        if (this.players[this.currentPlayerIndex].id === playerId) {
-            console.log(`${playerId} picked dungeon card at index ${cardIndex}`);
+        if (this.dungeon.length && this.noCurrentCard() && this.isMyTurn(playerId)) {
             this.currentCard = this.dungeon.pop();
+            if (this.currentCard.dungeonCardType == "monster") 
+                this.currentCardDamage = this.currentCard.calculateDamage()
+            console.log(`${playerId} picked dungeon card ${this.currentCard.title} :  ${this.currentCardDamage} damage!`);
         }
+    }
+
+    takeDamage(playerId) {
+        // Logic to handle picking a dungeon card
+        if (this.currentCard.dungeonCardType == "monster" && this.players[this.currentPlayerIndex].id === playerId) {
+            this.currentCardDamage = this.currentCard.calculateDamage()
+            console.log(`${playerId} takes ${this.currentCardDamage} damage!`);
+            let player = this.findPlayerById(playerId)
+            player.damagedByMonster(this.currentCardDamage)
+            player.addToPile(this.currentCard)
+            this.currentCard = null;
+            player.canPass = true;
+        }
+    }
+
+    wantToPassTurn(playerId){
+        let player = this.findPlayerById(playerId)
+        if(player.canPass){
+            this.passTurn()
+        }
+    }
+    passTurn(){
+        let player = this.getCurrentPlayer()
+        console.log(`${player} passes turn.`);
+        this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
+        let newPlayer = this.getCurrentPlayer()
+        newPlayer.canPass = false;
     }
 
     gameLoop() {
@@ -263,6 +305,7 @@ schema.defineTypes(GameState, {
     dungeon: [DungeonCard],
     dungeonLength: "number",
     currentCard: DungeonCard,
+    currentCardDamage: "number",
     discardPile: [DungeonCard],
     turnNumber: "number",
 });

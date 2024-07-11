@@ -6,7 +6,7 @@ let cardGame;
 let displayManager;
 let client;
 let room;
-let currentPlayerId;
+let localPlayerId;
 
 export function create() {
     console.log("Creating the scene...");
@@ -21,7 +21,7 @@ export function create() {
 
     client.joinOrCreate("room").then(roomInstance => {
         room = roomInstance;
-        currentPlayerId = room.sessionId;
+        localPlayerId = room.sessionId;
         console.log(room.sessionId, "joined", room.name);
 
         room.onStateChange((state) => {
@@ -63,7 +63,7 @@ export function create() {
                     displayManager.zoomCard(cardImage);
                 } else if (cardImage.isPlayer) {
                     const cardIndex = cardImage.cardIndex;
-                    const currentPlayer = cardGame.players.find(p => p.id === currentPlayerId);
+                    const currentPlayer = cardGame.players.find(p => p.id === localPlayerId);
                     console.log(`Sending select_card message: { action: "select_card", cardIndex: ${cardIndex} }`);
                     room.send("select_card", { cardIndex: cardIndex });
 
@@ -71,22 +71,28 @@ export function create() {
                     currentPlayer.hand.forEach(c => c.isPicked = false);
                     currentPlayer.hand[cardIndex].isPicked = true;
                     console.log(cardIndex, "picked")
-                    displayManager.updateDraftingUI(cardGame.players, currentPlayerId);
+                    displayManager.updateDraftingUI(cardGame.players, localPlayerId);
                 }
             }
             else if (cardGame.phase.includes("GAME")) {
                 const cardImage = gameObjects[0];
                 console.log(cardImage)
-                if (cardImage.getData("type")==="dungeon") {
+                if (cardImage.getData("type") === "dungeon") {
                     console.log("pick donjon")
                     room.send("pick_dungeon");
-
-                } else if (cardImage.getData("type")==="stuff") {
+                } else if (cardImage.getData("type") === "take_damage") {
+                    console.log(`Player takes ${cardGame.currentCardDamage} damage.`);
+                    room.send("take_damage")
+                } else if (cardImage.getData("type") === "pass_turn") { 
+                    room.send("pass_turn")
+                } else if (cardImage.getData("type") === "stuff") {
                     displayManager.zoomCard(cardImage);
                 } //todo use items
             }
         }
     });
+
+
     function copyPlayerState(playerState) {
         const player = new Player(playerState.id, playerState.name);
         player.hand = playerState.hand; // Direct assignment
@@ -95,6 +101,7 @@ export function create() {
         player.medals = playerState.medals;
         player.hp = playerState.hp;
         player.baseHp = playerState.baseHp;
+        player.canPass = playerState.canPass;
         player.defeatedMonstersPile = playerState.defeatedMonstersPile; // Direct assignment
         player.score = playerState.score;
         player.dead = playerState.dead;
@@ -107,7 +114,7 @@ export function create() {
             console.log("cardGame is not yet initialized");
             return;
         }
-    
+
         cardGame.phase = state.phase;
         cardGame.players = state.players.map(copyPlayerState);
         cardGame.itemDeck = state.itemDeck; // Direct assignment
@@ -115,15 +122,16 @@ export function create() {
         cardGame.dungeon = state.dungeon; // Direct assignment
         cardGame.dungeonLength = state.dungeonLength;
         cardGame.currentCard = state.currentCard;
+        cardGame.currentCardDamage = state.currentCardDamage;
         cardGame.discardPile = state.discardPile; // Direct assignment
         cardGame.turnNumber = state.turnNumber;
-    
+
         if (cardGame.phase === "DRAFT") {
-            displayManager.updateDraftingUI(cardGame.players, currentPlayerId);
+            displayManager.updateDraftingUI(cardGame.players, localPlayerId);
         } else if (cardGame.phase.includes("GAME")) {
-            displayManager.updateGameUI(cardGame, currentPlayerId);
+            displayManager.updateGameUI(cardGame, localPlayerId);
         }
     }
-        
+
 
 }

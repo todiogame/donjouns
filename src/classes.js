@@ -7,11 +7,18 @@ export class Game {
         this.dungeon = [];
         this.dungeonLength = 0;
         this.currentCard = null;
+        this.currentCardDamage = 0;
         this.discardPile = [];
         this.turnNumber = 0;
     }
     noCurrentCard() {
         return !this.currentCard || this.currentCard._id === undefined
+    }
+    isMyTurn(myId){
+        return this.players[this.currentPlayerIndex].id === myId
+    }
+    getCurrentPlayer(){
+        return this.players[this.currentPlayerIndex];
     }
 }
 
@@ -25,6 +32,7 @@ export class Player {
         this.medals = 0;
         this.hp = 0;
         this.baseHp = 0;
+        this.canPass = false;
         this.defeatedMonstersPile = [];
         this.score = 0;
         this.dead = false;
@@ -44,7 +52,7 @@ export class ItemCard {
         this.color = color;
         this.image = image;
         this.description = description;
-
+        this.broken = false;
         this.hp = 0;
         this.escapeRollModifier = 0;
         // Extract hp from description if it contains "PV + "
