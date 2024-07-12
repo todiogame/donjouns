@@ -1,6 +1,6 @@
 const schema = require("@colyseus/schema");
 const { Schema, type } = schema;
-const ie = require('./ItemEffects');
+const ieClick = require('./ItemEffectsClick');
 
 class ItemCard extends Schema {
     constructor(id, title, active, color, key, description = "") {
@@ -26,7 +26,8 @@ class ItemCard extends Schema {
         this.broken = true
     }
     tryToUse(player, game) {
-        ie[this.key]?.(this, player, game);
+        console.log(player.name,"tryToUse",this.title)
+        ieClick[this.key]?.(this, player, game);
     }
 }
 

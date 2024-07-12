@@ -1,7 +1,6 @@
 import { Client } from "colyseus.js";
 import { Game, Player } from './classes';
 import { DisplayManager } from './display';
-
 let cardGame;
 let displayManager;
 let client;
@@ -31,20 +30,29 @@ export function create() {
 
         room.onMessage("start_game", (state) => {
             console.log("Received start_game message:", state);
-            cardGame = new Game(); // Initialize the itemCard game
+            cardGame = new Game(); // Initialize the card game
             updateGameState(state);
 
             displayManager.displayTitle("Le Draft démarre !")
         });
         room.onMessage("start_game_random", (state) => {
             console.log("Received start_game_random message:", state);
-            cardGame = new Game(); // Initialize the itemCard game
+            cardGame = new Game(); // Initialize the card game
             updateGameState(state);
 
             displayManager.displayTitle("La partie démarre !")
+
         });
         room.onMessage("end_draft", (state) => {
             displayManager.displayTitle("Fin du Draft !")
+        });
+        // Handle dice roll results from the server
+        room.onMessage('escapeRollResult', (message) => {
+            const diceScene = this.game.scene.getScene('DiceScene');
+            if (diceScene) {
+                diceScene.showDiceResult(message.result);
+            }
+            cardGame.isDiceRolling = false; // Re-enable interactions after dice roll completes
         });
     }).catch(e => {
         console.error("join error", e);
@@ -54,9 +62,13 @@ export function create() {
     displayManager.initializeBackground();
 
     this.input.on('pointerdown', (pointer, gameObjects) => {
+
         if (displayManager.zoomedItemCard) {
             displayManager.closeZoom();
-        } else if (gameObjects.length > 0) {
+        } else if (cardGame.isDiceRolling) {
+            return; // Disable interactions during dice roll
+        }
+        else if (gameObjects.length > 0) {
             if (cardGame.phase === "DRAFT") {
                 const cardImage = gameObjects[0];
                 if (cardImage.isInStuff) {
@@ -67,7 +79,7 @@ export function create() {
                     console.log(`Sending select_card message: { action: "select_card", cardIndex: ${cardIndex} }`);
                     room.send("select_card", { cardIndex: cardIndex });
 
-                    // Highlight the selected itemCard
+                    // Highlight the selected card
                     currentPlayer.hand.forEach(c => c.isPicked = false);
                     currentPlayer.hand[cardIndex].isPicked = true;
                     console.log(cardIndex, "picked")
@@ -89,16 +101,21 @@ export function create() {
                     displayManager.zoomCard(cardImage);
                 } else if (cardImage.getData("type") === "my_item") {
                     room.send("use_item", { item_id: cardImage.getData("item_id") })
+                } else if (cardImage.getData("type") === "escape_roll") {
+                    cardGame.isDiceRolling = true; // Set flag to disable interactions during dice roll
+                    displayManager.updateGameUI(cardGame, localPlayerId);
+                    displayManager.displayDice()
+                    room.send("escape_roll") 
                 }
             }
         }
     });
-    
+
     function copyPlayerState(playerState) {
         const player = new Player(playerState.id, playerState.name);
         player.hand = playerState.hand; // Direct assignment
         player.stuff = playerState.stuff; // Direct assignment
-        player.selectedItemCardIndex = playerState.selectedItemCardIndex;
+        player.selectedCardIndex = playerState.selectedCardIndex;
         player.medals = playerState.medals;
         player.hp = playerState.hp;
         player.baseHp = playerState.baseHp;
@@ -133,6 +150,4 @@ export function create() {
             displayManager.updateGameUI(cardGame, localPlayerId);
         }
     }
-
-
 }

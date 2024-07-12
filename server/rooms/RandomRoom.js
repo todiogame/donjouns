@@ -38,7 +38,7 @@ class RandomRoom extends colyseus.Room {
             console.log(`Received take_damage message from ${client.sessionId}:`, message);
             this.state.takeDamage(client.sessionId);
         })
-        
+
         this.onMessage("pass_turn", (client, message) => {
             console.log(`Received pass_turn message from ${client.sessionId}:`, message);
             this.state.wantToPassTurn(client.sessionId);
@@ -47,6 +47,17 @@ class RandomRoom extends colyseus.Room {
         this.onMessage("use_item", (client, message) => {
             console.log(`Received use_item message from ${client.sessionId}:`, message.item_id);
             this.state.wantToUseItem(client.sessionId, message.item_id);
+        })
+
+        this.onMessage("escape_roll", (client, message) => {
+            console.log(`Received escape_roll message from ${client.sessionId}:`, message);
+            // Simulate a delay before broadcasting the result
+            setTimeout(() => {
+                const escapeRoll = this.state.wantToEscape(client.sessionId);
+                console.log(`broadcast escape_roll result for ${client.sessionId}:`, escapeRoll);
+                this.broadcast('escapeRollResult', { result: escapeRoll });
+                this.state.tryToEscape(client.sessionId, escapeRoll);
+            }, 1000); // 1000 milliseconds delay
         })
     }
 
@@ -68,7 +79,7 @@ class RandomRoom extends colyseus.Room {
 
     onLeave(client, consented) {
         console.log(client.sessionId, "left!");
-        const playerIndex = this.state.players.findIndex(p => p.id === client.sessionId);
+        // const playerIndex = this.state.players.findIndex(p => p.id === client.sessionId);
         // if (playerIndex !== -1) {
         //     this.state.players.splice(playerIndex, 1);
         // }

@@ -69,16 +69,25 @@ class Player extends Schema {
         this.defeatedMonstersPile.push(monsterCard)
     }
 
-    calculateEscapeRollModifiers() {
-        return this.stuff.reduce((modifier, item) => modifier + item.escapeRollModifier, 0);
+    pickItem(game) {
+        this.addItem(game.itemDeck.pop());
     }
 
-    flee() {
+    rollToEscape(){
+        const diceRoll = Math.floor(Math.random() * 6) + 1;
+        return diceRoll;
+    }
+
+    flee(game) {
+        console.log(this.name + "flee!")
         this.fled = true;
+        game.passTurn()
     }
 
-    die() {
+    die(game) {
+        console.log(this.name + "died!")
         this.dead = true;
+        // game.passTurn()
     }
 
     calculateFinalScore(logDetails) {

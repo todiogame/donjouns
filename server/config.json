@@ -1,6 +1,6 @@
 {
     "nb_players" : 3,
-    "nb_items_deck" : 22,
+    "nb_items_deck" : 100,
     "nb_items_draft" : 7,
     "nb_items_starting" : 6
 }

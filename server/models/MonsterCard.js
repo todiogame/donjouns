@@ -7,11 +7,18 @@ class MonsterCard extends DungeonCard {
         super(id, title, "monster", description, effect);
         this.power = power;
         this.types = types;
-        this.damage = 0;
+        this.damage = this.calculateDamage();
     }
 
     calculateDamage() {
-        return this.power
+        return this.power //add bonus damage
+    }
+
+    odd(){
+        return this.power % 2 !== 0
+    }
+    even(){
+        return this.power % 2 == 0
     }
 }
 

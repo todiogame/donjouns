@@ -1,3 +1,5 @@
+import { createDice } from './dice.js';
+
 export class TitleScene extends Phaser.Scene {
     constructor() {
         super({ key: 'TitleScene', active: true });
@@ -43,6 +45,154 @@ export class TitleScene extends Phaser.Scene {
     }
 }
 
+import Phaser from 'phaser';
+
+export class DiceScene extends Phaser.Scene {
+    constructor() {
+        super({ key: 'DiceScene', active: true });
+    }
+
+    preload() {
+        this.load.image("dice-albedo", "assets/obj/dice/dice-albedo.png");
+        this.load.obj("dice-obj", "assets/obj/dice/dice.obj");
+    }
+
+    create() {
+        this.createDice(this.scale.width / 2, this.scale.height / 2, 1000);
+    }
+
+    createDice(x, y, duration) {
+        let diceIsRolling = false;
+        let stopDiceAnimation;
+
+        const dice = this.add.mesh(x, y, "dice-albedo").setVisible(false);
+        const shadowFX = dice.postFX.addShadow(0, 0, 0.006, 2, 0x111111, 10, .8);
+
+        dice.addVerticesFromObj("dice-obj", 0.25);
+        dice.panZ(6);
+
+        dice.modelRotation.x = Phaser.Math.DegToRad(0);
+        dice.modelRotation.y = Phaser.Math.DegToRad(-90);
+
+        const startDiceAnimation = () => {
+            if (!diceIsRolling) {
+                diceIsRolling = true;
+                dice.setVisible(true);
+                dice.setPosition(this.scale.width / 2, this.scale.height + dice.height);
+
+                // Move dice to the center of the screen
+                this.add.tween({
+                    targets: dice,
+                    y: this.scale.height / 2,
+                    duration: 500,
+                    ease: "Sine.easeInOut",
+                });
+
+                // Shadow animation
+                this.add.tween({
+                    targets: shadowFX,
+                    x: -8,
+                    y: 10,
+                    duration: duration - 250,
+                    ease: "Sine.easeInOut",
+                    yoyo: true,
+                });
+
+                // Dice rotation animation
+                const diceTween = this.add.tween({
+                    targets: dice,
+                    from: 0,
+                    to: 1,
+                    duration: duration,
+                    repeat: -1,
+                    onUpdate: () => {
+                        dice.modelRotation.x -= .02;
+                        dice.modelRotation.y -= .08;
+                    },
+                    ease: "Sine.easeInOut",
+                });
+
+                // Save the function to stop the animation
+                stopDiceAnimation = () => {
+                    diceTween.stop();
+                    diceIsRolling = false;
+                };
+            } else {
+                console.log("Dice is already rolling");
+            }
+        };
+
+        const showDiceResult = (diceRoll) => {
+            if (diceIsRolling) {
+                stopDiceAnimation();
+
+                switch (diceRoll) {
+                    case 1:
+                        dice.modelRotation.x = Phaser.Math.DegToRad(0);
+                        dice.modelRotation.y = Phaser.Math.DegToRad(-90);
+                        break;
+                    case 2:
+                        dice.modelRotation.x = Phaser.Math.DegToRad(90);
+                        dice.modelRotation.y = Phaser.Math.DegToRad(0);
+                        break;
+                    case 3:
+                        dice.modelRotation.x = Phaser.Math.DegToRad(180);
+                        dice.modelRotation.y = Phaser.Math.DegToRad(0);
+                        break;
+                    case 4:
+                        dice.modelRotation.x = Phaser.Math.DegToRad(180);
+                        dice.modelRotation.y = Phaser.Math.DegToRad(180);
+                        break;
+                    case 5:
+                        dice.modelRotation.x = Phaser.Math.DegToRad(-90);
+                        dice.modelRotation.y = Phaser.Math.DegToRad(0);
+                        break;
+                    case 6:
+                        dice.modelRotation.x = Phaser.Math.DegToRad(0);
+                        dice.modelRotation.y = Phaser.Math.DegToRad(90);
+                        break;
+                }
+
+                // Show the dice value
+                const textDiceValue = this.add.text(this.scale.width / 2, this.scale.height / 2, diceRoll, {
+                    fontFamily: 'Arial Black',
+                    fontSize: 74,
+                    color: '#c51b00'
+                });
+                textDiceValue.setStroke('#de77ae', 16).setScale(0);
+                textDiceValue.setOrigin(0.5);
+                textDiceValue.setPosition(this.scale.width / 2, this.scale.height / 2);
+
+                this.add.tween({
+                    targets: textDiceValue,
+                    scale: 1,
+                    duration: 1000,
+                    ease: Phaser.Math.Easing.Bounce.Out,
+                    onComplete: () => {
+                        dice.setVisible(false);
+                        textDiceValue.setVisible(false);
+                    }
+                });
+            }
+        };
+
+        this.startDiceAnimation = startDiceAnimation;
+        this.showDiceResult = showDiceResult;
+
+        // Start dice animation on click and show result
+        // this.input.on('pointerdown', () => {
+        //     // startDiceAnimation();
+
+        //     // Simulate server request and response
+        //     setTimeout(() => {
+        //         const diceRoll = Phaser.Math.Between(1, 6); // Simulated server response
+        //         showDiceResult(diceRoll);
+        //     }, 1000); // Simulated server delay
+        // });
+    }
+}
+
+
 export class DisplayManager {
     constructor(scene) {
         this.scene = scene;
@@ -55,7 +205,12 @@ export class DisplayManager {
         const titleScene = this.scene.scene.get('TitleScene');
         titleScene.displayTitle(message, duration, onComplete);
     }
-
+    displayDice() {
+        const diceScene = this.scene.scene.get('DiceScene');
+        if (diceScene) {
+            diceScene.startDiceAnimation();
+        }
+    }
     initializeBackground() {
         this.backgroundContainer = this.scene.add.container(0, 0);
         const background = this.scene.add.image(0, 0, 'background');
@@ -234,7 +389,6 @@ export class DisplayManager {
     updateGameUI(game, localPlayerId) {
         console.log("updateGameUI", game, localPlayerId);
         this.clearPreviousDisplay();
-
         const players = game.players;
         players.forEach(player => {
             if (player.id === localPlayerId) {
@@ -247,12 +401,16 @@ export class DisplayManager {
             }
         });
         this.displayCurrentCard(game, localPlayerId);
-        if (game.noCurrentCard() && game.getCurrentPlayer().canPass)
-            this.addPassTurnButton(game)
         this.displayDungeon(game, localPlayerId);
         this.displayDiscardPile(game);
-        if (game.isMyTurn(localPlayerId) && game.currentCard?.dungeonCardType === "monster")
-            this.addDamageButton(game);
+        if (game.isMyTurn(localPlayerId) && !game.isDiceRolling) {
+            if (game.currentCard?.dungeonCardType === "monster")
+                this.addDamageButton(game);
+            if (game.noCurrentCard() && game.getCurrentPlayer().canPass)
+                this.addPassTurnButton(game)
+            if (game.noCurrentCard())
+                this.addEscapeButton(game)
+        }
     }
 
     displayCurrentCard(game) {
@@ -297,7 +455,8 @@ export class DisplayManager {
         const desiredHeight = 175;
         const scaleX = desiredWidth / 750;
         const scaleY = desiredHeight / 1050;
-        const numCards = game.dungeonLength;
+        // const numCards = game.dungeonLength;
+        const numCards = game.dungeon.length;
         let cardSprite;
 
         for (let i = 0; i < numCards; i++) {
@@ -588,13 +747,73 @@ export class DisplayManager {
         // Add a hover effect to the button and text
         button.on('pointerover', () => {
             graphics.clear();
-            graphics.fillStyle(0x5555ff, 1); // Lighter orange for hover
+            graphics.fillStyle(0x5555ff, 1); // Lighter for hover
             graphics.fillRoundedRect(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight, buttonRadius);
         });
 
         button.on('pointerout', () => {
             graphics.clear();
             graphics.fillStyle(0x3333ee, 1);
+            graphics.fillRoundedRect(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight, buttonRadius);
+        });
+
+        this.scene.tweens.add({
+            targets: [text],
+            scaleX: 1.1,
+            scaleY: 1.1,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut',
+            duration: 500
+        });
+    }
+
+
+    addEscapeButton(game) {
+        const buttonText = `Try to escape`;
+        const buttonWidth = 200;
+        const buttonHeight = 50;
+        const buttonX = this.scene.sys.game.config.width / 2;
+        const buttonY = this.scene.sys.game.config.height - 320;
+        // const buttonY = this.scene.sys.game.config.height / 2 - 50;
+        const buttonRadius = 10; // For rounded corners
+
+        // Create a graphics object to draw the button
+        const graphics = this.scene.add.graphics();
+
+        // Draw the rounded rectangle button
+        graphics.fillStyle(0x33ee33, 1);
+        graphics.fillRoundedRect(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight, buttonRadius);
+
+        // Add the text on top of the button
+        const text = this.scene.add.text(buttonX, buttonY, buttonText, {
+            fontSize: '20px',
+            fill: '#000',
+            fontStyle: 'bold'
+        }).setOrigin(0.5, 0.5);
+
+        // Create an interactive zone over the button
+        const button = this.scene.add.zone(buttonX, buttonY, buttonWidth, buttonHeight)
+            .setOrigin(0.5, 0.5)
+            .setInteractive({ useHandCursor: true });
+
+        button.setData("type", "escape_roll")
+        // Handle the click event
+        button.on('pointerdown', () => {
+            console.log(`Player wants escape.`);
+            // Example: Apply damage to the player or update the game state
+        });
+
+        // Add a hover effect to the button and text
+        button.on('pointerover', () => {
+            graphics.clear();
+            graphics.fillStyle(0x55ff55, 1); // Lighter for hover
+            graphics.fillRoundedRect(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight, buttonRadius);
+        });
+
+        button.on('pointerout', () => {
+            graphics.clear();
+            graphics.fillStyle(0x33ee33, 1);
             graphics.fillRoundedRect(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight, buttonRadius);
         });
 

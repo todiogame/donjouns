@@ -24,8 +24,25 @@ function executeAndLeech(player, game) {
     }
 }
 
+function surviveWith(player, hp) {
+    player.setHP(hp)
+    player.addToPile(game.currentCard)
+    game.currentCard = null;
+    player.canPass = true;
+}
+
+
+function playerPileContainsType(player, type) {
+    return player.defeatedMonstersPile.some(card => card.types.includes(type));}
+
+function currentCardHasType(game, type) {
+    return game.currentCard.types.includes(type)
+}
 module.exports = {
     execute,
     executeAndDiscard,
     executeAndLeech,
+    playerPileContainsType,
+    currentCardHasType,
+    surviveWith,
 };

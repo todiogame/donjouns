@@ -10,6 +10,7 @@ const path = require('path');
 const configPath = path.resolve(__dirname, '../config.json');
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 const { nb_items_deck, nb_items_draft, nb_items_starting } = config;
+const ieStartGame = require('./ItemEffectsStartGame');
 
 class GameState extends Schema {
     constructor() {
@@ -36,7 +37,7 @@ class GameState extends Schema {
         // DEBUG ON NE VAS PLUS CREER DIRECT D'ITEMCARD DEPUIS LE DATA FEED
         this.itemDeck.clear();
         this.itemDeck.push(...itemsCards.filter(item => item.id > 0 && item.id <= nb_items_deck)
-            .map(i => new ItemCard(i.id, i.title, i.active, i.color, i.image, i.description)));
+            .map(i => new ItemCard(i.id, i.title, i.active, i.color, i.key, i.description)));
         this.shuffleItemsDeck();
     }
 
@@ -109,15 +110,14 @@ class GameState extends Schema {
             .map(d => new MonsterCard(d.id, d.title, d.power, d.types, d.description, d.effects)));
         this.shuffleDungeon();
         this.dungeonLength = this.dungeon.length;
-        // set up HP
+        // set up HP and start of game effects
         this.players.forEach(player => {
             player.baseHp = 3;
-            player.hp = player.baseHp + player.stuff.reduce((totalHp, item) => totalHp + item.hp, 0);
-            console.log(player.name, player.hp, " HP")
+            player.hp = player.baseHp
+            player.stuff.forEach(item => ieStartGame[item.key]?.(item, player, this));
         })
         this.currentPlayerIndex = Math.floor(Math.random() * this.players.length);
 
-        // todo do items effects "before entering" 
         console.log("donjon set up ok")
     }
 
@@ -130,10 +130,10 @@ class GameState extends Schema {
     noCurrentCard() {
         return !this.currentCard || this.currentCard._id === undefined
     }
-    inFight(){
+    inFight() {
         return this.currentCard?.dungeonCardType == "monster";
     }
-    inEvent(){
+    inEvent() {
         return this.currentCard?.dungeonCardType == "event";
     }
     getCurrentPlayer() {
@@ -142,8 +142,12 @@ class GameState extends Schema {
     isMyTurn(myId) {
         return this.getCurrentPlayer().id === myId
     }
-    discard(card){
+    discard(card) {
         this.discardPile.push(card);
+    }
+    returnCardToDungeon(){
+        this.dungeon.push(this.currentCard);
+        this.currentCard = null;
     }
 
     pickDungeonCard(playerId) {
@@ -175,19 +179,53 @@ class GameState extends Schema {
             this.passTurn()
         }
     }
-    passTurn() {
-        let player = this.getCurrentPlayer()
+    passTurn(reversed = false) {
+        let player = this.getCurrentPlayer();
         console.log(`${player} passes turn.`);
-        this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
-        let newPlayer = this.getCurrentPlayer()
-        newPlayer.canPass = false;
+
+        let originalIndex = this.currentPlayerIndex;
+        let newPlayer;
+        let foundPlayerInDungeon = false;
+        let totalPlayers = this.players.length;
+
+        for (let i = 0; i < totalPlayers; i++) {
+            let nextIndex = reversed
+                ? (originalIndex - 1 - i + totalPlayers) % totalPlayers
+                : (originalIndex + 1 + i) % totalPlayers;
+            newPlayer = this.players[nextIndex];
+            if (newPlayer.inDungeon()) {
+                this.currentPlayerIndex = nextIndex;
+                foundPlayerInDungeon = true;
+                break;
+            }
+        }
+
+        if (!foundPlayerInDungeon) {
+            this.endGame();
+        } else {
+            newPlayer.canPass = false;
+        }
+    }
+
+    wantToEscape(playerId) {
+        let player = this.findPlayerById(playerId)
+        return player.rollToEscape();
+    }
+
+    tryToEscape(playerId, escapeRoll) {
+        let player = this.findPlayerById(playerId)
+        this.pickDungeonCard(playerId)
+        if(this.inFight() && this.currentCard.power <= escapeRoll) {
+            player.flee(this)
+        }
     }
 
     wantToUseItem(playerId, itemId) {
+        console.log("wantToUseItem")
         let player = this.findPlayerById(playerId)
         let item = player.stuff.find(i => i.id === itemId)
-        if (this.isMyTurn(playerId) && item ) { // it's his turn and he got the item
-            item.tryToUse(player,this)
+        if (this.isMyTurn(playerId) && item) { // it's his turn and he got the item
+            item.tryToUse(player, this)
         }
     }
 
