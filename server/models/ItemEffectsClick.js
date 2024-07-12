@@ -122,12 +122,12 @@ const ieClick = {
 
     },
     sacred_book: (item, player, game) => {
-        if (!game.trap && !item.broken && h.currentCardHasType(game, "Skeleton")) {
+        if (!game.trap && !item.broken && game.inFight() && h.currentCardHasType(game, "Skeleton")) {
             h.execute(player, game)
         }
     },
     noob_amu: (item, player, game) => {
-        if (!game.trap && !item.broken && !player.medals && h.currentCardHasType(game, "Goblin")) {
+        if (!game.trap && !item.broken && game.inFight() && !player.medals && h.currentCardHasType(game, "Goblin")) {
             h.execute(player, game)
         }
     },
@@ -141,7 +141,7 @@ const ieClick = {
 
     },
     rat_lich: (item, player, game) => {
-        if (!game.trap && !item.broken && (h.currentCardHasType(game, "Rat") || h.currentCardHasType(game, "Lich"))) {
+        if (!game.trap && !item.broken && game.inFight() && (h.currentCardHasType(game, "Rat") || h.currentCardHasType(game, "Lich"))) {
             h.execute(player, game)
         }
     },
@@ -150,7 +150,7 @@ const ieClick = {
         // make scout interface
     },
     pest: (item, player, game) => {
-        if (!game.trap && !item.broken && (h.currentCardHasType(game, "Rat"))) {
+        if (!game.trap && !item.broken && game.inFight() && (h.currentCardHasType(game, "Rat"))) {
             h.execute(player, game)
         }
     },
@@ -158,24 +158,24 @@ const ieClick = {
 
     },
     slayer_shield: (item, player, game) => {
-        if (!game.trap && !item.broken && (h.currentCardHasType(game, "Orc"))) {
+        if (!game.trap && !item.broken && game.inFight() && (h.currentCardHasType(game, "Orc"))) {
             h.execute(player, game)
         }
     },
     shells: (item, player, game) => {
-        if (!game.trap && !item.broken) {
+        if (!game.trap && !item.broken && game.inFight()) {
             h.execute(player, game)
             item.break()
             //todo dice fix pv
         }
     },
     pirate_pistol: (item, player, game) => {
-        if (!game.trap && !item.broken && (h.currentCard.power == 2 || h.currentCard.power == 3)) {
+        if (!game.trap && !item.broken && game.inFight() && (game.currentCard.power == 2 || game.currentCard.power == 3)) {
             h.execute(player, game)
         }
     },
     mage_robe: (item, player, game) => {
-        if (!game.trap && !item.broken && (h.currentCardHasType(game, "Demon"))) {
+        if (!game.trap && !item.broken && game.inFight() && (h.currentCardHasType(game, "Demon"))) {
             h.execute(player, game)
             player.gainHP(5)
         }
@@ -252,7 +252,8 @@ const ieClick = {
         }
     },
     boomerang: (item, player, game) => {
-
+        h.executeAndDiscard(player, game)
+        //todo next monster
     },
     ice_ring: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() && h.currentCardHasType(game, "Skeleton")) {
@@ -298,7 +299,7 @@ const ieClick = {
         }
     },
     blue_torch: (item, player, game) => {
-        if (!game.trap && !item.broken && game.inFight() && h.currentCard.power <= 2) {
+        if (!game.trap && !item.broken && game.inFight() && game.currentCard.power <= 2) {
             h.execute(player, game)
         }
     },
@@ -340,11 +341,8 @@ const ieClick = {
     genius_glasses: (item, player, game) => {
 
     },
-    lootbox: (item, player, game) => {
-
-    },
     katana: (item, player, game) => {
-        if (!game.trap && !item.broken && h.currentCard.power >= 7) {
+        if (!game.trap && !item.broken && game.currentCard.power >= 7) {
             h.executeAndDiscard(player, game)
         }
     },

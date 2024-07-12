@@ -68,7 +68,7 @@ export function create() {
         } else if (cardGame.isDiceRolling) {
             return; // Disable interactions during dice roll
         }
-        else if (gameObjects.length > 0) {
+        else if (gameObjects.length > 0) {  
             if (cardGame.phase === "DRAFT") {
                 const cardImage = gameObjects[0];
                 if (cardImage.isInStuff) {
@@ -105,7 +105,7 @@ export function create() {
                     cardGame.isDiceRolling = true; // Set flag to disable interactions during dice roll
                     displayManager.updateGameUI(cardGame, localPlayerId);
                     displayManager.displayDice()
-                    room.send("escape_roll") 
+                    room.send("escape_roll")  
                 }
             }
         }

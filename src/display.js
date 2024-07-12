@@ -520,42 +520,52 @@ export class DisplayManager {
         const playerName = player.name;
         this.scene.playcardSound.play();
 
-        const desiredWidth = isPlayer ? 200 : 90; // increased size for player cards
-        const desiredHeight = isPlayer ? 280 : 126; // increased size for player cards
-        const scaleX = desiredWidth / 750;
-        const scaleY = desiredHeight / 1050;
+        const maxItemsPerRow = 6;
+        const defaultWidth = isPlayer ? 200 : 90; // increased size for player cards
+        const defaultHeight = isPlayer ? 280 : 126; // increased size for player cards
+        const scaleX = defaultWidth / 750;
+        const scaleY = defaultHeight / 1050;
+
         let playerNameText;
 
         if (isPlayer) {
+            const totalItems = stuff.length;
+            const actualWidth = totalItems > maxItemsPerRow ? defaultWidth * (maxItemsPerRow / totalItems) : defaultWidth;
+            const actualHeight = totalItems > maxItemsPerRow ? defaultHeight * (maxItemsPerRow / totalItems) : defaultHeight;
+            const actualScaleX = actualWidth / 750;
+            const actualScaleY = actualHeight / 1050;
+
+            const startingX = (this.scene.sys.game.config.width - (actualWidth + 10) * Math.min(totalItems -1, maxItemsPerRow)) / 2;
+
             stuff.forEach((itemCard, index) => {
                 if (itemCard) {
                     let itemCardImage;
-                    const xPosition = 100 + index * (desiredWidth + 10); // Adjusted slightly to the right
-                    const yPosition = this.scene.sys.game.config.height - 280 + (desiredHeight / 2) - 5; // Adjust for origin (0.5, 0.5)
+                    const xPosition = startingX + index * (actualWidth + 10);
+                    const yPosition = this.scene.sys.game.config.height - 280 + (actualHeight / 2) - 5;
 
                     itemCardImage = this.scene.add.image(xPosition, yPosition, itemCard.texture)
-                        .setOrigin(0.5, 0.5) // Center origin for correct rotation
-                        .setScale(scaleX, scaleY)
+                        .setOrigin(0.5, 0.5)
+                        .setScale(actualScaleX, actualScaleY)
                         .setInteractive({ useHandCursor: true, pixelPerfect: true, alphaTolerance: 1 });
 
                     if (itemCard.broken) {
                         itemCardImage.setRotation(Math.PI / 2);
                         itemCardImage.setDepth(-2);
-                        const overlay = this.scene.add.rectangle(xPosition, yPosition, desiredWidth, desiredHeight, 0x444444, 0.3)
+                        const overlay = this.scene.add.rectangle(xPosition, yPosition, actualWidth, actualHeight, 0x444444, 0.3)
                             .setOrigin(0.5, 0.5)
                             .setRotation(Math.PI / 2)
-                            .setDepth(-1); // Bring to foreground
+                            .setDepth(-1);
                         itemCardImage.setData('overlay', overlay);
                     }
                     itemCardImage.setData("type", "my_item");
                     itemCardImage.setData("item_id", itemCard.id);
-                    // Add hover effect with smooth transition
+
                     itemCardImage.on('pointerover', () => {
                         itemCardImage.setDepth(1);
                         this.scene.tweens.add({
                             targets: itemCardImage,
-                            scaleX: scaleX * 1.1,
-                            scaleY: scaleY * 1.1,
+                            scaleX: actualScaleX * 1.1,
+                            scaleY: actualScaleY * 1.1,
                             duration: 50,
                             ease: 'Sine.easeInOut'
                         });
@@ -564,25 +574,26 @@ export class DisplayManager {
                         itemCardImage.setDepth(itemCard.broken ? -2 : 0);
                         this.scene.tweens.add({
                             targets: itemCardImage,
-                            scaleX: scaleX,
-                            scaleY: scaleY,
+                            scaleX: actualScaleX,
+                            scaleY: actualScaleY,
                             duration: 50,
                             ease: 'Sine.easeInOut',
                         });
                     });
                 }
             });
-            playerNameText = this.scene.add.text(100, this.scene.sys.game.config.height - 310, playerName, { fontSize: '20px', fill: '#fff', fontStyle: 'bold' });
+
+            playerNameText = this.scene.add.text(startingX, this.scene.sys.game.config.height - 310, playerName, { fontSize: '20px', fill: '#fff', fontStyle: 'bold' });
         } else {
-            const stuffYOffset = 15; // Adjust the offset for pushing down the stuff
+            const stuffYOffset = 15;
             const maxItemsPerColumn = 2;
-            const columnOffset = desiredWidth + 10;
+            const columnOffset = defaultWidth + 10;
             let xPosition;
 
             if (position === 'top-left') {
-                xPosition = 10; // moved closer to the top-left corner
+                xPosition = 10;
             } else if (position === 'top-right') {
-                xPosition = this.scene.sys.game.config.width - desiredWidth - 10; // moved closer to the top-right corner
+                xPosition = this.scene.sys.game.config.width - defaultWidth - 10;
             }
 
             stuff.forEach((itemCard, index) => {
@@ -590,11 +601,11 @@ export class DisplayManager {
                     let itemCardImage;
                     const columnIndex = Math.floor(index / maxItemsPerColumn);
                     const rowIndex = index % maxItemsPerColumn;
-                    const yPosition = rowIndex * (desiredHeight * 0.5 + 5) + stuffYOffset + (desiredHeight / 2); // Adjust for origin (0.5, 0.5)
-                    const actualXPosition = position === 'top-left' ? xPosition + columnIndex * columnOffset + (desiredWidth / 2) : xPosition - columnIndex * columnOffset + (desiredWidth / 2); // Adjust for origin (0.5, 0.5)
+                    const yPosition = rowIndex * (defaultHeight * 0.5 + 5) + stuffYOffset + (defaultHeight / 2);
+                    const actualXPosition = position === 'top-left' ? xPosition + columnIndex * columnOffset + (defaultWidth / 2) : xPosition - columnIndex * columnOffset + (defaultWidth / 2);
 
                     itemCardImage = this.scene.add.image(actualXPosition, yPosition, itemCard.texture)
-                        .setOrigin(0.5, 0.5) // Center origin for correct rotation
+                        .setOrigin(0.5, 0.5)
                         .setScale(scaleX, scaleY)
                         .setInteractive({ useHandCursor: true, pixelPerfect: true, alphaTolerance: 1 });
                     itemCardImage.setData("type", "opponent_item");
@@ -602,21 +613,23 @@ export class DisplayManager {
                     if (itemCard.broken) {
                         itemCardImage.setRotation(Math.PI / 2);
                         itemCardImage.setDepth(-1);
-                        const overlay = this.scene.add.rectangle(actualXPosition, yPosition, desiredWidth, desiredHeight, 0x444444, 0.3)
+                        const overlay = this.scene.add.rectangle(actualXPosition, yPosition, defaultWidth, defaultHeight, 0x444444, 0.3)
                             .setOrigin(0.5, 0.5)
                             .setRotation(Math.PI / 2)
-                            .setDepth(-1); // Bring to foreground
+                            .setDepth(-1);
                         itemCardImage.setData('overlay', overlay);
                     }
                 }
             });
 
-            playerNameText = this.scene.add.text(xPosition, 2 * stuffYOffset + (desiredHeight * (maxItemsPerColumn - 1) * 1.5), playerName, { fontSize: '20px', fill: '#fff', fontStyle: 'bold' }); // Name displayed below stuff
+            playerNameText = this.scene.add.text(xPosition, 2 * stuffYOffset + (defaultHeight * (maxItemsPerColumn - 1) * 1.5), playerName, { fontSize: '20px', fill: '#fff', fontStyle: 'bold' });
         }
 
-        if (game && game.players[game.currentPlayerIndex].id === player.id)
+        if (game && game.players[game.currentPlayerIndex].id === player.id) {
             this.addShiningEffect(playerNameText);
+        }
     }
+
 
     displayHP(player, isPlayer, position) {
         const hp = player.hp;
