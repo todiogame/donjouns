@@ -22,7 +22,6 @@ class GameState extends Schema {
         this.dungeon = new ArraySchema();
         this.dungeonLength = 0;
         this.currentCard = null;
-        this.currentCardDamage = 0;
         this.discardPile = new ArraySchema();
         this.turnNumber = 0;
     }
@@ -155,18 +154,17 @@ class GameState extends Schema {
         if (this.dungeon.length && this.noCurrentCard() && this.isMyTurn(playerId)) {
             this.currentCard = this.dungeon.pop();
             if (this.inFight())
-                this.currentCardDamage = this.currentCard.calculateDamage()
-            console.log(`${playerId} picked dungeon card ${this.currentCard.title} :  ${this.currentCardDamage} damage!`);
+                this.currentCard.damage = this.currentCard.calculateDamage()
+            console.log(`${playerId} picked dungeon card ${this.currentCard.title} :  ${this.currentCard.damage} damage!`);
         }
     }
 
     takeDamage(playerId) {
         // Logic to handle picking a dungeon card
-        if (this.currentCard.dungeonCardType == "monster" && this.players[this.currentPlayerIndex].id === playerId) {
-            this.currentCardDamage = this.currentCard.calculateDamage()
-            console.log(`${playerId} takes ${this.currentCardDamage} damage!`);
+        if (this.inFight() && this.isMyTurn(playerId)) {
+            console.log(`${playerId} takes ${this.currentCard.damage} damage!`);
             let player = this.findPlayerById(playerId)
-            player.loseHP(this.currentCardDamage)
+            player.loseHP(this.currentCard.damage)
             player.addToPile(this.currentCard)
             this.currentCard = null;
             player.canPass = true;
@@ -204,6 +202,12 @@ class GameState extends Schema {
             this.endGame();
         } else {
             newPlayer.canPass = false;
+        }
+
+        //if there is an active card, reset its stats
+        if (this.inFight()){
+            this.currentCard.power =  this.currentCard.originalPower;
+            this.currentCard.damage = this.currentCard.calculateDamage();
         }
     }
 
@@ -361,7 +365,6 @@ schema.defineTypes(GameState, {
     dungeon: [DungeonCard],
     dungeonLength: "number",
     currentCard: DungeonCard,
-    currentCardDamage: "number",
     discardPile: [DungeonCard],
     turnNumber: "number",
 });

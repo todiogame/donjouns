@@ -31,13 +31,26 @@ function surviveWith(player, hp) {
     player.canPass = true;
 }
 
-
 function playerPileContainsType(player, type) {
-    return player.defeatedMonstersPile.some(card => card.types.includes(type));}
+    return player.defeatedMonstersPile.some(card => card.types.includes(type));
+}
 
 function currentCardHasType(game, type) {
     return game.currentCard.types.includes(type)
 }
+
+function reduceDamage(game, item, value, minDamage = 0) {
+    if (game.currentCard?.dungeonCardType == "monster" && !game.currentCard.affectedBy.includes(item.key)) {
+        console.log("reduce damage by "+value);
+        let damage = game.currentCard.damage - value
+        game.currentCard.damage = (damage > minDamage) ? damage : minDamage;
+        game.currentCard.affectedBy.push(item.key)
+    }
+}
+
+
+
+
 module.exports = {
     execute,
     executeAndDiscard,
@@ -45,4 +58,5 @@ module.exports = {
     playerPileContainsType,
     currentCardHasType,
     surviveWith,
+    reduceDamage,
 };

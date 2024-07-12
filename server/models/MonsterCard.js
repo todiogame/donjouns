@@ -6,8 +6,10 @@ class MonsterCard extends DungeonCard {
     constructor(id, title, power, types = [], description = "", effect = "") {
         super(id, title, "monster", description, effect);
         this.power = power;
+        this.originalPower = power;
         this.types = types;
         this.damage = this.calculateDamage();
+        this.affectedBy = [];
     }
 
     calculateDamage() {

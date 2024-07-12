@@ -26,7 +26,7 @@ export function create() {
         room.onStateChange((state) => {
             console.log("New state:", state);
             updateGameState(state);
-        });
+        });     
 
         room.onMessage("start_game", (state) => {
             console.log("Received start_game message:", state);
@@ -93,7 +93,7 @@ export function create() {
                     console.log("pick donjon")
                     room.send("pick_dungeon");
                 } else if (cardImage.getData("type") === "take_damage") {
-                    console.log(`Player takes ${cardGame.currentCardDamage} damage.`);
+                    console.log(`Player takes ${cardGame.currentCard.damage} damage.`);
                     room.send("take_damage")
                 } else if (cardImage.getData("type") === "pass_turn") {
                     room.send("pass_turn")
@@ -131,7 +131,7 @@ export function create() {
         if (!cardGame) {
             console.log("cardGame is not yet initialized");
             return;
-        }
+        } 
 
         cardGame.phase = state.phase;
         cardGame.players = state.players.map(copyPlayerState);
@@ -140,7 +140,6 @@ export function create() {
         cardGame.dungeon = state.dungeon; // Direct assignment
         cardGame.dungeonLength = state.dungeonLength;
         cardGame.currentCard = state.currentCard;
-        cardGame.currentCardDamage = state.currentCardDamage;
         cardGame.discardPile = state.discardPile; // Direct assignment
         cardGame.turnNumber = state.turnNumber;
 

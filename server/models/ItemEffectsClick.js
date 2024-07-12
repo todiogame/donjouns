@@ -110,7 +110,13 @@ const ieClick = {
         }
     },
     pickaxe: (item, player, game) => {
-
+        // Exécutez un monstre de puissance impaire, ne brise pas contre un Golem
+        if (!item.broken && game.inFight() && game.currentCard.power % 2 === 1) {
+            h.execute(player, game);
+            if (!h.currentCardHasType(game, "Golem")) {
+                item.break();
+            }
+        }
     },
     totem: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight()) {
@@ -148,6 +154,7 @@ const ieClick = {
     adam: (item, player, game) => {
         player.gainHP(3)
         // make scout interface
+        item.break();
     },
     pest: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() && (h.currentCardHasType(game, "Rat"))) {
@@ -181,10 +188,14 @@ const ieClick = {
         }
     },
     fire_armor: (item, player, game) => {
-
+        if (!item.broken && game.inFight() && h.currentCardHasType(game, "Dragon")) {
+            h.reduceDamage(game, item, 5)
+        }
     },
     fire_hammer: (item, player, game) => {
-
+        if (!item.broken && game.inFight() && (h.currentCardHasType(game, "Golem") || h.currentCardHasType(game, "Dragon"))) {
+            h.reduceDamage(game, item, 4)
+        }
     },
     '13_16': (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() &&
@@ -224,7 +235,9 @@ const ieClick = {
 
     },
     mage_armor: (item, player, game) => {
-
+        if (!item.broken && game.inFight() && (h.currentCardHasType(game, "Lich") || h.currentCardHasType(game, "Demon"))) {
+            h.reduceDamage(game, item, 5)
+        }
     },
     divination: (item, player, game) => {
 
@@ -258,7 +271,9 @@ const ieClick = {
     ice_ring: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() && h.currentCardHasType(game, "Skeleton")) {
             h.execute(player, game)
-        } //todo damage
+        } else if (!item.broken && game.inFight()) {
+            h.reduceDamage(game, item, 1)
+        }
     },
     magic_ring: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() && (game.currentCard.power === 1 || game.currentCard.power === 2)) {
@@ -351,12 +366,18 @@ const ieClick = {
         //todo
     },
     golem_heart: (item, player, game) => {
-
+        if (!item.broken && game.inFight()) {
+            const golemCount = player.monsterPile.filter(monster => monster.type === "Golem").length
+            if (golemCount) h.reduceDamage(game, item, golemCount)
+        }
     },
     dragon_blade: (item, player, game) => {
-        if (!game.trap && !item.broken && h.currentCardHasType(game, "Dragon")) {
+        if (!game.trap && !item.broken && game.inFight() && h.currentCardHasType(game, "Dragon")) {
             h.execute(player, game)
-        } //todo reduc damage
+        } else if (!game.trap && !item.broken && game.inFight()) {
+            const dragonCount = player.monsterPile.filter(monster => monster.type === "Dragon").length
+            h.reduceDamage(game, item, dragonCount)
+        }
     },
     axe: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() && game.currentCard.even()) {

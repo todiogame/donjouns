@@ -663,7 +663,7 @@ export class DisplayManager {
 
 
     addDamageButton(game) {
-        const buttonText = `Take ${game.currentCardDamage} Damage`;
+        const buttonText = `Take ${game.currentCard.damage} Damage`;
         const buttonWidth = 200;
         const buttonHeight = 50;
         const buttonX = this.scene.sys.game.config.width / 2;
@@ -693,7 +693,7 @@ export class DisplayManager {
         button.setData("type", "take_damage")
         // Handle the click event
         button.on('pointerdown', () => {
-            console.log(`Player takes ${game.currentCardDamage} damage.`);
+            console.log(`Player takes ${game.currentCard.damage} damage.`);
             // Example: Apply damage to the player or update the game state
         });
 
