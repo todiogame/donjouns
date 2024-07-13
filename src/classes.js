@@ -30,7 +30,7 @@ export class Player {
         this.selectedItemCardIndex = -1;
         this.medals = 0;
         this.hp = 0;
-        this.baseHp = 0;
+        this.baseHP = 0;
         this.canPass = false;
         this.defeatedMonstersPile = [];
         this.score = 0;

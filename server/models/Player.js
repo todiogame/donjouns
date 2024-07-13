@@ -13,13 +13,14 @@ class Player extends Schema {
         this.selectedItemCardIndex = -1;
         this.medals = 0;
         this.hp = 0;
-        this.baseHp = 0;
+        this.baseHP = 0;
         this.canPass = false;
         this.defeatedMonstersPile = new ArraySchema();
         this.score = 0;
         this.dead = false;
         this.fled = false;
         this.monstersAddedThisTurn = 0;
+        this.lastDamageTaken = 0;
     }
     // DRAFT PHASE
     addItemCardDraft(itemCard) {
@@ -63,6 +64,10 @@ class Player extends Schema {
     }
     gainHP(heal){
         this.hp += heal
+    }
+
+    setHP(value){
+        this.hp = value
     }
 
     addToPile(monsterCard){
@@ -132,7 +137,7 @@ schema.defineTypes(Player, {
     selectedItemCardIndex: "number",
     medals: "number",
     hp: "number",
-    baseHp: "number",
+    baseHP: "number",
     canPass: "boolean",
     defeatedMonstersPile: [DungeonCard],
     score: "number",

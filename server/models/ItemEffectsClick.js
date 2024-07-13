@@ -31,9 +31,6 @@ const ieClick = {
             game.passTurn(true)
         }
     },
-    heart: (item, player, game) => {
-
-    },
     box: (item, player, game) => {
 
     },
@@ -138,13 +135,17 @@ const ieClick = {
         }
     },
     noob_ring: (item, player, game) => {
-
+        h.surviveWith(player, player.medals ? 1 : player.baseHP);
     },
     noob_hat: (item, player, game) => {
-
+        if (!game.trap && !item.broken && game.inFight() && !player.medals && h.currentCardHasType(game, "Orc")) {
+            h.execute(player, game)
+        } //todo execute next
     },
     noob_cape: (item, player, game) => {
-
+        if (!game.trap && !item.broken && game.inFight() && (!player.medals || game.currentCard.odd())){
+           h.execute(player, game)
+        }
     },
     rat_lich: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() && (h.currentCardHasType(game, "Rat") || h.currentCardHasType(game, "Lich"))) {
@@ -206,7 +207,9 @@ const ieClick = {
         }
     },
     scuba: (item, player, game) => {
-
+        if (!item.broken && game.inFight()) {
+            h.reduceDamage(game, item, 2)
+        }
     },
     chainsaw: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() && player.hp > 3) {
@@ -215,9 +218,9 @@ const ieClick = {
         }
     },
     laser: (item, player, game) => {
-        if (!game.trap && !item.broken && game.inFight() && game.currentCard.even()) {
+        if (!game.trap && !item.broken && game.inFight() && game.currentCard.odd()) {
             h.execute(player, game)
-            item.break()
+            item.break() //todo kill next
         }
     },
     monkey_grenade: (item, player, game) => {
@@ -232,7 +235,10 @@ const ieClick = {
 
     },
     heal: (item, player, game) => {
-
+        if(!item.broken && player.lastDamageTaken){
+            player.gainHP(player.lastDamageTaken)
+        }
+        item.break();
     },
     mage_armor: (item, player, game) => {
         if (!item.broken && game.inFight() && (h.currentCardHasType(game, "Lich") || h.currentCardHasType(game, "Demon"))) {

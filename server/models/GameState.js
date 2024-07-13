@@ -111,8 +111,8 @@ class GameState extends Schema {
         this.dungeonLength = this.dungeon.length;
         // set up HP and start of game effects
         this.players.forEach(player => {
-            player.baseHp = 3;
-            player.hp = player.baseHp
+            player.baseHP = 3;
+            player.hp = player.baseHP
             player.stuff.forEach(item => ieStartGame[item.key]?.(item, player, this));
         })
         this.currentPlayerIndex = Math.floor(Math.random() * this.players.length);
@@ -144,7 +144,7 @@ class GameState extends Schema {
     discard(card) {
         this.discardPile.push(card);
     }
-    returnCardToDungeon(){
+    returnCardToDungeon() {
         this.dungeon.push(this.currentCard);
         this.currentCard = null;
     }
@@ -159,12 +159,14 @@ class GameState extends Schema {
         }
     }
 
-    takeDamage(playerId) {
-        // Logic to handle picking a dungeon card
+    faceMonster(playerId) {
         if (this.inFight() && this.isMyTurn(playerId)) {
-            console.log(`${playerId} takes ${this.currentCard.damage} damage!`);
             let player = this.findPlayerById(playerId)
-            player.loseHP(this.currentCard.damage)
+            if (this.currentCard.damage > 0) {
+                console.log(`${playerId} takes ${this.currentCard.damage} damage!`);
+                player.loseHP(this.currentCard.damage)
+            }
+            player.lastDamageTaken = this.currentCard.damage;
             player.addToPile(this.currentCard)
             this.currentCard = null;
             player.canPass = true;
@@ -205,8 +207,8 @@ class GameState extends Schema {
         }
 
         //if there is an active card, reset its stats
-        if (this.inFight()){
-            this.currentCard.power =  this.currentCard.originalPower;
+        if (this.inFight()) {
+            this.currentCard.power = this.currentCard.originalPower;
             this.currentCard.damage = this.currentCard.calculateDamage();
         }
     }
@@ -219,7 +221,7 @@ class GameState extends Schema {
     tryToEscape(playerId, escapeRoll) {
         let player = this.findPlayerById(playerId)
         this.pickDungeonCard(playerId)
-        if(this.inFight() && this.currentCard.power <= escapeRoll) {
+        if (this.inFight() && this.currentCard.power <= escapeRoll) {
             player.flee(this)
         }
     }

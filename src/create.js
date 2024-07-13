@@ -118,7 +118,7 @@ export function create() {
         player.selectedCardIndex = playerState.selectedCardIndex;
         player.medals = playerState.medals;
         player.hp = playerState.hp;
-        player.baseHp = playerState.baseHp;
+        player.baseHP = playerState.baseHP;
         player.canPass = playerState.canPass;
         player.defeatedMonstersPile = playerState.defeatedMonstersPile; // Direct assignment
         player.score = playerState.score;
@@ -131,8 +131,8 @@ export function create() {
         if (!cardGame) {
             console.log("cardGame is not yet initialized");
             return;
-        } 
-
+        }  
+         
         cardGame.phase = state.phase;
         cardGame.players = state.players.map(copyPlayerState);
         cardGame.itemDeck = state.itemDeck; // Direct assignment
