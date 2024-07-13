@@ -109,12 +109,21 @@ class GameState extends Schema {
             .map(d => new MonsterCard(d.id, d.title, d.power, d.types, d.description, d.effects)));
         this.shuffleDungeon();
         this.dungeonLength = this.dungeon.length;
-        // set up HP and start of game effects
+        // set up HP, panos and start of game effects
         this.players.forEach(player => {
-            player.baseHP = 3;
-            player.hp = player.baseHP
-            player.stuff.forEach(item => ieStartGame[item.key]?.(item, player, this));
-        })
+            player.hp = player.baseHP;
+            const colorCount = {};
+
+            player.stuff.forEach(item => {
+                colorCount[item.color] = (colorCount[item.color] || 0) + 1;
+                ieStartGame[item.key]?.(item, player, this);
+            });
+
+            Object.values(colorCount).forEach(count => {
+                if (count >= 3) player.hp += 1;
+            });
+        });
+
         this.currentPlayerIndex = Math.floor(Math.random() * this.players.length);
 
         console.log("donjon set up ok")
@@ -164,12 +173,14 @@ class GameState extends Schema {
             let player = this.findPlayerById(playerId)
             if (this.currentCard.damage > 0) {
                 console.log(`${playerId} takes ${this.currentCard.damage} damage!`);
-                player.loseHP(this.currentCard.damage)
+                player.loseHP(this, this.currentCard.damage)
             }
             player.lastDamageTaken = this.currentCard.damage;
-            player.addToPile(this.currentCard)
-            this.currentCard = null;
-            player.canPass = true;
+            if (player.inDungeon()) {
+                player.addToPile(this.currentCard)
+                this.currentCard = null;
+                player.canPass = true;
+            }
         }
     }
 

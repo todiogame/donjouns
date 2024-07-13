@@ -14,7 +14,8 @@ const ieClick = {
         }
     },
     hammer: (item, player, game) => {
-        if (!game.trap && !item.broken && (h.currentCardHasType(game, "Skeleton") || h.currentCardHasType(game, "Golem"))) {
+        if (!game.trap && !item.broken && game.inFight()
+            && (h.currentCardHasType(game, "Skeleton") || h.currentCardHasType(game, "Golem"))) {
             h.execute(player, game)
         }
     },
@@ -50,7 +51,7 @@ const ieClick = {
     },
     bard: (item, player, game) => {
         if (!game.trap && !item.broken && player.hp > 3) {
-            player.loseHP(3)
+            player.loseHP(game, 3)
             h.execute(player, game)
             item.break()
         }
@@ -81,12 +82,12 @@ const ieClick = {
 
     },
     fairy_potion: (item, player, game) => {
-        h.surviveWith(player, 1);
+        h.surviveWith(player, game, 1);
     },
     ice_potion: (item, player, game) => {
         if (!item.broken && game.inFight()) {
             game.currentCard.power = 0;
-            game.currentCard.damage = game.getCurrentCard.calculateDamage()
+            game.currentCard.damage = game.currentCard.calculateDamage()
             item.break()
         }
     },
@@ -98,10 +99,10 @@ const ieClick = {
     },
     dragon_potion: (item, player, game) => {
         if (!item.broken) {
-            if (h.currentCardHasType(game, "Dragon")) {
-                player.surviveWith(9);
+            if (game.inFight() && h.currentCardHasType(game, "Dragon")) {
+                h.surviveWith(player, game, 9);
             } else {
-                player.surviveWith(1);
+                h.surviveWith(player, game, 1);
             }
             item.break()
         }
@@ -135,7 +136,10 @@ const ieClick = {
         }
     },
     noob_ring: (item, player, game) => {
-        h.surviveWith(player, player.medals ? 1 : player.baseHP);
+        if (!item.broken) {
+            h.surviveWith(player, game, player.medals ? 1 : player.baseHP);
+            item.break();
+        }
     },
     noob_hat: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() && !player.medals && h.currentCardHasType(game, "Orc")) {
@@ -143,9 +147,10 @@ const ieClick = {
         } //todo execute next
     },
     noob_cape: (item, player, game) => {
-        if (!game.trap && !item.broken && game.inFight() && (!player.medals || game.currentCard.odd())){
-           h.execute(player, game)
+        if (!game.trap && !item.broken && game.inFight() && (!player.medals || game.currentCard.odd())) {
+            h.execute(player, game)
         }
+        item.break();
     },
     rat_lich: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() && (h.currentCardHasType(game, "Rat") || h.currentCardHasType(game, "Lich"))) {
@@ -202,7 +207,7 @@ const ieClick = {
         if (!game.trap && !item.broken && game.inFight() &&
             (game.currentCard.power === 1 ||
                 ((!h.playerPileContainsType(player, "Dragon") && game.currentCard.power === 3) ||
-                    (!h.playerPileContainsType(player, "Dragon") && game.currentCard.power === 6)))) {
+                    (h.playerPileContainsType(player, "Dragon") && game.currentCard.power === 6)))) {
             h.execute(player, game)
         }
     },
@@ -213,7 +218,7 @@ const ieClick = {
     },
     chainsaw: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() && player.hp > 3) {
-            player.loseHP(3)
+            player.loseHP(game, 3)
             h.execute(player, game)
         }
     },
@@ -235,7 +240,7 @@ const ieClick = {
 
     },
     heal: (item, player, game) => {
-        if(!item.broken && player.lastDamageTaken){
+        if (!item.broken && player.lastDamageTaken) {
             player.gainHP(player.lastDamageTaken)
         }
         item.break();
@@ -350,9 +355,9 @@ const ieClick = {
 
     },
     eternity_leaf: (item, player, game) => {
-        if (!game.trap && !item.broken && player.hp > 1
+        if (!game.trap && !item.broken && player.hp > 1 && game.inFight() &&
             (h.currentCardHasType(game, "Demon") || h.currentCardHasType(game, "Dragon"))) {
-            player.loseHP(1)
+            player.loseHP(game, 1)
             h.execute(player, game)
         }
     },
@@ -373,15 +378,15 @@ const ieClick = {
     },
     golem_heart: (item, player, game) => {
         if (!item.broken && game.inFight()) {
-            const golemCount = player.monsterPile.filter(monster => monster.type === "Golem").length
+            const golemCount = player.defeatedMonstersPile.filter(monster => monster.types.includes("Golem")).length
             if (golemCount) h.reduceDamage(game, item, golemCount)
         }
     },
     dragon_blade: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() && h.currentCardHasType(game, "Dragon")) {
             h.execute(player, game)
-        } else if (!game.trap && !item.broken && game.inFight()) {
-            const dragonCount = player.monsterPile.filter(monster => monster.type === "Dragon").length
+        } else if (!item.broken && game.inFight()) {
+            const dragonCount = player.defeatedMonstersPile.filter(monster => monster.types.includes("Dragon")).length
             h.reduceDamage(game, item, dragonCount)
         }
     },

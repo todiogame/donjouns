@@ -132,7 +132,7 @@ export function create() {
             console.log("cardGame is not yet initialized");
             return;
         }  
-         
+          
         cardGame.phase = state.phase;
         cardGame.players = state.players.map(copyPlayerState);
         cardGame.itemDeck = state.itemDeck; // Direct assignment

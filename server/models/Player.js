@@ -13,7 +13,7 @@ class Player extends Schema {
         this.selectedItemCardIndex = -1;
         this.medals = 0;
         this.hp = 0;
-        this.baseHP = 0;
+        this.baseHP = 3;
         this.canPass = false;
         this.defeatedMonstersPile = new ArraySchema();
         this.score = 0;
@@ -55,11 +55,11 @@ class Player extends Schema {
         this.hp += item.hp;
     }
 
-    loseHP(damage){
+    loseHP(game, damage){
         this.hp -= damage
         if(this.hp <=0){
             this.hp = 0;
-            this.die()
+            this.die(game)
         }
     }
     gainHP(heal){
@@ -92,7 +92,7 @@ class Player extends Schema {
     die(game) {
         console.log(this.name + "died!")
         this.dead = true;
-        // game.passTurn()
+        game.passTurn()
     }
 
     calculateFinalScore(logDetails) {
