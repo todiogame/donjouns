@@ -55,6 +55,13 @@ function reduceDamage(game, item, value, minDamage = 0) {
     }
 }
 
+function scout(game, player, nbCards) {
+    const targetClient = game.room.clients.find(c => c.id === player.id);
+    if (targetClient) {
+        targetClient.send("scout", { cards: game.dungeon.slice(0, nbCards) });
+    }
+}
+
 
 
 
@@ -66,4 +73,5 @@ module.exports = {
     currentCardHasType,
     surviveWith,
     reduceDamage,
+    scout,
 };

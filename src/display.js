@@ -199,6 +199,8 @@ export class DisplayManager {
         this.backgroundContainer = null;
         this.zoomedItemCard = null; // To keep track of the zoomed-in itemCard
         this.blurryBackground = null; // To keep track of the blurry background
+        this.scoutPopup = null; // To keep track of the scout popup
+        this.numberInputPopup = null; // To keep track of the number input popup
     }
 
     displayTitle(message, duration, onComplete) {
@@ -241,7 +243,13 @@ export class DisplayManager {
     }
 
     clearPreviousDisplay() {
-        let childrenToRemove = this.scene.children.list.filter(child => child !== this.backgroundContainer && child !== this.zoomedItemCard && child !== this.blurryBackground);
+        let childrenToRemove = this.scene.children.list.filter(child => 
+            child !== this.backgroundContainer && 
+            child !== this.zoomedItemCard && 
+            child !== this.blurryBackground &&
+            child !== this.scoutPopup &&
+            child !== this.numberInputPopup
+        );
         while (childrenToRemove.length > 0) {
             const child = childrenToRemove.pop();
             if (child.input) {
@@ -847,7 +855,206 @@ export class DisplayManager {
         });
     }
     
-    updateEndUI(winner, finalPlayers) {
+
+    displayScoutInterface(cards) {
+        // Ensure any existing scout popup is removed
+        if (this.scoutPopup) {
+            this.scoutPopup.destroy();
+            this.scoutPopup = null;
+        }
+
+        // Create semi-transparent background
+        const bg = this.scene.add.graphics({ fillStyle: { color: 0x000000, alpha: 0.7 } });
+        bg.fillRect(0, 0, this.scene.sys.game.config.width, this.scene.sys.game.config.height);
+        bg.setDepth(10);
+
+        // Block interactions with elements behind the background
+        const interactionBlocker = this.scene.add.zone(0, 0, this.scene.sys.game.config.width, this.scene.sys.game.config.height);
+        interactionBlocker.setOrigin(0, 0);
+        interactionBlocker.setDepth(11);
+        interactionBlocker.setInteractive();
+
+        // Create a container for the popup
+        const container = this.scene.add.container(0, 0).setDepth(12);
+
+        // Calculate card positions
+        const cardWidth = 240;
+        const cardHeight = 336;
+        const spacing = 20;
+        const totalWidth = cards.length * (cardWidth + spacing) - spacing;
+        const startX = (this.scene.sys.game.config.width - totalWidth) / 2;
+        const startY = (this.scene.sys.game.config.height - cardHeight) / 2;
+
+        // Add cards to the container
+        cards.forEach((card, index) => {
+            const cardX = startX + index * (cardWidth + spacing);
+            const cardY = startY;
+            const cardImage = this.scene.add.image(cardX, cardY, card.texture)
+                .setOrigin(0, 0)
+                .setDisplaySize(cardWidth, cardHeight);
+            container.add(cardImage);
+        });
+
+        // Add close button
+        const buttonWidth = 200;
+        const buttonHeight = 50;
+        const buttonX = this.scene.sys.game.config.width / 2;
+        const buttonY = startY + cardHeight + 40;
+        const buttonRadius = 10;
+
+        const closeButtonBg = this.scene.add.graphics();
+        closeButtonBg.fillStyle(0xff0000, 1);
+        closeButtonBg.fillRoundedRect(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight, buttonRadius);
+        closeButtonBg.setDepth(13);
+        container.add(closeButtonBg);
+
+        const closeButtonText = this.scene.add.text(buttonX, buttonY, 'CLOSE', {
+            fontSize: '32px',
+            fill: '#fff'
+        }).setOrigin(0.5, 0.5)
+            .setInteractive({ useHandCursor: true })
+            .setDepth(14);
+
+        closeButtonText.on('pointerdown', () => {
+            this.scene.tweens.add({
+                targets: [container, bg, interactionBlocker],
+                alpha: { from: 1, to: 0 },
+                duration: 300,
+                onComplete: () => {
+                    container.destroy();
+                    bg.destroy();
+                    interactionBlocker.destroy();
+                    this.scoutPopup = null;
+                }
+            });
+        });
+
+        container.add(closeButtonText);
+
+        // Add tween animation for opening
+        this.scene.tweens.add({
+            targets: [container, bg, interactionBlocker],
+            alpha: { from: 0, to: 1 },
+            duration: 300
+        });
+
+        // Keep reference to the scout popup
+        this.scoutPopup = container;
+    }
+
+
+    displayNumberInputInterface(onNumberSelected) {
+        // Ensure any existing number input popup is removed
+        if (this.numberInputPopup) {
+            this.numberInputPopup.destroy();
+            this.numberInputPopup = null;
+        }
+
+        // Create semi-transparent background
+        const bg = this.scene.add.graphics({ fillStyle: { color: 0x000000, alpha: 0.7 } });
+        bg.fillRect(0, 0, this.scene.sys.game.config.width, this.scene.sys.game.config.height);
+        bg.setDepth(10);
+
+        // Block interactions with elements behind the background
+        const interactionBlocker = this.scene.add.zone(0, 0, this.scene.sys.game.config.width, this.scene.sys.game.config.height);
+        interactionBlocker.setOrigin(0, 0);
+        interactionBlocker.setDepth(11);
+        interactionBlocker.setInteractive();
+
+        // Create a container for the popup
+        const container = this.scene.add.container(0, 0).setDepth(12);
+
+        // Button dimensions
+        const buttonSize = 100;
+        const spacing = 20;
+
+        // Calculate positions
+        const startX = (this.scene.sys.game.config.width - 3 * (buttonSize + spacing) + spacing) / 2;
+        const startY = (this.scene.sys.game.config.height - 4 * (buttonSize + spacing) + spacing) / 2;
+
+        // Add number buttons to the container
+        for (let i = 0; i <= 10; i++) {
+            const row = Math.floor(i / 3);
+            const col = i % 3;
+            const buttonX = startX + col * (buttonSize + spacing) + buttonSize / 2;
+            const buttonY = startY + row * (buttonSize + spacing) + buttonSize / 2;
+
+            // Create a container for the button
+            const buttonContainer = this.scene.add.container(buttonX, buttonY);
+
+            const buttonBg = this.scene.add.graphics();
+            buttonBg.fillStyle(0xffa500, 1);
+            buttonBg.fillRoundedRect(-buttonSize / 2, -buttonSize / 2, buttonSize, buttonSize, 10);
+            buttonBg.setDepth(13);
+            buttonContainer.add(buttonBg);
+
+            const buttonText = this.scene.add.text(0, 0, i.toString(), {
+                fontSize: '32px',
+                fill: '#fff'
+            }).setOrigin(0.5, 0.5)
+                .setDepth(14);
+
+            buttonContainer.add(buttonText);
+
+            const buttonZone = this.scene.add.zone(0, 0, buttonSize, buttonSize)
+                .setOrigin(0.5, 0.5)
+                .setInteractive({ useHandCursor: true })
+                .setDepth(15);
+
+            buttonContainer.add(buttonZone);
+
+            buttonZone.on('pointerover', () => {
+                this.scene.tweens.add({
+                    targets: buttonContainer,
+                    scaleX: 1.1,
+                    scaleY: 1.1,
+                    duration: 50,
+                    ease: 'Sine.easeInOut'
+                });
+            });
+
+            buttonZone.on('pointerout', () => {
+                this.scene.tweens.add({
+                    targets: buttonContainer,
+                    scaleX: 1,
+                    scaleY: 1,
+                    duration: 50,
+                    ease: 'Sine.easeInOut'
+                });
+            });
+
+            buttonZone.on('pointerdown', () => {
+                this.scene.tweens.add({
+                    targets: [container, bg, interactionBlocker],
+                    alpha: { from: 1, to: 0 },
+                    duration: 300,
+                    onComplete: () => {
+                        container.destroy();
+                        bg.destroy();
+                        interactionBlocker.destroy();
+                        this.numberInputPopup = null;
+                        onNumberSelected(i);
+                    }
+                });
+            });
+
+            container.add(buttonContainer);
+        }
+
+        // Add tween animation for opening
+        this.scene.tweens.add({
+            targets: [container, bg, interactionBlocker],
+            alpha: { from: 0, to: 1 },
+            duration: 300
+        });
+
+        // Keep reference to the number input popup
+        this.numberInputPopup = container;
+    }
+
+
+
+    updateEndUI(winner, finalPlayers, localPlayerId ) {
         console.log("updateEndUI", winner, finalPlayers);
     
         // Clear previous display
@@ -870,6 +1077,7 @@ export class DisplayManager {
         // Create final players display with animation
         let yPos = 200;
         finalPlayers.forEach((player, index) => {
+            const isLocalPlayer = player.id === localPlayerId;
             const playerText = `#${index + 1} - ${player.name} : ${player.score} points, ${player.defeatedMonstersPile.length} monstres tués ${player.id === winner.id ? '🏅' : ''}`;
             const playerDisplay = this.scene.add.text(this.scene.cameras.main.centerX, yPos, playerText, {
                 fontSize: '32px',
@@ -883,7 +1091,6 @@ export class DisplayManager {
                 duration: 1000,
                 ease: 'Power2'
             });
-    
             yPos += 50;
         });
     

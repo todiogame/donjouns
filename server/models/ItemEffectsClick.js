@@ -159,9 +159,11 @@ const ieClick = {
         }
     },
     adam: (item, player, game) => {
-        player.gainHP(3)
-        // make scout interface
-        item.break();
+        if (!item.broken) {
+            player.gainHP(3)
+            h.scout(game, player, 3)
+            item.break();
+        }
     },
     pest: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() && (h.currentCardHasType(game, "Rat"))) {
@@ -267,7 +269,7 @@ const ieClick = {
 
     },
     ocean_ring: (item, player, game) => {
-        if (!game.trap && !item.broken && game.inFight() && h.power >= 8) {
+        if (!game.trap && !item.broken && game.inFight() && game.currentCard.power >= 8) {
             h.execute(player, game)
         }
     },
@@ -366,16 +368,19 @@ const ieClick = {
 
     },
     genius_glasses: (item, player, game) => {
-
+        if (!item.broken && player.lastDamageTaken && game.noCurrentCard())
+            h.scout(game, player, 1)
     },
     katana: (item, player, game) => {
-        if (!game.trap && !item.broken && game.currentCard.power >= 7) {
+        if (!game.trap && !item.broken && game.inFight() && game.currentCard.power >= 7) {
             h.executeAndDiscard(player, game)
         }
     },
     silence: (item, player, game) => {
-        player.gainHP(2)
-        //todo
+        if (!item.broken && game.inFight()) {
+            player.gainHP(2)
+            //todo
+        }
     },
     golem_heart: (item, player, game) => {
         if (!item.broken && game.inFight()) {

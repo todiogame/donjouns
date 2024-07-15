@@ -62,6 +62,12 @@ export function create() {
             displayManager.updateEndUI(winner, finalPlayers, localPlayerId);
         });
 
+        
+        room.onMessage("scout", (message) => {
+            console.log("Received scout cards:", message);
+            displayManager.displayScoutInterface(message.cards)
+    });
+
     }).catch(e => {
         console.error("join error", e);
     });
@@ -100,6 +106,7 @@ export function create() {
                 if (cardImage.getData("type") === "dungeon") {
                     console.log("pick donjon")
                     room.send("pick_dungeon");
+                    // displayManager.displayNumberInputInterface((number) => console.log(`Selected number: ${number}`))
                 } else if (cardImage.getData("type") === "take_damage") {
                     console.log(`Player takes ${cardGame.currentCard.damage} damage.`);
                     room.send("take_damage")

@@ -156,7 +156,7 @@ class GameState extends Schema {
         this.discardPile.push(card);
     }
     returnCardToDungeon() {
-        this.dungeon.push(this.currentCard);
+        this.dungeonLength = this.dungeon.unshift(this.currentCard);
         this.currentCard = null;
     }
 
@@ -164,7 +164,8 @@ class GameState extends Schema {
         // Logic to handle picking a dungeon card
         if (this.dungeon.length && this.noCurrentCard() && this.isMyTurn(playerId)) {
             this.canTryToEscape = false;
-            this.currentCard = this.dungeon.pop();
+            this.currentCard = this.dungeon.shift();
+            this.dungeonLength = this.dungeon.length;
             if (this.inFight())
                 this.currentCard.damage = this.currentCard.calculateDamage()
             console.log(`${playerId} picked dungeon card ${this.currentCard.title} :  ${this.currentCard.damage} damage!`);
@@ -247,6 +248,7 @@ class GameState extends Schema {
                 this.endGame();
         } else {
             console.log("escape roll failed")
+            this.canTryToEscape = false;
         }
     }
 
