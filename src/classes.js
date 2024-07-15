@@ -6,7 +6,8 @@ export class Game {
         this.currentPlayerIndex = 0;
         this.dungeon = [];
         this.dungeonLength = 0;
-        this.currentCard = null;
+        this.currentCard = null; 
+        this.canTryToEscape = true;
         this.discardPile = [];
         this.turnNumber = 0;
     }

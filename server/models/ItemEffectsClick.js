@@ -110,8 +110,9 @@ const ieClick = {
     pickaxe: (item, player, game) => {
         // Exécutez un monstre de puissance impaire, ne brise pas contre un Golem
         if (!item.broken && game.inFight() && game.currentCard.power % 2 === 1) {
+            const isGolem = h.currentCardHasType(game, "Golem")
             h.execute(player, game);
-            if (!h.currentCardHasType(game, "Golem")) {
+            if (!isGolem) {
                 item.break();
             }
         }
@@ -233,6 +234,7 @@ const ieClick = {
             game.returnCardToDungeon()
             game.shuffleDungeon()
             item.break()
+            game.canTryToEscape = true;
             player.canPass = true;
         }
     },
@@ -288,8 +290,7 @@ const ieClick = {
     },
     magic_ring: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() && (game.currentCard.power === 1 || game.currentCard.power === 2)) {
-            h.execute(player, game)
-            player.gainHP(game.currentCard.power)
+            h.executeAndLeech(player, game)
         }
     },
     wind_ring: (item, player, game) => {

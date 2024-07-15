@@ -13,6 +13,7 @@ export function create() {
     this.playcardSound = this.sound.add('playcard');
     this.drawSound = this.sound.add('draw');
     this.shuffleSound = this.sound.add('shuffle');
+    this.rollDieSound = this.sound.add('rolldie');
 
     this.shuffleSound.play();
 
@@ -26,7 +27,7 @@ export function create() {
         room.onStateChange((state) => {
             console.log("New state:", state);
             updateGameState(state);
-        });     
+        });
 
         room.onMessage("start_game", (state) => {
             console.log("Received start_game message:", state);
@@ -54,6 +55,13 @@ export function create() {
             }
             cardGame.isDiceRolling = false; // Re-enable interactions after dice roll completes
         });
+
+        room.onMessage("endScores", (message) => {
+            console.log("Received end scores data:", message);
+            const { winner, finalPlayers } = message;
+            displayManager.updateEndUI(winner, finalPlayers, localPlayerId);
+        });
+
     }).catch(e => {
         console.error("join error", e);
     });
@@ -68,7 +76,7 @@ export function create() {
         } else if (cardGame.isDiceRolling) {
             return; // Disable interactions during dice roll
         }
-        else if (gameObjects.length > 0) {  
+        else if (gameObjects.length > 0) {
             if (cardGame.phase === "DRAFT") {
                 const cardImage = gameObjects[0];
                 if (cardImage.isInStuff) {
@@ -104,8 +112,9 @@ export function create() {
                 } else if (cardImage.getData("type") === "escape_roll") {
                     cardGame.isDiceRolling = true; // Set flag to disable interactions during dice roll
                     displayManager.updateGameUI(cardGame, localPlayerId);
+                    this.rollDieSound.play();
                     displayManager.displayDice()
-                    room.send("escape_roll")  
+                    room.send("escape_roll")
                 }
             }
         }
@@ -131,8 +140,8 @@ export function create() {
         if (!cardGame) {
             console.log("cardGame is not yet initialized");
             return;
-        }  
-          
+        }
+
         cardGame.phase = state.phase;
         cardGame.players = state.players.map(copyPlayerState);
         cardGame.itemDeck = state.itemDeck; // Direct assignment
@@ -140,6 +149,7 @@ export function create() {
         cardGame.dungeon = state.dungeon; // Direct assignment
         cardGame.dungeonLength = state.dungeonLength;
         cardGame.currentCard = state.currentCard;
+        cardGame.canTryToEscape = state.canTryToEscape;
         cardGame.discardPile = state.discardPile; // Direct assignment
         cardGame.turnNumber = state.turnNumber;
 
@@ -148,5 +158,8 @@ export function create() {
         } else if (cardGame.phase.includes("GAME")) {
             displayManager.updateGameUI(cardGame, localPlayerId);
         }
+        //  else if (cardGame.phase === "END") {
+        //     displayManager.updateEndUI(null, [], localPlayerId);
+        // }
     }
 }

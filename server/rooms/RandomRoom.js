@@ -22,7 +22,7 @@ class RandomRoom extends colyseus.Room {
     onCreate(options) {
         console.log("Room created!");
         this.maxClients = nb_players;
-        this.setState(new GameState());
+        this.setState(new GameState(this));
 
         // Initialize room-specific data
         this.allDungeonCards = options.dungeon || [];
@@ -52,12 +52,14 @@ class RandomRoom extends colyseus.Room {
         this.onMessage("escape_roll", (client, message) => {
             console.log(`Received escape_roll message from ${client.sessionId}:`, message);
             // Simulate a delay before broadcasting the result
-            setTimeout(() => {
-                const escapeRoll = this.state.wantToEscape(client.sessionId);
-                console.log(`broadcast escape_roll result for ${client.sessionId}:`, escapeRoll);
-                this.broadcast('escapeRollResult', { result: escapeRoll });
-                this.state.tryToEscape(client.sessionId, escapeRoll);
-            }, 1000); // 1000 milliseconds delay
+            const escapeRoll = this.state.wantToEscape(client.sessionId);
+            if (escapeRoll > -1) { // if allowed to escape roll
+                setTimeout(() => {
+                    console.log(`broadcast escape_roll result for ${client.sessionId}:`, escapeRoll);
+                    this.broadcast('escapeRollResult', { result: escapeRoll });
+                    this.state.tryToEscape(client.sessionId, escapeRoll);
+                }, 1000); // 1000 milliseconds delay
+            }
         })
     }
 

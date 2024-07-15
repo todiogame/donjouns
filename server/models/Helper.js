@@ -4,6 +4,7 @@ function execute(player, game) {
         player.addToPile(game.currentCard)
         game.currentCard = null;
         player.canPass = true;
+        game.canTryToEscape = true;
     }
 }
 
@@ -12,6 +13,7 @@ function executeAndDiscard(player, game) {
         game.discard(game.currentCard)
         game.currentCard = null;
         player.canPass = true;
+        game.canTryToEscape = true;
     }
 }
 
@@ -21,6 +23,7 @@ function executeAndLeech(player, game) {
         player.addToPile(game.currentCard)
         game.currentCard = null;
         player.canPass = true;
+        game.canTryToEscape = true;
     }
 }
 
@@ -30,6 +33,7 @@ function surviveWith(player, game, hp) {
         player.addToPile(game.currentCard)
         game.currentCard = null;
         player.canPass = true;
+        game.canTryToEscape = true;
     }
 }
 

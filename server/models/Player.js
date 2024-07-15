@@ -1,7 +1,8 @@
 const schema = require("@colyseus/schema");
 const { Schema, type, ArraySchema } = schema;
-const {ItemCard} = require('./ItemCard');
-const {DungeonCard} = require('./DungeonCard');
+const { ItemCard } = require('./ItemCard');
+const { DungeonCard } = require('./DungeonCard');
+const ieScore = require('./ItemEffectsScore');
 
 class Player extends Schema {
     constructor(id, name) {
@@ -17,6 +18,7 @@ class Player extends Schema {
         this.canPass = false;
         this.defeatedMonstersPile = new ArraySchema();
         this.score = 0;
+        this.always_count = false;
         this.dead = false;
         this.fled = false;
         this.monstersAddedThisTurn = 0;
@@ -45,32 +47,32 @@ class Player extends Schema {
     }
 
     // DUNGEON PHASE
-    inDungeon(){
+    inDungeon() {
         return !this.dead && !this.fled;
     }
 
-    
+
     addItem(item) {
         this.stuff.push(item);
         this.hp += item.hp;
     }
 
-    loseHP(game, damage){
+    loseHP(game, damage) {
         this.hp -= damage
-        if(this.hp <=0){
+        if (this.hp <= 0) {
             this.hp = 0;
             this.die(game)
         }
     }
-    gainHP(heal){
+    gainHP(heal) {
         this.hp += heal
     }
 
-    setHP(value){
+    setHP(value) {
         this.hp = value
     }
 
-    addToPile(monsterCard){
+    addToPile(monsterCard) {
         this.defeatedMonstersPile.push(monsterCard)
     }
 
@@ -78,7 +80,7 @@ class Player extends Schema {
         this.addItem(game.itemDeck.pop());
     }
 
-    rollToEscape(){
+    rollToEscape() {
         const diceRoll = Math.floor(Math.random() * 6) + 1;
         return diceRoll;
     }
@@ -95,15 +97,36 @@ class Player extends Schema {
         game.passTurn()
     }
 
-    calculateFinalScore(logDetails) {
-        // logDetails.push(`Calculating score for ${this.name}: ${this.defeatedMonstersPile.length} defeated monsters.`);
+    scoreBonus(value) {
+        if (!this.score_blocked)
+            this.score = this.score + value
+    }
+
+    calculateScore(game) {
+        //calculate score - non final
         this.score = this.defeatedMonstersPile.length;
         if (this.defeatedMonstersPile.some(monster => monster.effect && monster.effect.includes("GOLD"))) {
-            // logDetails.push("+1 for the Golden Golem");
+            // console.log("+1 pour le Golem d'or");
             this.score += 1;
         }
-        this.stuff.forEach(item => item.onScore(this, logDetails));
+        this.stuff.forEach(item => {
+            ieScore[item.key]?.(item, player, game, false);
+        });
     }
+    calculateFinalScore(game) {
+        //calculate score - final
+        console.log(`Calcul du score de ${this.name} : ${this.defeatedMonstersPile.length} monstres vaincus.`);
+        this.score = this.defeatedMonstersPile.length;
+        if (this.defeatedMonstersPile.some(monster => monster.effect && monster.effect.includes("GOLD"))) {
+            console.log("+1 pour le Golem d'or");
+            this.score += 1;
+        }
+        this.stuff.forEach(item => {
+            ieScore[item.key]?.(item, this, game, true);
+        });
+    }
+
+
 
 
     rollDice(game, logDetails, desiredRoll = 4, reversed = false, rerolled = false) {
@@ -143,7 +166,7 @@ schema.defineTypes(Player, {
     score: "number",
     dead: "boolean",
     fled: "boolean",
-    monstersAddedThisTurn : "number"
+    monstersAddedThisTurn: "number"
 });
 
 module.exports = { Player };

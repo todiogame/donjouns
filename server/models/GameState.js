@@ -13,8 +13,9 @@ const { nb_items_deck, nb_items_draft, nb_items_starting } = config;
 const ieStartGame = require('./ItemEffectsStartGame');
 
 class GameState extends Schema {
-    constructor() {
+    constructor(room) {
         super();
+        this.room = room;
         this.phase = "WAITING";
         this.players = new ArraySchema();
         this.itemDeck = new ArraySchema();
@@ -22,6 +23,7 @@ class GameState extends Schema {
         this.dungeon = new ArraySchema();
         this.dungeonLength = 0;
         this.currentCard = null;
+        this.canTryToEscape = true;
         this.discardPile = new ArraySchema();
         this.turnNumber = 0;
     }
@@ -161,6 +163,7 @@ class GameState extends Schema {
     pickDungeonCard(playerId) {
         // Logic to handle picking a dungeon card
         if (this.dungeon.length && this.noCurrentCard() && this.isMyTurn(playerId)) {
+            this.canTryToEscape = false;
             this.currentCard = this.dungeon.pop();
             if (this.inFight())
                 this.currentCard.damage = this.currentCard.calculateDamage()
@@ -171,11 +174,11 @@ class GameState extends Schema {
     faceMonster(playerId) {
         if (this.inFight() && this.isMyTurn(playerId)) {
             let player = this.findPlayerById(playerId)
-            if (this.currentCard.damage > 0) {
-                console.log(`${playerId} takes ${this.currentCard.damage} damage!`);
-                player.loseHP(this, this.currentCard.damage)
-            }
-            player.lastDamageTaken = this.currentCard.damage;
+            this.canTryToEscape = true; //either if player dies or if monster dies, we can try to escape
+
+            console.log(`${playerId} takes ${this.currentCard.damage} damage!`);
+            player.loseHP(this, this.currentCard.damage)
+            if (this.currentCard.damage > 0) player.lastDamageTaken = this.currentCard.damage;
             if (player.inDungeon()) {
                 player.addToPile(this.currentCard)
                 this.currentCard = null;
@@ -211,29 +214,39 @@ class GameState extends Schema {
             }
         }
 
-        if (!foundPlayerInDungeon) {
-            this.endGame();
-        } else {
+        if (foundPlayerInDungeon) {
             newPlayer.canPass = false;
-        }
+            this.canTryToEscape = true;
 
-        //if there is an active card, reset its stats
-        if (this.inFight()) {
-            this.currentCard.power = this.currentCard.originalPower;
-            this.currentCard.damage = this.currentCard.calculateDamage();
+            //if there is an active card, reset its stats
+            if (this.inFight()) {
+                this.currentCard.power = this.currentCard.originalPower;
+                this.currentCard.damage = this.currentCard.calculateDamage();
+                this.currentCard.affectedBy = [];
+            }
+
+        } else {
+            this.endGame();
         }
     }
 
     wantToEscape(playerId) {
-        let player = this.findPlayerById(playerId)
-        return player.rollToEscape();
+        if (this.canTryToEscape) {
+            let player = this.findPlayerById(playerId)
+            return player.rollToEscape();
+        } else return -1
     }
 
     tryToEscape(playerId, escapeRoll) {
         let player = this.findPlayerById(playerId)
-        this.pickDungeonCard(playerId)
+        if (!this.inFight()) this.pickDungeonCard(playerId)
         if (this.inFight() && this.currentCard.power <= escapeRoll) {
+            console.log("player escaped")
             player.flee(this)
+            if (this.players.every(p => !p.inDungeon()))
+                this.endGame();
+        } else {
+            console.log("escape roll failed")
         }
     }
 
@@ -368,7 +381,83 @@ class GameState extends Schema {
     // log(info) {
     //     console.log(info);
     // }
+
+
+    endGame() {
+        this.phase = "END"
+        console.log("\nFIN DE LA PARTIE !\nCalcul des scores:");
+
+        this.players.forEach(player => {
+            player.calculateFinalScore(this);
+            console.log(`Score final: ${player.name} : ${player.score}, ${!player.dead ? 'vivant' : player.fled ? 'fui' : 'mort'}.`);
+        });
+
+        const playersInDungeon = this.players.filter(player => player.inDungeon());
+        let finalPlayers;
+
+        if (playersInDungeon.length > 0) {
+            console.log("Les joueurs suivants ont poncé le donjon :");
+            playersInDungeon.forEach(player => {
+                console.log(`- ${player.name}`);
+            });
+            finalPlayers = playersInDungeon;
+            console.log("Des joueurs sont arrivés vivants au bout du donjon, les fuyards sont exclus.");
+        } else {
+            finalPlayers = this.players.filter(player => !player.dead);
+            console.log("Aucun joueur n'a poncé le donjon, tous les joueurs vivants comptent.");
+        }
+        // Include players with always_count attribute
+        const alwaysCountPlayers = this.players.filter(player => player.always_count);
+        alwaysCountPlayers.forEach(player => {
+            if (!finalPlayers.includes(player)) {
+                finalPlayers.push(player);
+            }
+        });
+        this.players.forEach(player => {
+            if (finalPlayers.includes(player)) {
+                console.log(`${player.name} est inclus dans le décompte final.`);
+            } else {
+                if (player.dead) {
+                    console.log(`${player.name} est exclu du décompte final car il est mort.`);
+                } else if (player.fled) {
+                    console.log(`${player.name} est exclu du décompte final car il a fui le donjon.`);
+                } else {
+                    console.log(`${player.name} A BUG ?? ${player.alive} ${player.fled} ${player.inDungeon}`);
+                }
+            }
+        });
+
+        finalPlayers.sort((a, b) => b.score - a.score);
+        const topScore = finalPlayers[0].score;
+        const tiedPlayers = finalPlayers.filter(player => player.score === topScore);
+
+        let winner;
+        if (tiedPlayers.length > 1) {
+            const playersWithTiebreaker = this.players.filter(player => player.tiebreaker && player.alive);
+            if (playersWithTiebreaker.length > 0) {
+                winner = playersWithTiebreaker[0];
+                console.log(`${winner.name} remporte la manche grâce à son avantage en cas d'égalité.`);
+            } else {
+                winner = tiedPlayers[Math.floor(Math.random() * tiedPlayers.length)];
+                console.log(`${winner.name} remporte la manche suite à un tirage au sort parmi les joueurs avec le même score.`);
+            }
+        } else {
+            winner = tiedPlayers[0];
+        }
+
+
+        finalPlayers.forEach((player, index) => {
+            const medal = player === winner ? "MEDAILLE" : "";
+            console.log(`${player.name} : ${player.score} points, PV restant ${player.hp}. ${medal}`);
+        });
+
+        console.log("\n");
+
+        this.room.broadcast("endScores", {"winner":winner, "finalPlayers":finalPlayers})
+    }
+
 }
+
 
 schema.defineTypes(GameState, {
     phase: "string",
@@ -378,6 +467,7 @@ schema.defineTypes(GameState, {
     dungeon: [DungeonCard],
     dungeonLength: "number",
     currentCard: DungeonCard,
+    canTryToEscape: "boolean",
     discardPile: [DungeonCard],
     turnNumber: "number",
 });

@@ -406,11 +406,11 @@ export class DisplayManager {
         if (game.isMyTurn(localPlayerId) && !game.isDiceRolling) {
             if (game.currentCard?.dungeonCardType === "monster")
                 this.addDamageButton(game);
-            if (game.noCurrentCard() && game.dungeon.length) {
+            if (game.canTryToEscape && game.dungeon.length) {
                 this.addEscapeButton(game)
-                if (game.getCurrentPlayer().canPass)
-                    this.addPassTurnButton(game)
             }
+            if (game.noCurrentCard() && game.dungeon.length && game.getCurrentPlayer().canPass)
+                this.addPassTurnButton(game)
         }
     }
 
@@ -512,7 +512,7 @@ export class DisplayManager {
         this.scene.add.rectangle(800, 100, desiredWidth, desiredHeight, 0x808080, 0.5) // moved to top
             .setOrigin(0.5, 0.5);
         this.scene.add.text(800, 100, 'DISCARD', { fontSize: '16px', color: '#FFFFFF' })
-            .setOrigin(0.5, 0.5); 
+            .setOrigin(0.5, 0.5);
 
 
         cardSprite?.setInteractive({ useHandCursor: true, pixelPerfect: true, alphaTolerance: 1 });
@@ -673,7 +673,7 @@ export class DisplayManager {
         const buttonWidth = 200;
         const buttonHeight = 50;
         const buttonX = this.scene.sys.game.config.width / 2;
-        const buttonY = this.scene.sys.game.config.height - 320;
+        const buttonY = this.scene.sys.game.config.height - 375;
         // const buttonY = this.scene.sys.game.config.height / 2 - 50;
         const buttonRadius = 10; // For rounded corners
 
@@ -846,7 +846,99 @@ export class DisplayManager {
             duration: 500
         });
     }
-
+    
+    updateEndUI(winner, finalPlayers) {
+        console.log("updateEndUI", winner, finalPlayers);
+    
+        // Clear previous display
+        this.clearPreviousDisplay();
+    
+        // Create a title with animation
+        const title = this.scene.add.text(this.scene.cameras.main.centerX, 100, 'FIN DE LA PARTIE', {
+            fontSize: '48px',
+            fill: '#ffffff',
+            fontStyle: 'bold'
+        }).setOrigin(0.5).setAlpha(0);
+    
+        this.scene.tweens.add({
+            targets: title,
+            alpha: 1,
+            duration: 1000,
+            ease: 'Power2'
+        });
+    
+        // Create final players display with animation
+        let yPos = 200;
+        finalPlayers.forEach((player, index) => {
+            const playerText = `#${index + 1} - ${player.name} : ${player.score} points, ${player.defeatedMonstersPile.length} monstres tués ${player.id === winner.id ? '🏅' : ''}`;
+            const playerDisplay = this.scene.add.text(this.scene.cameras.main.centerX, yPos, playerText, {
+                fontSize: '32px',
+                fill: isLocalPlayer ? '#00ff00' : '#ffffff', // Highlight local player in green
+                fontStyle: isLocalPlayer ? 'bold' : 'normal'
+            }).setOrigin(0.5).setAlpha(0);
+    
+            this.scene.tweens.add({
+                targets: playerDisplay,
+                alpha: 1,
+                duration: 1000,
+                ease: 'Power2'
+            });
+    
+            yPos += 50;
+        });
+    
+        // Display winner with animation
+        if (winner) {
+            const winnerText = `${winner.name} remporte la partie !`;
+            const winnerDisplay = this.scene.add.text(this.scene.cameras.main.centerX, yPos + 50, winnerText, {
+                fontSize: '36px',
+                fill: '#ffdd00',
+                fontStyle: 'bold'
+            }).setOrigin(0.5).setAlpha(0);
+    
+            this.scene.tweens.add({
+                targets: winnerDisplay,
+                alpha: 1,
+                duration: 1000,
+                ease: 'Power2'
+            });
+        }
+    
+        // Add Replay and Exit buttons with animation
+        const replayButton = this.scene.add.text(this.scene.cameras.main.centerX - 100, yPos + 100, 'Replay', {
+            fontSize: '32px',
+            fill: '#00ff00',
+            fontStyle: 'bold'
+        }).setOrigin(0.5).setInteractive().setAlpha(0);
+    
+        replayButton.on('pointerdown', () => {
+            this.scene.scene.restart();
+        });
+    
+        this.scene.tweens.add({
+            targets: replayButton,
+            alpha: 1,
+            duration: 1000,
+            ease: 'Power2'
+        });
+    
+        const exitButton = this.scene.add.text(this.scene.cameras.main.centerX + 100, yPos + 100, 'Exit', {
+            fontSize: '32px',
+            fill: '#ff0000',
+            fontStyle: 'bold'
+        }).setOrigin(0.5).setInteractive().setAlpha(0);
+    
+        exitButton.on('pointerdown', () => {
+            this.scene.scene.start('MainMenu');
+        });
+    
+        this.scene.tweens.add({
+            targets: exitButton,
+            alpha: 1,
+            duration: 1000,
+            ease: 'Power2'
+        });
+    }
 
 
 }
