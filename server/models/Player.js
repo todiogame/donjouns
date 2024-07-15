@@ -84,6 +84,11 @@ class Player extends Schema {
         const diceRoll = Math.floor(Math.random() * 6) + 1;
         return diceRoll;
     }
+    
+    rollDice() {
+        const diceRoll = Math.floor(Math.random() * 6) + 1;
+        return diceRoll;
+    }
 
     flee(game) {
         console.log(this.name + "flee!")

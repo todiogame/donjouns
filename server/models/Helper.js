@@ -62,6 +62,15 @@ function scout(game, player, nbCards, position = 0) {
     }
 }
 
+function playerRollDice(game, player){
+    const targetClient = game.room.clients.find(c => c.id === player.id);
+    game.room.broadcast("animate_roll", {player: player});
+    let diceRoll = player.rollDice()
+    setTimeout(() => {
+        console.log(`broadcast dice_roll result for ${client.sessionId}:`, diceRoll);
+        game.room.broadcast('diceRollResult', { result: diceRoll });
+    }, 1000); // 1000 milliseconds delay
+}
 
 
 

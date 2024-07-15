@@ -74,15 +74,25 @@ export class DiceScene extends Phaser.Scene {
         dice.modelRotation.x = Phaser.Math.DegToRad(0);
         dice.modelRotation.y = Phaser.Math.DegToRad(-90);
 
-        const startDiceAnimation = () => {
+        const startDiceAnimation = (position) => {
             if (!diceIsRolling) {
                 diceIsRolling = true;
                 dice.setVisible(true);
-                dice.setPosition(this.scale.width / 2, this.scale.height + dice.height);
+                let xPosition = this.scale.width / 2
+                let yPosition = this.scale.height + dice.height
+                if (position === "top-left") {
+                    xPosition = 0
+                    yPosition = 0
+                } else if (position === "top-right") {
+                    xPosition = this.scale.width 
+                    yPosition = 0
+                }
+                dice.setPosition(xPosition, yPosition);
 
                 // Move dice to the center of the screen
                 this.add.tween({
                     targets: dice,
+                    x: this.scale.width / 2,
                     y: this.scale.height / 2,
                     duration: 500,
                     ease: "Sine.easeInOut",
@@ -207,10 +217,10 @@ export class DisplayManager {
         const titleScene = this.scene.scene.get('TitleScene');
         titleScene.displayTitle(message, duration, onComplete);
     }
-    displayDice() {
+    displayDice(position) {
         const diceScene = this.scene.scene.get('DiceScene');
         if (diceScene) {
-            diceScene.startDiceAnimation();
+            diceScene.startDiceAnimation(position);
         }
     }
     initializeBackground() {
@@ -891,18 +901,18 @@ export class DisplayManager {
             this.scoutPopup.destroy();
             this.scoutPopup = null;
         }
-    
+
         const bg = this.scene.add.graphics({ fillStyle: { color: 0x000000, alpha: 0.7 } });
         bg.fillRect(0, 0, this.scene.sys.game.config.width, this.scene.sys.game.config.height);
         bg.setDepth(10);
-    
+
         const interactionBlocker = this.scene.add.zone(0, 0, this.scene.sys.game.config.width, this.scene.sys.game.config.height);
         interactionBlocker.setOrigin(0, 0);
         interactionBlocker.setDepth(11);
         interactionBlocker.setInteractive();
-    
+
         const container = this.scene.add.container(0, 0).setDepth(12);
-    
+
         let cardWidth = 240;
         let cardHeight = 336;
         const maxCardWidth = 240;
@@ -913,29 +923,29 @@ export class DisplayManager {
         const maxColumns = 10;
         let columns = Math.min(cards.length, maxColumns);
         let rows = Math.ceil(cards.length / columns);
-    
+
         if (cards.length > 4) {
             cardWidth = Math.max(minCardWidth, maxCardWidth - ((cards.length - 4) * 10));
             cardHeight = Math.max(minCardHeight, maxCardHeight - ((cards.length - 4) * 14));
         }
-    
+
         const scaleX = cardWidth / 750;
         const scaleY = cardHeight / 1050;
-    
+
         const startX = (this.scene.sys.game.config.width - (columns * (cardWidth + spacing))) / 2;
         const startY = (this.scene.sys.game.config.height - (rows * (cardHeight + spacing))) / 2;
-    
+
         cards.forEach((card, index) => {
             const colIndex = index % columns;
             const rowIndex = Math.floor(index / columns);
             const cardX = startX + colIndex * (cardWidth + spacing);
             const cardY = startY + rowIndex * (cardHeight + spacing);
-    
+
             const cardImage = this.scene.add.image(cardX, cardY, card.texture)
                 .setOrigin(0, 0)
                 .setDisplaySize(cardWidth, cardHeight)
                 .setInteractive({ useHandCursor: true, pixelPerfect: true, alphaTolerance: 1 });
-    
+
             cardImage.on('pointerover', () => {
                 cardImage.setDepth(15);
                 this.scene.tweens.add({
@@ -946,7 +956,7 @@ export class DisplayManager {
                     ease: 'Sine.easeInOut'
                 });
             });
-    
+
             cardImage.on('pointerout', () => {
                 cardImage.setDepth(12);
                 this.scene.tweens.add({
@@ -957,29 +967,29 @@ export class DisplayManager {
                     ease: 'Sine.easeInOut',
                 });
             });
-    
+
             container.add(cardImage);
         });
-    
+
         const buttonWidth = 200;
         const buttonHeight = 50;
         const buttonX = this.scene.sys.game.config.width / 2;
         const buttonY = startY + rows * (cardHeight + spacing) + 40;
         const buttonRadius = 10;
-    
+
         const closeButtonBg = this.scene.add.graphics();
         closeButtonBg.fillStyle(0xff0000, 1);
         closeButtonBg.fillRoundedRect(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight, buttonRadius);
         closeButtonBg.setDepth(13);
         closeButtonBg.setInteractive(new Phaser.Geom.Rectangle(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight), Phaser.Geom.Rectangle.Contains);
-    
+
         const closeButtonText = this.scene.add.text(buttonX, buttonY, 'CLOSE', {
             fontSize: '32px',
             fill: '#fff'
         }).setOrigin(0.5, 0.5)
             .setInteractive({ useHandCursor: true })
             .setDepth(14);
-    
+
         closeButtonBg.on('pointerdown', () => {
             this.scene.tweens.add({
                 targets: [container, bg, interactionBlocker],
@@ -993,7 +1003,7 @@ export class DisplayManager {
                 }
             });
         });
-    
+
         closeButtonText.on('pointerdown', () => {
             this.scene.tweens.add({
                 targets: [container, bg, interactionBlocker],
@@ -1007,21 +1017,21 @@ export class DisplayManager {
                 }
             });
         });
-    
+
         container.add(closeButtonBg);
         container.add(closeButtonText);
-    
+
         this.scene.tweens.add({
             targets: [container, bg, interactionBlocker],
             alpha: { from: 0, to: 1 },
             duration: 300
         });
-    
+
         interactionBlocker.setInteractive();
         interactionBlocker.on('pointerdown', () => {
             // Do nothing to block interactions
         });
-    
+
         this.scoutPopup = container;
     }
 
@@ -1223,7 +1233,7 @@ export class DisplayManager {
         });
     }
 
- 
+
 
 
     updateEndUI(winner, finalPlayers, localPlayerId) {

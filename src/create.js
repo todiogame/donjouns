@@ -47,6 +47,16 @@ export function create() {
         room.onMessage("end_draft", (state) => {
             displayManager.displayTitle("Fin du Draft !")
         });
+
+        room.onMessage("animate_roll", (message) => {
+            cardGame.isDiceRolling = true; // Set flag to disable interactions during dice roll
+            displayManager.updateGameUI(cardGame, localPlayerId);
+            this.rollDieSound.play();
+            const playerId = message.playerId
+            displayManager.displayDice(playerId === localPlayerId ? "bottom" :
+                displayManager.getOpponentPosition(playerId, localPlayerId, cardGame.players))
+        });
+
         // Handle dice roll results from the server
         room.onMessage('escapeRollResult', (message) => {
             const diceScene = this.game.scene.getScene('DiceScene');
@@ -62,11 +72,11 @@ export function create() {
             displayManager.updateEndUI(winner, finalPlayers, localPlayerId);
         });
 
-        
+
         room.onMessage("scout", (message) => {
             console.log("Received scout cards:", message);
             displayManager.displayScoutInterface(message.cards)
-    });
+        });
 
     }).catch(e => {
         console.error("join error", e);
@@ -118,10 +128,6 @@ export function create() {
                 } else if (cardImage.getData("type") === "my_item") {
                     room.send("use_item", { item_id: cardImage.getData("item_id") })
                 } else if (cardImage.getData("type") === "escape_roll") {
-                    cardGame.isDiceRolling = true; // Set flag to disable interactions during dice roll
-                    displayManager.updateGameUI(cardGame, localPlayerId);
-                    this.rollDieSound.play();
-                    displayManager.displayDice()
                     room.send("escape_roll")
                 }
             }

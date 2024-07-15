@@ -33,7 +33,9 @@ const ieClick = {
         }
     },
     box: (item, player, game) => {
-
+        if (!game.trap && !item.broken && game.inFight() && game.currentCard.power <= 6){
+            h.playerRollDice(player)
+        }
     },
     lich_bane: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() && h.currentCardHasType(game, "Lich")) {
