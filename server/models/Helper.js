@@ -55,10 +55,10 @@ function reduceDamage(game, item, value, minDamage = 0) {
     }
 }
 
-function scout(game, player, nbCards) {
+function scout(game, player, nbCards, position = 0) {
     const targetClient = game.room.clients.find(c => c.id === player.id);
     if (targetClient) {
-        targetClient.send("scout", { cards: game.dungeon.slice(0, nbCards) });
+        targetClient.send("scout", { cards: game.dungeon.slice(position, position + nbCards) });
     }
 }
 

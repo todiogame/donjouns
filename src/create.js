@@ -106,6 +106,7 @@ export function create() {
                 if (cardImage.getData("type") === "dungeon") {
                     console.log("pick donjon")
                     room.send("pick_dungeon");
+                    // displayManager.displayScoutInterface(cardGame.dungeon.slice(0,Math.floor(Math.random() * 55)))
                     // displayManager.displayNumberInputInterface((number) => console.log(`Selected number: ${number}`))
                 } else if (cardImage.getData("type") === "take_damage") {
                     console.log(`Player takes ${cardGame.currentCard.damage} damage.`);

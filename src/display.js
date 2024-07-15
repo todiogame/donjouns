@@ -243,9 +243,9 @@ export class DisplayManager {
     }
 
     clearPreviousDisplay() {
-        let childrenToRemove = this.scene.children.list.filter(child => 
-            child !== this.backgroundContainer && 
-            child !== this.zoomedItemCard && 
+        let childrenToRemove = this.scene.children.list.filter(child =>
+            child !== this.backgroundContainer &&
+            child !== this.zoomedItemCard &&
             child !== this.blurryBackground &&
             child !== this.scoutPopup &&
             child !== this.numberInputPopup
@@ -402,10 +402,12 @@ export class DisplayManager {
             if (player.id === localPlayerId) {
                 this.displayStuff(player.stuff, true, 'bottom', player, game);
                 this.displayHP(player, true, 'bottom');
+                this.displayMonstersPiles(player, true, 'bottom');
             } else {
                 const position = this.getOpponentPosition(player.id, localPlayerId, players);
                 this.displayStuff(player.stuff, false, position, player, game);
                 this.displayHP(player, false, position);
+                this.displayMonstersPiles(player, false, position);
             }
         });
         this.displayCurrentCard(game, localPlayerId);
@@ -655,13 +657,13 @@ export class DisplayManager {
 
         if (position === 'bottom') {
             xPosition = this.scene.sys.game.config.width / 2 - 200;
-            yPosition = this.scene.sys.game.config.height - 320;
+            yPosition = this.scene.sys.game.config.height - 330;
         } else if (position === 'top-left') {
             xPosition = this.scene.sys.game.config.width / 2 - 300
-            yPosition = 100; // Moved closer to the middle
+            yPosition = 50; // Moved closer to the middle
         } else if (position === 'top-right') {
             xPosition = this.scene.sys.game.config.width / 2 + 300; // Moved closer to the middle
-            yPosition = 100; // Moved closer to the middle
+            yPosition = 50; // Moved closer to the middle
         }
 
         const heartImage = this.scene.add.image(xPosition, yPosition, 'heart')
@@ -675,6 +677,35 @@ export class DisplayManager {
         }).setOrigin(0.5, 0.5);
     }
 
+    displayMonstersPiles(player, isPlayer, position) {
+        const pileLength = player.defeatedMonstersPile.length;
+        const desiredWidth = 60;
+        const desiredHeight = 84;
+        const scaleX = desiredWidth / 750;
+        const scaleY = desiredHeight / 1050;
+        let xPosition, yPosition;
+
+        if (position === 'bottom') {
+            xPosition = this.scene.sys.game.config.width / 2 - 300;
+            yPosition = this.scene.sys.game.config.height - 330;
+        } else if (position === 'top-left') {
+            xPosition = this.scene.sys.game.config.width / 2 - 300
+            yPosition = 130; // Moved closer to the middle
+        } else if (position === 'top-right') {
+            xPosition = this.scene.sys.game.config.width / 2 + 300; // Moved closer to the middle
+            yPosition = 130; // Moved closer to the middle
+        }
+
+        const monsterPileImage = this.scene.add.image(xPosition, yPosition, 'back_dungeon')
+            .setOrigin(0.5, 0.5)
+            .setScale(scaleX, scaleY);
+
+        this.scene.add.text(xPosition, yPosition, pileLength, {
+            fontSize: '40px',
+            fill: '#fff',
+            fontStyle: 'bold'
+        }).setOrigin(0.5, 0.5);
+    }
 
     addDamageButton(game) {
         const buttonText = `Take ${game.currentCard.damage} Damage`;
@@ -854,67 +885,115 @@ export class DisplayManager {
             duration: 500
         });
     }
-    
 
     displayScoutInterface(cards) {
-        // Ensure any existing scout popup is removed
         if (this.scoutPopup) {
             this.scoutPopup.destroy();
             this.scoutPopup = null;
         }
-
-        // Create semi-transparent background
+    
         const bg = this.scene.add.graphics({ fillStyle: { color: 0x000000, alpha: 0.7 } });
         bg.fillRect(0, 0, this.scene.sys.game.config.width, this.scene.sys.game.config.height);
         bg.setDepth(10);
-
-        // Block interactions with elements behind the background
+    
         const interactionBlocker = this.scene.add.zone(0, 0, this.scene.sys.game.config.width, this.scene.sys.game.config.height);
         interactionBlocker.setOrigin(0, 0);
         interactionBlocker.setDepth(11);
         interactionBlocker.setInteractive();
-
-        // Create a container for the popup
+    
         const container = this.scene.add.container(0, 0).setDepth(12);
-
-        // Calculate card positions
-        const cardWidth = 240;
-        const cardHeight = 336;
-        const spacing = 20;
-        const totalWidth = cards.length * (cardWidth + spacing) - spacing;
-        const startX = (this.scene.sys.game.config.width - totalWidth) / 2;
-        const startY = (this.scene.sys.game.config.height - cardHeight) / 2;
-
-        // Add cards to the container
+    
+        let cardWidth = 240;
+        let cardHeight = 336;
+        const maxCardWidth = 240;
+        const maxCardHeight = 336;
+        const minCardWidth = 100;
+        const minCardHeight = 140;
+        const spacing = 10;
+        const maxColumns = 10;
+        let columns = Math.min(cards.length, maxColumns);
+        let rows = Math.ceil(cards.length / columns);
+    
+        if (cards.length > 4) {
+            cardWidth = Math.max(minCardWidth, maxCardWidth - ((cards.length - 4) * 10));
+            cardHeight = Math.max(minCardHeight, maxCardHeight - ((cards.length - 4) * 14));
+        }
+    
+        const scaleX = cardWidth / 750;
+        const scaleY = cardHeight / 1050;
+    
+        const startX = (this.scene.sys.game.config.width - (columns * (cardWidth + spacing))) / 2;
+        const startY = (this.scene.sys.game.config.height - (rows * (cardHeight + spacing))) / 2;
+    
         cards.forEach((card, index) => {
-            const cardX = startX + index * (cardWidth + spacing);
-            const cardY = startY;
+            const colIndex = index % columns;
+            const rowIndex = Math.floor(index / columns);
+            const cardX = startX + colIndex * (cardWidth + spacing);
+            const cardY = startY + rowIndex * (cardHeight + spacing);
+    
             const cardImage = this.scene.add.image(cardX, cardY, card.texture)
                 .setOrigin(0, 0)
-                .setDisplaySize(cardWidth, cardHeight);
+                .setDisplaySize(cardWidth, cardHeight)
+                .setInteractive({ useHandCursor: true, pixelPerfect: true, alphaTolerance: 1 });
+    
+            cardImage.on('pointerover', () => {
+                cardImage.setDepth(15);
+                this.scene.tweens.add({
+                    targets: cardImage,
+                    scaleX: scaleX * 1.1,
+                    scaleY: scaleY * 1.1,
+                    duration: 50,
+                    ease: 'Sine.easeInOut'
+                });
+            });
+    
+            cardImage.on('pointerout', () => {
+                cardImage.setDepth(12);
+                this.scene.tweens.add({
+                    targets: cardImage,
+                    scaleX: scaleX,
+                    scaleY: scaleY,
+                    duration: 50,
+                    ease: 'Sine.easeInOut',
+                });
+            });
+    
             container.add(cardImage);
         });
-
-        // Add close button
+    
         const buttonWidth = 200;
         const buttonHeight = 50;
         const buttonX = this.scene.sys.game.config.width / 2;
-        const buttonY = startY + cardHeight + 40;
+        const buttonY = startY + rows * (cardHeight + spacing) + 40;
         const buttonRadius = 10;
-
+    
         const closeButtonBg = this.scene.add.graphics();
         closeButtonBg.fillStyle(0xff0000, 1);
         closeButtonBg.fillRoundedRect(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight, buttonRadius);
         closeButtonBg.setDepth(13);
-        container.add(closeButtonBg);
-
+        closeButtonBg.setInteractive(new Phaser.Geom.Rectangle(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight), Phaser.Geom.Rectangle.Contains);
+    
         const closeButtonText = this.scene.add.text(buttonX, buttonY, 'CLOSE', {
             fontSize: '32px',
             fill: '#fff'
         }).setOrigin(0.5, 0.5)
             .setInteractive({ useHandCursor: true })
             .setDepth(14);
-
+    
+        closeButtonBg.on('pointerdown', () => {
+            this.scene.tweens.add({
+                targets: [container, bg, interactionBlocker],
+                alpha: { from: 1, to: 0 },
+                duration: 300,
+                onComplete: () => {
+                    container.destroy();
+                    bg.destroy();
+                    interactionBlocker.destroy();
+                    this.scoutPopup = null;
+                }
+            });
+        });
+    
         closeButtonText.on('pointerdown', () => {
             this.scene.tweens.add({
                 targets: [container, bg, interactionBlocker],
@@ -928,20 +1007,102 @@ export class DisplayManager {
                 }
             });
         });
-
+    
+        container.add(closeButtonBg);
         container.add(closeButtonText);
-
-        // Add tween animation for opening
+    
         this.scene.tweens.add({
             targets: [container, bg, interactionBlocker],
             alpha: { from: 0, to: 1 },
             duration: 300
         });
-
-        // Keep reference to the scout popup
+    
+        interactionBlocker.setInteractive();
+        interactionBlocker.on('pointerdown', () => {
+            // Do nothing to block interactions
+        });
+    
         this.scoutPopup = container;
     }
 
+
+    createPopupBackground(depth) {
+        const bg = this.scene.add.graphics({ fillStyle: { color: 0x000000, alpha: 0.7 } });
+        bg.fillRect(0, 0, this.scene.sys.game.config.width, this.scene.sys.game.config.height);
+        bg.setDepth(depth);
+
+        const interactionBlocker = this.scene.add.zone(0, 0, this.scene.sys.game.config.width, this.scene.sys.game.config.height);
+        interactionBlocker.setOrigin(0, 0);
+        interactionBlocker.setDepth(depth + 1);
+        interactionBlocker.setInteractive();
+
+        return { bg, interactionBlocker };
+    }
+
+    createButton(container, x, y, text, onClick, bgColor = 0xffa500) {
+        const buttonSize = 100;
+
+        const buttonContainer = this.scene.add.container(x, y);
+
+        const buttonBg = this.scene.add.graphics();
+        buttonBg.fillStyle(bgColor, 1);
+        buttonBg.fillRoundedRect(-buttonSize / 2, -buttonSize / 2, buttonSize, buttonSize, 10);
+        buttonBg.setDepth(13);
+        buttonContainer.add(buttonBg);
+
+        const buttonText = this.scene.add.text(0, 0, text, {
+            fontSize: '32px',
+            fill: '#fff'
+        }).setOrigin(0.5, 0.5)
+            .setDepth(14);
+
+        buttonContainer.add(buttonText);
+
+        const buttonZone = this.scene.add.zone(0, 0, buttonSize, buttonSize)
+            .setOrigin(0.5, 0.5)
+            .setInteractive({ useHandCursor: true })
+            .setDepth(15);
+
+        buttonContainer.add(buttonZone);
+
+        buttonZone.on('pointerover', () => {
+            this.scene.tweens.add({
+                targets: buttonContainer,
+                scaleX: 1.1,
+                scaleY: 1.1,
+                duration: 50,
+                ease: 'Sine.easeInOut'
+            });
+        });
+
+        buttonZone.on('pointerout', () => {
+            this.scene.tweens.add({
+                targets: buttonContainer,
+                scaleX: 1,
+                scaleY: 1,
+                duration: 50,
+                ease: 'Sine.easeInOut'
+            });
+        });
+
+        buttonZone.on('pointerdown', onClick);
+
+        container.add(buttonContainer);
+    }
+
+    createNumberButtons(container, startX, startY, onClick) {
+        const buttonSize = 100;
+        const spacing = 20;
+
+        for (let i = 0; i <= 9; i++) {
+            const row = Math.floor(i / 3);
+            const col = i % 3;
+            const buttonX = startX + col * (buttonSize + spacing) + buttonSize / 2;
+            const buttonY = startY + row * (buttonSize + spacing) + buttonSize / 2;
+
+            this.createButton(container, buttonX, buttonY, i.toString(), () => onClick(i));
+        }
+    }
 
     displayNumberInputInterface(onNumberSelected) {
         // Ensure any existing number input popup is removed
@@ -950,16 +1111,7 @@ export class DisplayManager {
             this.numberInputPopup = null;
         }
 
-        // Create semi-transparent background
-        const bg = this.scene.add.graphics({ fillStyle: { color: 0x000000, alpha: 0.7 } });
-        bg.fillRect(0, 0, this.scene.sys.game.config.width, this.scene.sys.game.config.height);
-        bg.setDepth(10);
-
-        // Block interactions with elements behind the background
-        const interactionBlocker = this.scene.add.zone(0, 0, this.scene.sys.game.config.width, this.scene.sys.game.config.height);
-        interactionBlocker.setOrigin(0, 0);
-        interactionBlocker.setDepth(11);
-        interactionBlocker.setInteractive();
+        const { bg, interactionBlocker } = this.createPopupBackground(10);
 
         // Create a container for the popup
         const container = this.scene.add.container(0, 0).setDepth(12);
@@ -973,73 +1125,28 @@ export class DisplayManager {
         const startY = (this.scene.sys.game.config.height - 4 * (buttonSize + spacing) + spacing) / 2;
 
         // Add number buttons to the container
-        for (let i = 0; i <= 10; i++) {
-            const row = Math.floor(i / 3);
-            const col = i % 3;
-            const buttonX = startX + col * (buttonSize + spacing) + buttonSize / 2;
-            const buttonY = startY + row * (buttonSize + spacing) + buttonSize / 2;
-
-            // Create a container for the button
-            const buttonContainer = this.scene.add.container(buttonX, buttonY);
-
-            const buttonBg = this.scene.add.graphics();
-            buttonBg.fillStyle(0xffa500, 1);
-            buttonBg.fillRoundedRect(-buttonSize / 2, -buttonSize / 2, buttonSize, buttonSize, 10);
-            buttonBg.setDepth(13);
-            buttonContainer.add(buttonBg);
-
-            const buttonText = this.scene.add.text(0, 0, i.toString(), {
-                fontSize: '32px',
-                fill: '#fff'
-            }).setOrigin(0.5, 0.5)
-                .setDepth(14);
-
-            buttonContainer.add(buttonText);
-
-            const buttonZone = this.scene.add.zone(0, 0, buttonSize, buttonSize)
-                .setOrigin(0.5, 0.5)
-                .setInteractive({ useHandCursor: true })
-                .setDepth(15);
-
-            buttonContainer.add(buttonZone);
-
-            buttonZone.on('pointerover', () => {
-                this.scene.tweens.add({
-                    targets: buttonContainer,
-                    scaleX: 1.1,
-                    scaleY: 1.1,
-                    duration: 50,
-                    ease: 'Sine.easeInOut'
-                });
+        this.createNumberButtons(container, startX, startY, (i) => {
+            this.scene.tweens.add({
+                targets: [container, bg, interactionBlocker],
+                alpha: { from: 1, to: 0 },
+                duration: 300,
+                onComplete: () => {
+                    container.destroy();
+                    bg.destroy();
+                    interactionBlocker.destroy();
+                    this.numberInputPopup = null;
+                    onNumberSelected(i);
+                }
             });
+        });
 
-            buttonZone.on('pointerout', () => {
-                this.scene.tweens.add({
-                    targets: buttonContainer,
-                    scaleX: 1,
-                    scaleY: 1,
-                    duration: 50,
-                    ease: 'Sine.easeInOut'
-                });
-            });
+        // Add "Other" button
+        const otherButtonX = startX + 1 * (buttonSize + spacing) + buttonSize / 2;
+        const otherButtonY = startY + 3 * (buttonSize + spacing) + buttonSize / 2;
 
-            buttonZone.on('pointerdown', () => {
-                this.scene.tweens.add({
-                    targets: [container, bg, interactionBlocker],
-                    alpha: { from: 1, to: 0 },
-                    duration: 300,
-                    onComplete: () => {
-                        container.destroy();
-                        bg.destroy();
-                        interactionBlocker.destroy();
-                        this.numberInputPopup = null;
-                        onNumberSelected(i);
-                    }
-                });
-            });
-
-            container.add(buttonContainer);
-        }
+        this.createButton(container, otherButtonX, otherButtonY, 'Other', () => {
+            this.showManualNumberInput(onNumberSelected, container, bg, interactionBlocker);
+        }, 0xff4500);
 
         // Add tween animation for opening
         this.scene.tweens.add({
@@ -1052,28 +1159,93 @@ export class DisplayManager {
         this.numberInputPopup = container;
     }
 
+    showManualNumberInput(onNumberSelected, container, bg, interactionBlocker) {
+        // Hide the existing container
+        container.setVisible(false);
+
+        const { bg: manualBg, interactionBlocker: manualInteractionBlocker } = this.createPopupBackground(10);
+        const inputContainer = this.scene.add.container(0, 0).setDepth(12);
+
+        // Button dimensions
+        const buttonSize = 100;
+        const spacing = 20;
+
+        // Calculate positions
+        const startX = (this.scene.sys.game.config.width - 3 * (buttonSize + spacing) + spacing) / 2;
+        const startY = (this.scene.sys.game.config.height - 4 * (buttonSize + spacing) + spacing) / 2;
+
+        // Add number buttons to the input container
+        let inputValue = "";
+
+        this.createNumberButtons(inputContainer, startX, startY, (i) => {
+            inputValue += i.toString();
+            inputText.setText(inputValue);
+        });
+
+        // Display input value
+        const inputText = this.scene.add.text(this.scene.sys.game.config.width / 2, startY - 30, '', {
+            fontSize: '32px',
+            fill: '#fff'
+        }).setOrigin(0.5, 0.5)
+            .setDepth(14);
+
+        inputContainer.add(inputText);
+
+        // Submit button
+        const submitButtonX = startX + 1 * (buttonSize + spacing) + buttonSize / 2;
+        const submitButtonY = startY + 3 * (buttonSize + spacing) + buttonSize / 2;
+
+        this.createButton(inputContainer, submitButtonX, submitButtonY, '🆗', () => {
+            if (inputValue !== "") {
+                const numValue = parseInt(inputValue);
+                this.scene.tweens.add({
+                    targets: [inputContainer, manualBg, manualInteractionBlocker, bg, interactionBlocker],
+                    alpha: { from: 1, to: 0 },
+                    duration: 300,
+                    onComplete: () => {
+                        inputContainer.destroy();
+                        manualBg.destroy();
+                        manualInteractionBlocker.destroy();
+                        bg.destroy();
+                        interactionBlocker.destroy();
+                        this.numberInputPopup = null;
+                        onNumberSelected(numValue);
+                    }
+                });
+            }
+        }, 0x00ff00);
+
+        // Add tween animation for opening the input container
+        this.scene.tweens.add({
+            targets: inputContainer,
+            alpha: { from: 0, to: 1 },
+            duration: 300
+        });
+    }
+
+ 
 
 
-    updateEndUI(winner, finalPlayers, localPlayerId ) {
+    updateEndUI(winner, finalPlayers, localPlayerId) {
         console.log("updateEndUI", winner, finalPlayers);
-    
+
         // Clear previous display
         this.clearPreviousDisplay();
-    
+
         // Create a title with animation
         const title = this.scene.add.text(this.scene.cameras.main.centerX, 100, 'FIN DE LA PARTIE', {
             fontSize: '48px',
             fill: '#ffffff',
             fontStyle: 'bold'
         }).setOrigin(0.5).setAlpha(0);
-    
+
         this.scene.tweens.add({
             targets: title,
             alpha: 1,
             duration: 1000,
             ease: 'Power2'
         });
-    
+
         // Create final players display with animation
         let yPos = 200;
         finalPlayers.forEach((player, index) => {
@@ -1084,7 +1256,7 @@ export class DisplayManager {
                 fill: isLocalPlayer ? '#00ff00' : '#ffffff', // Highlight local player in green
                 fontStyle: isLocalPlayer ? 'bold' : 'normal'
             }).setOrigin(0.5).setAlpha(0);
-    
+
             this.scene.tweens.add({
                 targets: playerDisplay,
                 alpha: 1,
@@ -1093,7 +1265,7 @@ export class DisplayManager {
             });
             yPos += 50;
         });
-    
+
         // Display winner with animation
         if (winner) {
             const winnerText = `${winner.name} remporte la partie !`;
@@ -1102,7 +1274,7 @@ export class DisplayManager {
                 fill: '#ffdd00',
                 fontStyle: 'bold'
             }).setOrigin(0.5).setAlpha(0);
-    
+
             this.scene.tweens.add({
                 targets: winnerDisplay,
                 alpha: 1,
@@ -1110,35 +1282,35 @@ export class DisplayManager {
                 ease: 'Power2'
             });
         }
-    
+
         // Add Replay and Exit buttons with animation
         const replayButton = this.scene.add.text(this.scene.cameras.main.centerX - 100, yPos + 100, 'Replay', {
             fontSize: '32px',
             fill: '#00ff00',
             fontStyle: 'bold'
         }).setOrigin(0.5).setInteractive().setAlpha(0);
-    
+
         replayButton.on('pointerdown', () => {
             this.scene.scene.restart();
         });
-    
+
         this.scene.tweens.add({
             targets: replayButton,
             alpha: 1,
             duration: 1000,
             ease: 'Power2'
         });
-    
+
         const exitButton = this.scene.add.text(this.scene.cameras.main.centerX + 100, yPos + 100, 'Exit', {
             fontSize: '32px',
             fill: '#ff0000',
             fontStyle: 'bold'
         }).setOrigin(0.5).setInteractive().setAlpha(0);
-    
+
         exitButton.on('pointerdown', () => {
             this.scene.scene.start('MainMenu');
         });
-    
+
         this.scene.tweens.add({
             targets: exitButton,
             alpha: 1,

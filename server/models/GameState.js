@@ -188,6 +188,12 @@ class GameState extends Schema {
         }
     }
 
+    afterBeatMonster(){
+        if(this.dungeon.length <= 0){
+            this.endGame()
+        }
+    }
+
     wantToPassTurn(playerId) {
         let player = this.findPlayerById(playerId)
         if (player.canPass) {

@@ -333,7 +333,8 @@ const ieClick = {
         }
     },
     future: (item, player, game) => {
-
+        if (!item.broken && !player.lastDamageTaken && game.noCurrentCard()) //todo start of turn
+            h.scout(game, player, 1, 2)
     },
     rat_ring: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() && h.currentCardHasType(game, "Rat")) {
