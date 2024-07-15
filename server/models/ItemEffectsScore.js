@@ -4,7 +4,9 @@ const ieScore = {
         if (!item.broken) {
             // Au décompte final, lancez le dé. Gagnez autant de Points de Victoire.
             if (final) {
-                //todo dice effect
+                h.playerRollDice(game, player, (roll) => {
+                    player.scoreBonus(roll)
+                });
             }
         }
     },

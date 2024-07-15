@@ -57,12 +57,16 @@ export function create() {
                 displayManager.getOpponentPosition(playerId, localPlayerId, cardGame.players))
         });
 
+
+        room.onMessage("animate_execute", () => {
+            const animScene = this.game.scene.getScene('AnimScene');
+            if (animScene) animScene.executeAnimation();
+        });
+
         // Handle dice roll results from the server
-        room.onMessage('escapeRollResult', (message) => {
+        room.onMessage('roll_result', (message) => {
             const diceScene = this.game.scene.getScene('DiceScene');
-            if (diceScene) {
-                diceScene.showDiceResult(message.result);
-            }
+            if (diceScene) diceScene.showDiceResult(message.result);
             cardGame.isDiceRolling = false; // Re-enable interactions after dice roll completes
         });
 
@@ -86,7 +90,6 @@ export function create() {
     displayManager.initializeBackground();
 
     this.input.on('pointerdown', (pointer, gameObjects) => {
-
         if (displayManager.zoomedItemCard) {
             displayManager.closeZoom();
         } else if (cardGame.isDiceRolling) {

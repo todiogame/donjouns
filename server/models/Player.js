@@ -72,10 +72,6 @@ class Player extends Schema {
         this.hp = value
     }
 
-    addToPile(monsterCard) {
-        this.defeatedMonstersPile.push(monsterCard)
-    }
-
     pickItem(game) {
         this.addItem(game.itemDeck.pop());
     }
@@ -102,6 +98,11 @@ class Player extends Schema {
         game.passTurn()
     }
 
+    addDefeatedMonster(card) {
+        this.defeatedMonstersPile.push(card);
+        this.monstersAddedThisTurn += 1;
+    }
+    
     scoreBonus(value) {
         if (!this.score_blocked)
             this.score = this.score + value
@@ -131,30 +132,6 @@ class Player extends Schema {
         });
     }
 
-
-
-
-    rollDice(game, logDetails, desiredRoll = 4, reversed = false, rerolled = false) {
-        desiredRoll = Math.min(6, Math.max(1, desiredRoll));
-        let roll = Math.floor(Math.random() * 6) + 1;
-        logDetails.push(`${this.name} rolls a ${roll}`);
-        // this.stuff.forEach(item => {
-        //     const newRoll = item.onRoll(this, roll, desiredRoll, reversed, rerolled, game, logDetails);
-        //     if (newRoll && newRoll !== roll) {
-        //         roll = newRoll;
-        //     }
-        // });
-        return roll;
-    }
-
-    resetAddedMonsters() {
-        this.monstersAddedThisTurn = 0;
-    }
-
-    addDefeatedMonster(card) {
-        this.defeatedMonstersPile.push(card);
-        this.monstersAddedThisTurn += 1;
-    }
 }
 
 schema.defineTypes(Player, {

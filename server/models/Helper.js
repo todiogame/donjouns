@@ -1,15 +1,18 @@
 
 function execute(player, game) {
     if (game.currentCard?.dungeonCardType == "monster") {
-        player.addToPile(game.currentCard)
+        game.room.broadcast("animate_execute", { playerId: player.id });
+        player.addDefeatedMonster(game.currentCard)
         game.currentCard = null;
         player.canPass = true;
+        player.lastDamageTaken = 0;
         game.canTryToEscape = true;
     }
 }
 
 function executeAndDiscard(player, game) {
     if (game.currentCard?.dungeonCardType == "monster") {
+        game.room.broadcast("animate_execute", { playerId: player.id });
         game.discard(game.currentCard)
         game.currentCard = null;
         player.canPass = true;
@@ -19,8 +22,9 @@ function executeAndDiscard(player, game) {
 
 function executeAndLeech(player, game) {
     if (game.currentCard?.dungeonCardType == "monster") {
+        game.room.broadcast("animate_execute", { playerId: player.id });
         if (parseInt(game.currentCard.power) > 0) player.gainHP(game.currentCard.power)
-        player.addToPile(game.currentCard)
+        player.addDefeatedMonster(game.currentCard)
         game.currentCard = null;
         player.canPass = true;
         game.canTryToEscape = true;
@@ -30,7 +34,7 @@ function executeAndLeech(player, game) {
 function surviveWith(player, game, hp) {
     player.setHP(hp)
     if (game.inFight()) {
-        player.addToPile(game.currentCard)
+        player.addDefeatedMonster(game.currentCard)
         game.currentCard = null;
         player.canPass = true;
         game.canTryToEscape = true;
@@ -62,13 +66,13 @@ function scout(game, player, nbCards, position = 0) {
     }
 }
 
-function playerRollDice(game, player){
-    const targetClient = game.room.clients.find(c => c.id === player.id);
-    game.room.broadcast("animate_roll", {player: player});
-    let diceRoll = player.rollDice()
+function playerRollDice(game, player, callback) {
+    game.room.broadcast("animate_roll", { playerId: player.id });
+    let diceRoll = player.rollDice();
     setTimeout(() => {
-        console.log(`broadcast dice_roll result for ${client.sessionId}:`, diceRoll);
-        game.room.broadcast('diceRollResult', { result: diceRoll });
+        console.log(`broadcast dice_roll result for ${player.id}:`, diceRoll);
+        game.room.broadcast('roll_result', { result: diceRoll });
+        callback(diceRoll);
     }, 1000); // 1000 milliseconds delay
 }
 
@@ -83,4 +87,5 @@ module.exports = {
     surviveWith,
     reduceDamage,
     scout,
+    playerRollDice,
 };

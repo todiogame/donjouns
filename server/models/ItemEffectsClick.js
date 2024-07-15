@@ -20,7 +20,16 @@ const ieClick = {
         }
     },
     cake: (item, player, game) => {
-
+        if (!item.broken) {
+            h.playerRollDice(game, player, (roll) => {
+                if (roll >= 1) {
+                    player.gainHP(roll);
+                } else {
+                    player.flee(game);
+                }
+                item.break();
+            });
+        }
     },
     swiss: (item, player, game) => {
 
@@ -33,8 +42,13 @@ const ieClick = {
         }
     },
     box: (item, player, game) => {
-        if (!game.trap && !item.broken && game.inFight() && game.currentCard.power <= 6){
-            h.playerRollDice(player)
+        if (!game.trap && !item.broken && game.inFight() && game.currentCard.power <= 6) {
+            h.playerRollDice(game, player, (roll) => {
+                if (roll >= game.currentCard.power)
+                    h.execute(player, game)
+                if (roll == 1)
+                    item.break();
+            })
         }
     },
     lich_bane: (item, player, game) => {
@@ -66,13 +80,23 @@ const ieClick = {
         }
     },
     dragon_shield: (item, player, game) => {
-
+        if (!item.broken && game.inFight()) {
+            h.playerRollDice(game, player, (roll1) => {
+                h.playerRollDice(game, player, (roll2) => {
+                    h.reduceDamage(game, item, roll1 + roll2)
+                    item.break();
+                })
+            })
+        }
     },
     mana_potion: (item, player, game) => {
 
     },
     kebab: (item, player, game) => {
-
+        if (!item.broken) {//todo check turn 3
+            player.gainHP(7)
+            item.break();
+        }
     },
     glass_axe: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight()) {
@@ -81,7 +105,9 @@ const ieClick = {
         }
     },
     tp: (item, player, game) => {
-
+        if (!item.broken && player.canPass) {//check if that works
+            player.flee(game)
+        }
     },
     fairy_potion: (item, player, game) => {
         h.surviveWith(player, game, 1);

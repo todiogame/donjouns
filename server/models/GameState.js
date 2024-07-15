@@ -181,7 +181,7 @@ class GameState extends Schema {
             player.loseHP(this, this.currentCard.damage)
             if (this.currentCard.damage > 0) player.lastDamageTaken = this.currentCard.damage;
             if (player.inDungeon()) {
-                player.addToPile(this.currentCard)
+                player.addDefeatedMonster(this.currentCard)
                 this.currentCard = null;
                 player.canPass = true;
             }
@@ -203,7 +203,11 @@ class GameState extends Schema {
     passTurn(reversed = false) {
         let player = this.getCurrentPlayer();
         console.log(`${player} passes turn.`);
+        //todo use items end of turn ?
+        player.lastDamageTaken = 0;
+        player.monstersAddedThisTurn = 0;
 
+        //calculate next player
         let originalIndex = this.currentPlayerIndex;
         let newPlayer;
         let foundPlayerInDungeon = false;

@@ -1,11 +1,14 @@
 import { TitleScene } from './display';
 import { DiceScene } from './display';
+import { AnimScene } from './display';
 export function preload() {
     console.log('Preloading assets...');
     this.load.image('background', 'assets/pics/ui/wood.jpg');
     this.load.image('heart', 'assets/pics/ui/heart.png');
     // this.load.image('medal', 'assets/pics/ui/medal.png');
     // this.load.image('damage', 'assets/pics/ui/damage.png');
+
+ 
 
     this.load.image("dice-albedo", "assets/obj/dice/dice-albedo.jpg");
     this.load.obj("dice-obj", "assets/obj/dice/dice.obj");
@@ -37,4 +40,5 @@ export function preload() {
     this.scene.add('TitleScene', TitleScene, true);
     
     this.scene.add('DiceScene', DiceScene, true);
+    this.scene.add('AnimScene', AnimScene, true);
 }

@@ -1,4 +1,5 @@
 import { createDice } from './dice.js';
+import Phaser from 'phaser';
 
 export class TitleScene extends Phaser.Scene {
     constructor() {
@@ -45,7 +46,6 @@ export class TitleScene extends Phaser.Scene {
     }
 }
 
-import Phaser from 'phaser';
 
 export class DiceScene extends Phaser.Scene {
     constructor() {
@@ -84,7 +84,7 @@ export class DiceScene extends Phaser.Scene {
                     xPosition = 0
                     yPosition = 0
                 } else if (position === "top-right") {
-                    xPosition = this.scale.width 
+                    xPosition = this.scale.width
                     yPosition = 0
                 }
                 dice.setPosition(xPosition, yPosition);
@@ -189,16 +189,37 @@ export class DiceScene extends Phaser.Scene {
         this.startDiceAnimation = startDiceAnimation;
         this.showDiceResult = showDiceResult;
 
-        // Start dice animation on click and show result
-        // this.input.on('pointerdown', () => {
-        //     // startDiceAnimation();
+    }
+}
 
-        //     // Simulate server request and response
-        //     setTimeout(() => {
-        //         const diceRoll = Phaser.Math.Between(1, 6); // Simulated server response
-        //         showDiceResult(diceRoll);
-        //     }, 1000); // Simulated server delay
-        // });
+export class AnimScene extends Phaser.Scene {
+    constructor() {
+        super({ key: 'AnimScene', active: true });
+    }
+
+    preload() {
+        this.load.audio('execute', 'assets/sounds/effects/execute.mp3');
+        this.load.spritesheet('hit', 'assets/anims/hit.png', {
+            frameWidth: 1024, // width of each frame
+            frameHeight: 1024 // height of each frame
+        });
+    }
+
+    create() {
+        this.anims.create({
+            key: 'hitAnimation',
+            frames: this.anims.generateFrameNumbers('hit', { start: 0, end: 15 }),
+            frameRate: 60,
+            repeat: 0
+        });
+        this.executeSound = this.sound.add('execute');
+    }
+
+    executeAnimation() {
+        this.executeSound.play();
+        const sprite = this.add.sprite(650, 100, 'hit');
+        sprite.play('hitAnimation');
+        sprite.on('animationcomplete', () => sprite.destroy());
     }
 }
 
