@@ -4,6 +4,7 @@ JEU
 apres qu'on a setup les PV : pour set up les vorpales et autres
 => le server envoie les messages aux clients pour trigger l'UI pour chaque objet et process les reponses
 
+- kill next monster : add a button instead of it being automatic
 - ajouter plus d'objets
 - ajouter les events
 - ajouter les monstres speciaux

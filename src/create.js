@@ -81,7 +81,7 @@ export function create() {
         });
 
 
-        room.onMessage("scout", (message) => { 
+        room.onMessage("scout", (message) => {
             console.log("Received scout cards:", message);
             displayManager.displayScoutInterface(message.cards)
         });
@@ -121,9 +121,9 @@ export function create() {
                 const cardImage = gameObjects[0];
                 console.log(cardImage)
                 if (cardImage.getData("type") === "dungeon") {
-                    console.log("pick donjon")
+                    console.log("pick donjon") 
                     room.send("pick_dungeon");
-                    // displayManager.displayScoutInterface(cardGame.dungeon.slice(0,Math.floor(Math.random() * 25)))
+                    // displayManager.displayScoutInterface(cardGame.dungeon.slice(0,Math.floor(Math.random() * 25)), true)
                     // displayManager.displayNumberInputInterface((number) => console.log(`Selected number: ${number}`))
                 } else if (cardImage.getData("type") === "take_damage") {
                     console.log(`Player takes ${cardGame.currentCard.damage} damage.`);

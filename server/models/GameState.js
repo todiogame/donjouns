@@ -163,15 +163,21 @@ class GameState extends Schema {
         this.discardPile.push(card);
     }
     returnCardToDungeon() {
-        this.dungeonLength = this.dungeon.unshift(this.currentCard);
+        console.log('Initial dungeon:', this.dungeon.map(obj => obj.id).join(', '));
+        console.log('Current card:', this.currentCard.id);
+
+        this.dungeonLength = this.dungeon.push(this.currentCard);
         this.currentCard = null;
+    
+        console.log('Updated dungeon:', this.dungeon.map(obj => obj.id).join(', '));
+        console.log('Dungeon length:', this.dungeonLength);
     }
 
     pickDungeonCard(playerId) {
         // Logic to handle picking a dungeon card
         if (this.dungeon.length && this.noCurrentCard() && this.isMyTurn(playerId)) {
             this.canTryToEscape = false;
-            this.currentCard = this.dungeon.shift();
+            this.currentCard = this.dungeon.pop();
             this.dungeonLength = this.dungeon.length;
             if (this.inFight()) {
                 this.currentCard.damage = this.currentCard.calculateDamage()
@@ -220,11 +226,14 @@ class GameState extends Schema {
     }
     passTurn(reversed = false) {
         let player = this.getCurrentPlayer();
-        console.log(`${player} passes turn.`);
+        console.log(`${player.name} passes turn.`);
         //todo use items end of turn ?
         player.lastDamageTaken = 0;
         player.monstersAddedThisTurn = 0;
 
+        this.nextMonsterCondition = null;
+        this.nextMonsterAction = null;
+        
         //calculate next player
         let originalIndex = this.currentPlayerIndex;
         let newPlayer;

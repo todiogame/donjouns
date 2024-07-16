@@ -36,7 +36,7 @@ const ieClick = {
     },
     hourglass: (item, player, game) => {
         if (!item.broken && game.inFight()) {
-            game.returnCardToDungeon() //todo test is it broken?
+            game.returnCardToDungeon()
             item.break()
             game.passTurn(true)
         }

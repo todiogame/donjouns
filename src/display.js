@@ -927,13 +927,13 @@ export class DisplayManager {
         });
     }
 
-    displayScoutInterface(cards) {
+    displayScoutInterface(cards, canPickCard = false) {
         if (cards?.length) {
             if (this.scoutPopup) {
                 this.scoutPopup.destroy();
                 this.scoutPopup = null;
             }
-
+    
             if (!this.blurryBackground) {
                 this.blurryBackground = this.scene.add.graphics({ fillStyle: { color: 0x000000, alpha: 0.7 } });
                 this.blurryBackground.fillRect(0, 0, this.scene.sys.game.config.width, this.scene.sys.game.config.height);
@@ -941,9 +941,9 @@ export class DisplayManager {
                 this.blurryBackground.setInteractive(new Phaser.Geom.Rectangle(0, 0, this.scene.sys.game.config.width, this.scene.sys.game.config.height), Phaser.Geom.Rectangle.Contains);
                 this.blurryBackground.on('pointerdown', (pointer) => { });
             }
-
+    
             const container = this.scene.add.container(0, 0).setDepth(12);
-
+    
             let cardWidth = 240;
             let cardHeight = 336;
             const maxCardWidth = 240;
@@ -952,7 +952,7 @@ export class DisplayManager {
             const minCardHeight = 140;
             const spacing = 10;
             let columns;
-
+    
             if (cards.length <= 4) {
                 columns = cards.length;
             } else if (cards.length <= 12) {
@@ -964,26 +964,26 @@ export class DisplayManager {
                 cardWidth = 100;
                 cardHeight = 140;
             }
-
+    
             const scaleX = cardWidth / 750;
             const scaleY = cardHeight / 1050;
-
+    
             let rows = Math.ceil(cards.length / columns);
-
+    
             const startX = (this.scene.sys.game.config.width - (columns * (cardWidth + spacing))) / 2;
             const startY = (this.scene.sys.game.config.height - (rows * (cardHeight + spacing))) / 2;
-
+    
             cards.forEach((card, index) => {
                 const colIndex = index % columns;
                 const rowIndex = Math.floor(index / columns);
                 const cardX = startX + colIndex * (cardWidth + spacing);
                 const cardY = startY + rowIndex * (cardHeight + spacing);
-
+    
                 const cardImage = this.scene.add.image(cardX, cardY, card.texture)
                     .setOrigin(0, 0)
                     .setDisplaySize(cardWidth, cardHeight)
                     .setInteractive({ useHandCursor: true, pixelPerfect: true, alphaTolerance: 1 });
-
+    
                 cardImage.on('pointerover', () => {
                     cardImage.setDepth(15);
                     this.scene.tweens.add({
@@ -994,7 +994,7 @@ export class DisplayManager {
                         ease: 'Sine.easeInOut'
                     });
                 });
-
+    
                 cardImage.on('pointerout', () => {
                     cardImage.setDepth(12);
                     this.scene.tweens.add({
@@ -1005,28 +1005,38 @@ export class DisplayManager {
                         ease: 'Sine.easeInOut',
                     });
                 });
+    
+                if (canPickCard) {
+                    cardImage.on('pointerdown', () => {
+                        this.scene.tweens.add({
+                            targets: [container, this.blurryBackground],
+                            alpha: { from: 1, to: 0 },
+                            duration: 300,
+                            onComplete: () => {
+                                container.destroy();
+                                this.blurryBackground.destroy();
+                                this.scoutPopup = null;
+                                this.blurryBackground = null;
+                                console.log(`Picked card id: ${card.id}`); // Replace this with the necessary action to handle the picked card
+                            }
+                        });
+                    });
+                }
+    
                 container.add(cardImage);
             });
-
+    
             const buttonWidth = 200;
             const buttonHeight = 50;
             const buttonX = this.scene.sys.game.config.width / 2;
             const buttonY = startY + rows * (cardHeight + spacing) + 40;
             const buttonRadius = 10;
-
+    
             const closeButtonBg = this.scene.add.graphics();
             closeButtonBg.fillStyle(0xff0000, 1);
             closeButtonBg.fillRoundedRect(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight, buttonRadius);
             closeButtonBg.setDepth(13);
             closeButtonBg.setInteractive(new Phaser.Geom.Rectangle(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight), Phaser.Geom.Rectangle.Contains);
-
-            const closeButtonText = this.scene.add.text(buttonX, buttonY, 'CLOSE', {
-                fontSize: '32px',
-                fill: '#fff'
-            }).setOrigin(0.5, 0.5)
-                .setInteractive({ useHandCursor: true })
-                .setDepth(14);
-
             closeButtonBg.on('pointerdown', () => {
                 this.scene.tweens.add({
                     targets: [container, this.blurryBackground],
@@ -1040,7 +1050,14 @@ export class DisplayManager {
                     }
                 });
             });
-
+    
+            const closeButtonText = this.scene.add.text(buttonX, buttonY, 'CLOSE', {
+                fontSize: '32px',
+                fill: '#fff'
+            }).setOrigin(0.5, 0.5)
+                .setInteractive({ useHandCursor: true })
+                .setDepth(14);
+    
             closeButtonText.on('pointerdown', () => {
                 this.scene.tweens.add({
                     targets: [container, this.blurryBackground],
@@ -1054,20 +1071,20 @@ export class DisplayManager {
                     }
                 });
             });
-
+    
             container.add(closeButtonBg);
             container.add(closeButtonText);
-
+    
             this.scene.tweens.add({
                 targets: [container, this.blurryBackground],
                 alpha: { from: 0, to: 1 },
                 duration: 300
             });
-
+    
             this.scoutPopup = container;
         }
     }
-
+    
 
     createPopupBackground(depth) {
         const bg = this.scene.add.graphics({ fillStyle: { color: 0x000000, alpha: 0.7 } });

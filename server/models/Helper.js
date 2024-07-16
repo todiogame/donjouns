@@ -64,9 +64,11 @@ function reduceDamage(game, item, value, minDamage = 0) {
 function scout(game, player, nbCards, position = 0) {
     const targetClient = game.room.clients.find(c => c.id === player.id);
     if (targetClient) {
-        targetClient.send("scout", { cards: game.dungeon.slice(position, position + nbCards) });
+        const cards = game.dungeon.slice(-position - nbCards, -position || undefined).reverse();
+        targetClient.send("scout", { cards });
     }
 }
+
 
 function playerRollDice(game, player, callback) {
     game.room.broadcast("animate_roll", { playerId: player.id });
