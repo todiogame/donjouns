@@ -49,6 +49,7 @@ const ieClick = {
                 if (roll == 1)
                     item.break();
             })
+            game.currentCard.affectedBy.push(item.key)
         }
     },
     lich_bane: (item, player, game) => {
