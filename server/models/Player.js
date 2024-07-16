@@ -102,7 +102,7 @@ class Player extends Schema {
         this.defeatedMonstersPile.push(card);
         this.monstersAddedThisTurn += 1;
     }
-    
+
     scoreBonus(value) {
         if (!this.score_blocked)
             this.score = this.score + value
@@ -119,7 +119,7 @@ class Player extends Schema {
             ieScore[item.key]?.(item, player, game, false);
         });
     }
-    calculateFinalScore(game) {
+    async calculateFinalScore(game) {
         //calculate score - final
         console.log(`Calcul du score de ${this.name} : ${this.defeatedMonstersPile.length} monstres vaincus.`);
         this.score = this.defeatedMonstersPile.length;
@@ -127,9 +127,11 @@ class Player extends Schema {
             console.log("+1 pour le Golem d'or");
             this.score += 1;
         }
-        this.stuff.forEach(item => {
-            ieScore[item.key]?.(item, this, game, true);
-        });
+        for (const item of this.stuff) {
+            if (ieScore[item.key]) {
+                await ieScore[item.key](item, this, game, true);
+            }
+        }
     }
 
 }

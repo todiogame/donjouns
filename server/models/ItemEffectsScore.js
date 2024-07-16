@@ -1,13 +1,14 @@
 const h = require('./Helper.js');
 const ieScore = {
-    monkey: (item, player, game, final = false) => {
-        if (!item.broken) {
+    monkey: async (item, player, game, final = false) => {
+        if (!item.broken && final) {
             // Au décompte final, lancez le dé. Gagnez autant de Points de Victoire.
-            if (final) {
+            await new Promise((resolve) => {
                 h.playerRollDice(game, player, (roll) => {
-                    player.scoreBonus(roll)
+                    player.scoreBonus(roll);
+                    resolve();
                 });
-            }
+            });
         }
     },
     eternity_hammer: (item, player, game, final = false) => {

@@ -212,7 +212,7 @@ export class AnimScene extends Phaser.Scene {
             frameRate: 60,
             repeat: 0
         });
-        this.executeSound = this.sound.add('execute');
+        this.executeSound = this.sound.add('execute', { volume: 0.5 });
     }
 
     executeAnimation() {
@@ -1276,6 +1276,8 @@ export class DisplayManager {
             duration: 1000,
             ease: 'Power2'
         });
+
+        if(!finalPlayers) return;
 
         // Create final players display with animation
         let yPos = 200;

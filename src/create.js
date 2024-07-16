@@ -66,14 +66,18 @@ export function create() {
         // Handle dice roll results from the server
         room.onMessage('roll_result', (message) => {
             const diceScene = this.game.scene.getScene('DiceScene');
+            console.log("rolled a", message.result)
             if (diceScene) diceScene.showDiceResult(message.result);
             cardGame.isDiceRolling = false; // Re-enable interactions after dice roll completes
+            if (cardGame.phase.includes("GAME")) displayManager.updateGameUI(cardGame, localPlayerId);
         });
 
         room.onMessage("endScores", (message) => {
             console.log("Received end scores data:", message);
             const { winner, finalPlayers } = message;
-            displayManager.updateEndUI(winner, finalPlayers, localPlayerId);
+            cardGame.winner = winner;
+            cardGame.finalPlayers = finalPlayers;
+            displayManager.updateEndUI(cardGame.winner, cardGame.finalPlayers, localPlayerId);
         });
 
 
@@ -175,8 +179,8 @@ export function create() {
         } else if (cardGame.phase.includes("GAME")) {
             displayManager.updateGameUI(cardGame, localPlayerId);
         }
-        //  else if (cardGame.phase === "END") {
-        //     displayManager.updateEndUI(null, [], localPlayerId);
-        // }
+        else if (cardGame.phase === "END") {
+            displayManager.updateEndUI(cardGame.winner, cardGame.finalPlayers, localPlayerId);
+        }
     }
 }

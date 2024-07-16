@@ -31,12 +31,12 @@ const ieClick = {
             });
         }
     },
-    swiss: (item, player, game) => {
+    swiss: (item, player, game, arg) => {
 
     },
     hourglass: (item, player, game) => {
         if (!item.broken && game.inFight()) {
-            game.returnCardToDungeon()
+            game.returnCardToDungeon() //todo test is it broken?
             item.break()
             game.passTurn(true)
         }
@@ -57,7 +57,7 @@ const ieClick = {
             player.gainHP(6)
         }
     },
-    anvil: (item, player, game) => {
+    anvil: (item, player, game, arg) => {
 
     },
     golem_shield: (item, player, game) => {
@@ -89,7 +89,7 @@ const ieClick = {
             })
         }
     },
-    mana_potion: (item, player, game) => {
+    mana_potion: (item, player, game, arg) => {
 
     },
     kebab: (item, player, game) => {
@@ -173,7 +173,11 @@ const ieClick = {
     noob_hat: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() && !player.medals && h.currentCardHasType(game, "Orc")) {
             h.execute(player, game)
-        } //todo execute next
+            if (!player.medals) {
+                game.nextMonsterCondition = (state) => state.inFight();
+                game.nextMonsterAction = (state) => h.execute(player, state);
+            }
+        }
     },
     noob_cape: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() && (!player.medals || game.currentCard.odd())) {
@@ -255,8 +259,11 @@ const ieClick = {
     },
     laser: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() && game.currentCard.odd()) {
+            const currentPower = game.currentCard.power;
             h.execute(player, game)
-            item.break() //todo kill next
+            game.nextMonsterCondition = (state) => (state.inFight() && state.currentCard.power < currentPower);
+            game.nextMonsterAction = (state) => h.execute(player, state);
+            item.break()
         }
     },
     monkey_grenade: (item, player, game) => {
@@ -268,7 +275,7 @@ const ieClick = {
             player.canPass = true;
         }
     },
-    hex: (item, player, game) => {
+    hex: (item, player, game, arg) => {
 
     },
     heal: (item, player, game) => {
@@ -293,7 +300,7 @@ const ieClick = {
         }
         item.break()
     },
-    pirate_bomb: (item, player, game) => {
+    pirate_bomb: (item, player, game, arg) => {
 
     },
     ocean_ring: (item, player, game) => {
@@ -309,7 +316,8 @@ const ieClick = {
     },
     boomerang: (item, player, game) => {
         h.executeAndDiscard(player, game)
-        //todo next monster
+        game.nextMonsterCondition = (state) => state.inFight();
+        game.nextMonsterAction = (state) => h.execute(player, state);
     },
     ice_ring: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() && h.currentCardHasType(game, "Skeleton")) {
@@ -323,7 +331,7 @@ const ieClick = {
             h.executeAndLeech(player, game)
         }
     },
-    wind_ring: (item, player, game) => {
+    wind_ring: (item, player, game, arg) => {
 
     },
     sorcerer_hat: (item, player, game) => {
@@ -370,7 +378,7 @@ const ieClick = {
             player.gainHP(3)
         }
     },
-    crystal: (item, player, game) => {
+    crystal: (item, player, game, arg) => {
 
     },
     whip: (item, player, game) => {
@@ -428,8 +436,10 @@ const ieClick = {
     axe: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() && game.currentCard.even()) {
             h.execute(player, game)
+            game.nextMonsterCondition = (state) => state.inFight() && state.currentCard.even();
+            game.nextMonsterAction = (state) => h.execute(player, state);
             item.break()
-        } //todo execunte next if even
+        }
     },
 };
 // Example usage

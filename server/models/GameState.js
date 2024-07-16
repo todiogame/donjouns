@@ -9,7 +9,7 @@ const path = require('path');
 
 const configPath = path.resolve(__dirname, '../config.json');
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-const { nb_items_deck, nb_items_draft, nb_items_starting } = config;
+const { nb_items_deck, nb_items_draft, nb_items_starting, include_items } = config;
 const ieStartGame = require('./ItemEffectsStartGame');
 
 class GameState extends Schema {
@@ -26,6 +26,9 @@ class GameState extends Schema {
         this.canTryToEscape = true;
         this.discardPile = new ArraySchema();
         this.turnNumber = 0;
+
+        this.nextMonsterCondition = null;
+        this.nextMonsterAction = null;
     }
 
     findPlayerById(id) {
@@ -40,6 +43,10 @@ class GameState extends Schema {
         this.itemDeck.push(...itemsCards.filter(item => item.id > 0 && item.id <= nb_items_deck)
             .map(i => new ItemCard(i.id, i.title, i.active, i.color, i.key, i.description)));
         this.shuffleItemsDeck();
+        // Step 2: Move specified items to the end
+        const endItems = this.itemDeck.filter(item => include_items.includes(item.key));
+        this.itemDeck = this.itemDeck.filter(item => !include_items.includes(item.key));
+        this.itemDeck.push(...endItems);
     }
 
 
@@ -166,9 +173,14 @@ class GameState extends Schema {
             this.canTryToEscape = false;
             this.currentCard = this.dungeon.shift();
             this.dungeonLength = this.dungeon.length;
-            if (this.inFight())
+            if (this.inFight()) {
                 this.currentCard.damage = this.currentCard.calculateDamage()
-            console.log(`${playerId} picked dungeon card ${this.currentCard.title} :  ${this.currentCard.damage} damage!`);
+                console.log(`${playerId} picked dungeon card ${this.currentCard.title} :  ${this.currentCard.damage} damage!`);
+                this.tryToExecuteNextMonster()
+            }
+
+            this.nextMonsterCondition = null;
+            this.nextMonsterAction = null;
         }
     }
 
@@ -188,9 +200,15 @@ class GameState extends Schema {
         }
     }
 
-    afterBeatMonster(){
-        if(this.dungeon.length <= 0){
+    afterBeatMonster() {
+        if (this.dungeon.length <= 0) {
             this.endGame()
+        }
+    }
+
+    tryToExecuteNextMonster() {
+        if (this.nextMonsterCondition && this.nextMonsterAction && this.nextMonsterCondition(this)) {
+            this.nextMonsterAction(this);
         }
     }
 
@@ -395,77 +413,79 @@ class GameState extends Schema {
     // }
 
 
-    endGame() {
-        this.phase = "END"
-        console.log("\nFIN DE LA PARTIE !\nCalcul des scores:");
+    async endGame() {
+        if (this.phase != "END") {
+            this.phase = "END"
+            console.log("\nFIN DE LA PARTIE !\nCalcul des scores:");
 
-        this.players.forEach(player => {
-            player.calculateFinalScore(this);
-            console.log(`Score final: ${player.name} : ${player.score}, ${!player.dead ? 'vivant' : player.fled ? 'fui' : 'mort'}.`);
-        });
-
-        const playersInDungeon = this.players.filter(player => player.inDungeon());
-        let finalPlayers;
-
-        if (playersInDungeon.length > 0) {
-            console.log("Les joueurs suivants ont poncé le donjon :");
-            playersInDungeon.forEach(player => {
-                console.log(`- ${player.name}`);
-            });
-            finalPlayers = playersInDungeon;
-            console.log("Des joueurs sont arrivés vivants au bout du donjon, les fuyards sont exclus.");
-        } else {
-            finalPlayers = this.players.filter(player => !player.dead);
-            console.log("Aucun joueur n'a poncé le donjon, tous les joueurs vivants comptent.");
-        }
-        // Include players with always_count attribute
-        const alwaysCountPlayers = this.players.filter(player => player.always_count);
-        alwaysCountPlayers.forEach(player => {
-            if (!finalPlayers.includes(player)) {
-                finalPlayers.push(player);
+            for (const player of this.players) {
+                await player.calculateFinalScore(this);
+                console.log(`Score final: ${player.name} : ${player.score}, ${!player.dead ? 'vivant' : player.fled ? 'fui' : 'mort'}.`);
             }
-        });
-        this.players.forEach(player => {
-            if (finalPlayers.includes(player)) {
-                console.log(`${player.name} est inclus dans le décompte final.`);
+
+            const playersInDungeon = this.players.filter(player => player.inDungeon());
+            let finalPlayers;
+
+            if (playersInDungeon.length > 0) {
+                console.log("Les joueurs suivants ont poncé le donjon :");
+                playersInDungeon.forEach(player => {
+                    console.log(`- ${player.name}`);
+                });
+                finalPlayers = playersInDungeon;
+                console.log("Des joueurs sont arrivés vivants au bout du donjon, les fuyards sont exclus.");
             } else {
-                if (player.dead) {
-                    console.log(`${player.name} est exclu du décompte final car il est mort.`);
-                } else if (player.fled) {
-                    console.log(`${player.name} est exclu du décompte final car il a fui le donjon.`);
-                } else {
-                    console.log(`${player.name} A BUG ?? ${player.alive} ${player.fled} ${player.inDungeon}`);
+                finalPlayers = this.players.filter(player => !player.dead);
+                console.log("Aucun joueur n'a poncé le donjon, tous les joueurs vivants comptent.");
+            }
+            // Include players with always_count attribute
+            const alwaysCountPlayers = this.players.filter(player => player.always_count);
+            alwaysCountPlayers.forEach(player => {
+                if (!finalPlayers.includes(player)) {
+                    finalPlayers.push(player);
                 }
-            }
-        });
+            });
+            this.players.forEach(player => {
+                if (finalPlayers.includes(player)) {
+                    console.log(`${player.name} est inclus dans le décompte final.`);
+                } else {
+                    if (player.dead) {
+                        console.log(`${player.name} est exclu du décompte final car il est mort.`);
+                    } else if (player.fled) {
+                        console.log(`${player.name} est exclu du décompte final car il a fui le donjon.`);
+                    } else {
+                        console.log(`${player.name} A BUG ?? ${player.alive} ${player.fled} ${player.inDungeon}`);
+                    }
+                }
+            });
 
-        finalPlayers.sort((a, b) => b.score - a.score);
-        const topScore = finalPlayers[0].score;
-        const tiedPlayers = finalPlayers.filter(player => player.score === topScore);
+            finalPlayers.sort((a, b) => b.score - a.score);
+            const topScore = finalPlayers[0].score;
+            const tiedPlayers = finalPlayers.filter(player => player.score === topScore);
 
-        let winner;
-        if (tiedPlayers.length > 1) {
-            const playersWithTiebreaker = this.players.filter(player => player.tiebreaker && player.alive);
-            if (playersWithTiebreaker.length > 0) {
-                winner = playersWithTiebreaker[0];
-                console.log(`${winner.name} remporte la manche grâce à son avantage en cas d'égalité.`);
+            let winner;
+            if (tiedPlayers.length > 1) {
+                const playersWithTiebreaker = this.players.filter(player => player.tiebreaker && player.alive);
+                if (playersWithTiebreaker.length > 0) {
+                    winner = playersWithTiebreaker[0];
+                    console.log(`${winner.name} remporte la manche grâce à son avantage en cas d'égalité.`);
+                } else {
+                    winner = tiedPlayers[Math.floor(Math.random() * tiedPlayers.length)];
+                    console.log(`${winner.name} remporte la manche suite à un tirage au sort parmi les joueurs avec le même score.`);
+                }
             } else {
-                winner = tiedPlayers[Math.floor(Math.random() * tiedPlayers.length)];
-                console.log(`${winner.name} remporte la manche suite à un tirage au sort parmi les joueurs avec le même score.`);
+                winner = tiedPlayers[0];
             }
-        } else {
-            winner = tiedPlayers[0];
+
+
+            finalPlayers.forEach((player, index) => {
+                const medal = player === winner ? "MEDAILLE" : "";
+                console.log(`${player.name} : ${player.score} points, PV restant ${player.hp}. ${medal}`);
+            });
+
+            console.log("\n");
+
+            this.room.broadcast("endScores", { "winner": winner, "finalPlayers": finalPlayers })
         }
-
-
-        finalPlayers.forEach((player, index) => {
-            const medal = player === winner ? "MEDAILLE" : "";
-            console.log(`${player.name} : ${player.score} points, PV restant ${player.hp}. ${medal}`);
-        });
-
-        console.log("\n");
-
-        this.room.broadcast("endScores", {"winner":winner, "finalPlayers":finalPlayers})
     }
 
 }
