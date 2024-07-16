@@ -9,7 +9,6 @@ export class Game {
         this.currentCard = null; 
         this.canTryToEscape = true;
         this.discardPile = [];
-        this.turnNumber = 0;
     }
     noCurrentCard() {
         return !this.currentCard || this.currentCard._id === undefined
@@ -37,6 +36,7 @@ export class Player {
         this.score = 0;
         this.dead = false;
         this.fled = false;
+        this.turnNumber = 0;
         this.monstersAddedThisTurn = 0;
     }
 

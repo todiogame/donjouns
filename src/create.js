@@ -81,7 +81,7 @@ export function create() {
         });
 
 
-        room.onMessage("scout", (message) => {
+        room.onMessage("scout", (message) => { 
             console.log("Received scout cards:", message);
             displayManager.displayScoutInterface(message.cards)
         });

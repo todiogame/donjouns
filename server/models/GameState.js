@@ -25,7 +25,6 @@ class GameState extends Schema {
         this.currentCard = null;
         this.canTryToEscape = true;
         this.discardPile = new ArraySchema();
-        this.turnNumber = 0;
 
         this.nextMonsterCondition = null;
         this.nextMonsterAction = null;
@@ -134,6 +133,7 @@ class GameState extends Schema {
         });
 
         this.currentPlayerIndex = Math.floor(Math.random() * this.players.length);
+        this.players[this.currentPlayerIndex].turnNumber++
 
         console.log("donjon set up ok")
     }
@@ -191,7 +191,7 @@ class GameState extends Schema {
 
             console.log(`${playerId} takes ${this.currentCard.damage} damage!`);
             player.loseHP(this, this.currentCard.damage)
-            if (this.currentCard.damage > 0) player.lastDamageTaken = this.currentCard.damage;
+            player.lastDamageTaken = this.currentCard.damage;
             if (player.inDungeon()) {
                 player.addDefeatedMonster(this.currentCard)
                 this.currentCard = null;
@@ -244,6 +244,7 @@ class GameState extends Schema {
         }
 
         if (foundPlayerInDungeon) {
+            newPlayer.turnNumber++
             newPlayer.canPass = false;
             this.canTryToEscape = true;
 

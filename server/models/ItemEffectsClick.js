@@ -93,7 +93,7 @@ const ieClick = {
 
     },
     kebab: (item, player, game) => {
-        if (!item.broken) {//todo check turn 3
+        if (!item.broken && player.turnNumber >= 3) {
             player.gainHP(7)
             item.break();
         }

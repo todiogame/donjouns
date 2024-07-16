@@ -21,7 +21,9 @@ class Player extends Schema {
         this.always_count = false;
         this.dead = false;
         this.fled = false;
+        this.turnNumber = 0;
         this.monstersAddedThisTurn = 0;
+        
         this.lastDamageTaken = 0;
     }
     // DRAFT PHASE
@@ -150,6 +152,7 @@ schema.defineTypes(Player, {
     score: "number",
     dead: "boolean",
     fled: "boolean",
+    turnNumber: "number",
     monstersAddedThisTurn: "number"
 });
 

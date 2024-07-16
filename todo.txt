@@ -1,0 +1,34 @@
+JEU
+
+- Phase de preparation au debut de la partie / "avant d'entrer dans le donjon"
+apres qu'on a setup les PV : pour set up les vorpales et autres
+=> le server envoie les messages aux clients pour trigger l'UI pour chaque objet et process les reponses
+
+- ajouter plus d'objets
+- ajouter les events
+- ajouter les monstres speciaux
+
+- faire les objets 
+- modif jet de fuite + modif des + rerolls
+- qui pick d'autre items avec une UI comme bombe / couteau suisse ou enclume
+- qui pick dans la defausse / dans les piles de monstres
+- qui pick un nombre (ex. boule de cristal) ou un type (afficher l'objet a cote du clavier)
+
+=> on doit donner au client l'info de l'UI associee a ces objets
+=> colonne UI dans le google sheets ? 
+MY_BROKEN_ITEMS MY_INTACT_ITEMS OPPONENTS_BROKEN_ITEMS
+DISCARD_1 MY_PILE_1
+NUMBER TYPE
+et ensuite dans le create => if "ui" ca balance l'UI sinon comme mtn
+
+INTERFACE
+- Loading screen
+- Start screen / Lobby
+- (Chat)
+- Bouton "retour au lobby" apres la partie
+- Medailles
+
+PRODUCTION
+- Hoster
+- BDD users
+- Enregistrer les games

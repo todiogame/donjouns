@@ -16,6 +16,7 @@ function executeAndDiscard(player, game) {
         game.discard(game.currentCard)
         game.currentCard = null;
         player.canPass = true;
+        player.lastDamageTaken = 0;
         game.canTryToEscape = true;
     }
 }
@@ -27,6 +28,7 @@ function executeAndLeech(player, game) {
         player.addDefeatedMonster(game.currentCard)
         game.currentCard = null;
         player.canPass = true;
+        player.lastDamageTaken = 0;
         game.canTryToEscape = true;
     }
 }
