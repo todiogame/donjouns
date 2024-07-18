@@ -25,6 +25,7 @@ class Player extends Schema {
         this.monstersAddedThisTurn = 0;
         
         this.lastDamageTaken = 0;
+        this.alreadyUsedItems = [];
     }
     // DRAFT PHASE
     addItemCardDraft(itemCard) {
@@ -56,7 +57,8 @@ class Player extends Schema {
 
     addItem(item) {
         this.stuff.push(item);
-        this.hp += item.hp;
+        // this.hp += item.hp;
+        ieStartGame[item.key]?.(item, player, this);
     }
 
     loseHP(game, damage) {

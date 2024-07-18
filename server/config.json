@@ -3,6 +3,6 @@
     "nb_items_deck" : 100,
     "nb_items_draft" : 7,
     "nb_items_starting" : 6,
-    "include_items": ["hourglass","kebab","adam","genius_glasses", "bahn"]
+    "include_items": ["crystal","box"]
 
 }

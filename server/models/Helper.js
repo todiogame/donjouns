@@ -51,13 +51,13 @@ function currentCardHasType(game, type) {
     return game.currentCard?.types.includes(type)
 }
 
-function reduceDamage(game, item, value, minDamage = 0) {
-    if (game.currentCard?.dungeonCardType == "monster" && !game.currentCard.affectedBy.includes(item.key)
+function reduceDamage(game, item, player, value, minDamage = 0) {
+    if (game.currentCard?.dungeonCardType == "monster" && !player.alreadyUsedItems.includes(item.key)
         && game.currentCard.damage > minDamage) {
         console.log("reduce damage by " + value);
         let damage = game.currentCard.damage - value
         game.currentCard.damage = (damage > minDamage) ? damage : minDamage;
-        game.currentCard.affectedBy.push(item.key)
+        player.alreadyUsedItems.push(item.key)
     }
 }
 

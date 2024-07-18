@@ -9,7 +9,6 @@ class MonsterCard extends DungeonCard {
         this.originalPower = power;
         this.types = types;
         this.damage = this.calculateDamage();
-        this.affectedBy = [];
     }
 
     calculateDamage() {

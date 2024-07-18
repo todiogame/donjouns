@@ -121,7 +121,7 @@ export function create() {
                 const cardImage = gameObjects[0];
                 console.log(cardImage)
                 if (cardImage.getData("type") === "dungeon") {
-                    console.log("pick donjon") 
+                    console.log("pick donjon")
                     room.send("pick_dungeon");
                     // displayManager.displayScoutInterface(cardGame.dungeon.slice(0,Math.floor(Math.random() * 25)), true)
                     // displayManager.displayNumberInputInterface((number) => console.log(`Selected number: ${number}`))
@@ -133,7 +133,11 @@ export function create() {
                 } else if (cardImage.getData("type") === "opponent_item") {
                     displayManager.zoomCard(cardImage);
                 } else if (cardImage.getData("type") === "my_item") {
-                    room.send("use_item", { item_id: cardImage.getData("item_id") })
+                    if (cardImage.getData("ui")) {
+                        // todo open the right ui        
+                        if (cardImage.getData("ui") === "number") displayManager.displayNumberInputInterface((number) =>
+                            room.send("use_item", { item_id: cardImage.getData("item_id"), arg: number }))
+                    } else room.send("use_item", { item_id: cardImage.getData("item_id") })
                 } else if (cardImage.getData("type") === "escape_roll") {
                     room.send("escape_roll")
                 }

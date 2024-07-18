@@ -168,14 +168,16 @@ class GameState extends Schema {
 
         this.dungeonLength = this.dungeon.push(this.currentCard);
         this.currentCard = null;
-    
+
         console.log('Updated dungeon:', this.dungeon.map(obj => obj.id).join(', '));
         console.log('Dungeon length:', this.dungeonLength);
     }
 
     pickDungeonCard(playerId) {
+        let player = this.findPlayerById(playerId)
         // Logic to handle picking a dungeon card
         if (this.dungeon.length && this.noCurrentCard() && this.isMyTurn(playerId)) {
+            player.alreadyUsedItems = [];
             this.canTryToEscape = false;
             this.currentCard = this.dungeon.pop();
             this.dungeonLength = this.dungeon.length;
@@ -230,10 +232,11 @@ class GameState extends Schema {
         //todo use items end of turn ?
         player.lastDamageTaken = 0;
         player.monstersAddedThisTurn = 0;
+        player.alreadyUsedItems = [];
 
         this.nextMonsterCondition = null;
         this.nextMonsterAction = null;
-        
+
         //calculate next player
         let originalIndex = this.currentPlayerIndex;
         let newPlayer;
@@ -257,11 +260,11 @@ class GameState extends Schema {
             newPlayer.canPass = false;
             this.canTryToEscape = true;
 
+
             //if there is an active card, reset its stats
             if (this.inFight()) {
                 this.currentCard.power = this.currentCard.originalPower;
                 this.currentCard.damage = this.currentCard.calculateDamage();
-                this.currentCard.affectedBy = [];
             }
 
         } else {
@@ -290,12 +293,12 @@ class GameState extends Schema {
         }
     }
 
-    wantToUseItem(playerId, itemId) {
+    wantToUseItem(playerId, itemId, arg) {
         console.log("wantToUseItem")
         let player = this.findPlayerById(playerId)
         let item = player.stuff.find(i => i.id === itemId)
         if (this.isMyTurn(playerId) && item) { // it's his turn and he got the item
-            item.tryToUse(player, this)
+            item.tryToUse(player, this, arg)
         }
     }
 

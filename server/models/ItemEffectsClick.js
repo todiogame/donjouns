@@ -42,14 +42,14 @@ const ieClick = {
         }
     },
     box: (item, player, game) => {
-        if (!game.trap && !item.broken && game.inFight() && game.currentCard.power <= 6) {
+        if (!game.trap && !item.broken && game.inFight() && !player.alreadyUsedItems.includes(item.key)) {
             h.playerRollDice(game, player, (roll) => {
                 if (roll >= game.currentCard.power)
                     h.execute(player, game)
                 if (roll == 1)
                     item.break();
             })
-            game.currentCard.affectedBy.push(item.key)
+            player.alreadyUsedItems.push(item.key)
         }
     },
     lich_bane: (item, player, game) => {
@@ -84,7 +84,7 @@ const ieClick = {
         if (!item.broken && game.inFight()) {
             h.playerRollDice(game, player, (roll1) => {
                 h.playerRollDice(game, player, (roll2) => {
-                    h.reduceDamage(game, item, roll1 + roll2)
+                    h.reduceDamage(game, item, player, roll1 + roll2)
                     item.break();
                 })
             })
@@ -231,12 +231,12 @@ const ieClick = {
     },
     fire_armor: (item, player, game) => {
         if (!item.broken && game.inFight() && h.currentCardHasType(game, "Dragon")) {
-            h.reduceDamage(game, item, 5)
+            h.reduceDamage(game, item, player, 5)
         }
     },
     fire_hammer: (item, player, game) => {
         if (!item.broken && game.inFight() && (h.currentCardHasType(game, "Golem") || h.currentCardHasType(game, "Dragon"))) {
-            h.reduceDamage(game, item, 4)
+            h.reduceDamage(game, item, player, 4)
         }
     },
     '13_16': (item, player, game) => {
@@ -249,7 +249,7 @@ const ieClick = {
     },
     scuba: (item, player, game) => {
         if (!item.broken && game.inFight()) {
-            h.reduceDamage(game, item, 2)
+            h.reduceDamage(game, item, player, 2)
         }
     },
     chainsaw: (item, player, game) => {
@@ -287,7 +287,7 @@ const ieClick = {
     },
     mage_armor: (item, player, game) => {
         if (!item.broken && game.inFight() && (h.currentCardHasType(game, "Lich") || h.currentCardHasType(game, "Demon"))) {
-            h.reduceDamage(game, item, 5)
+            h.reduceDamage(game, item, player, 5)
         }
     },
     divination: (item, player, game) => {
@@ -324,7 +324,7 @@ const ieClick = {
         if (!game.trap && !item.broken && game.inFight() && h.currentCardHasType(game, "Skeleton")) {
             h.execute(player, game)
         } else if (!item.broken && game.inFight()) {
-            h.reduceDamage(game, item, 1)
+            h.reduceDamage(game, item, player, 1)
         }
     },
     magic_ring: (item, player, game) => {
@@ -380,7 +380,17 @@ const ieClick = {
         }
     },
     crystal: (item, player, game, arg) => {
+        console.log(player.alreadyUsedItems)
+        console.log(player.alreadyUsedItems.includes(item.key))
+        if (!game.trap && !item.broken && !player.alreadyUsedItems.includes(item.key)) {
+            const originalNextMonsterCondition = game.nextMonsterCondition;
+            game.nextMonsterCondition = (state) =>
+                (originalNextMonsterCondition ? originalNextMonsterCondition(state) : false) ||
+                (state.inFight() && state.currentCard.power === arg);
 
+            game.nextMonsterAction = (state) => h.execute(player, state);
+            player.alreadyUsedItems.push(item.key)
+        }
     },
     whip: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight()) {
@@ -423,7 +433,7 @@ const ieClick = {
     golem_heart: (item, player, game) => {
         if (!item.broken && game.inFight()) {
             const golemCount = player.defeatedMonstersPile.filter(monster => monster.types.includes("Golem")).length
-            if (golemCount) h.reduceDamage(game, item, golemCount)
+            if (golemCount) h.reduceDamage(game, item, player, golemCount)
         }
     },
     dragon_blade: (item, player, game) => {
@@ -431,7 +441,7 @@ const ieClick = {
             h.execute(player, game)
         } else if (!item.broken && game.inFight()) {
             const dragonCount = player.defeatedMonstersPile.filter(monster => monster.types.includes("Dragon")).length
-            h.reduceDamage(game, item, dragonCount)
+            h.reduceDamage(game, item, player, dragonCount)
         }
     },
     axe: (item, player, game) => {

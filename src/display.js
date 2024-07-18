@@ -610,6 +610,7 @@ export class DisplayManager {
                     }
                     itemCardImage.setData("type", "my_item");
                     itemCardImage.setData("item_id", itemCard.id);
+                    itemCardImage.setData("ui", itemCard.ui);
 
                     itemCardImage.on('pointerover', () => {
                         itemCardImage.setDepth(1);
