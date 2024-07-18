@@ -14,6 +14,7 @@ function executeAndDiscard(player, game) {
     if (game.currentCard?.dungeonCardType == "monster") {
         game.room.broadcast("animate_execute", { playerId: player.id });
         game.discard(game.currentCard)
+        player.monstersBeatenThisTurn ++;
         game.currentCard = null;
         player.canPass = true;
         player.lastDamageTaken = 0;
@@ -79,6 +80,7 @@ function playerRollDice(game, player, callback) {
         callback(diceRoll);
     }, 1000); // 1000 milliseconds delay
 }
+
 
 
 

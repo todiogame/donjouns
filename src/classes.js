@@ -37,7 +37,7 @@ export class Player {
         this.dead = false;
         this.fled = false;
         this.turnNumber = 0;
-        this.monstersAddedThisTurn = 0;
+        this.monstersBeatenThisTurn = 0;
     }
 
 

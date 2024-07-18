@@ -12,6 +12,7 @@ const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 const { nb_items_deck, nb_items_draft, nb_items_starting, include_items } = config;
 const ieStartGame = require('./ItemEffectsStartGame');
 const iePick = require("./ItemEffectsPick");
+const ieEndTurn = require("./ItemEffectsEndTurn");
 
 class GameState extends Schema {
     constructor(room) {
@@ -231,12 +232,21 @@ class GameState extends Schema {
             this.passTurn()
         }
     }
-    passTurn(reversed = false) {
+    async passTurn(reversed = false) {
         let player = this.getCurrentPlayer();
         console.log(`${player.name} passes turn.`);
-        //todo use items end of turn ?
+
+        if (player.inDungeon()) {
+            // trigger "on end turn" items
+            for (let item of player.stuff) {
+                if (ieEndTurn[item.key]) {
+                    await ieEndTurn[item.key](item, player, this);
+                }
+            }
+        }
+
         player.lastDamageTaken = 0;
-        player.monstersAddedThisTurn = 0;
+        player.monstersBeatenThisTurn = 0;
         player.alreadyUsedItems = [];
 
         this.nextMonsterCondition = null;

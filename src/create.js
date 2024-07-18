@@ -134,7 +134,7 @@ export function create() {
                     displayManager.zoomCard(cardImage);
                 } else if (cardImage.getData("type") === "my_item") {
                     if (cardImage.getData("ui")) {
-                        // todo open the right ui
+                        // todo open the right ui          
                         if (cardImage.getData("ui") === "number") displayManager.displayNumberInputInterface((number) =>
                             room.send("use_item", { item_id: cardImage.getData("item_id"), arg: number }))
                     } else room.send("use_item", { item_id: cardImage.getData("item_id") })
@@ -158,7 +158,7 @@ export function create() {
         player.score = playerState.score;
         player.dead = playerState.dead;
         player.fled = playerState.fled;
-        player.monstersAddedThisTurn = playerState.monstersAddedThisTurn;
+        player.monstersBeatenThisTurn = playerState.monstersBeatenThisTurn;
         return player;
     }
     function updateGameState(state) {

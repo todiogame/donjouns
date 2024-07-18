@@ -3,6 +3,7 @@ const { Schema, type, ArraySchema } = schema;
 const { ItemCard } = require('./ItemCard');
 const { DungeonCard } = require('./DungeonCard');
 const ieScore = require('./ItemEffectsScore');
+const ieStartGame = require("./ItemEffectsStartGame");
 
 class Player extends Schema {
     constructor(id, name) {
@@ -22,7 +23,7 @@ class Player extends Schema {
         this.dead = false;
         this.fled = false;
         this.turnNumber = 0;
-        this.monstersAddedThisTurn = 0;
+        this.monstersBeatenThisTurn = 0;
         
         this.lastDamageTaken = 0;
         this.alreadyUsedItems = [];
@@ -55,10 +56,10 @@ class Player extends Schema {
     }
 
 
-    addItem(item) {
+    addItem(item, game) {
         this.stuff.push(item);
         // this.hp += item.hp;
-        ieStartGame[item.key]?.(item, player, this);
+        ieStartGame[item.key]?.(item, this, game);
     }
 
     loseHP(game, damage) {
@@ -77,7 +78,7 @@ class Player extends Schema {
     }
 
     pickItem(game) {
-        this.addItem(game.itemDeck.pop());
+        this.addItem(game.itemDeck.pop(), game);
     }
 
     rollToEscape() {
@@ -104,7 +105,7 @@ class Player extends Schema {
 
     addDefeatedMonster(card) {
         this.defeatedMonstersPile.push(card);
-        this.monstersAddedThisTurn += 1;
+        this.monstersBeatenThisTurn += 1;
     }
 
     scoreBonus(value) {
@@ -155,7 +156,7 @@ schema.defineTypes(Player, {
     dead: "boolean",
     fled: "boolean",
     turnNumber: "number",
-    monstersAddedThisTurn: "number"
+    monstersBeatenThisTurn: "number"
 });
 
 module.exports = { Player };
