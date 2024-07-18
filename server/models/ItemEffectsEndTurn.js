@@ -27,6 +27,9 @@ const ieEndTurn = {
         return Promise.resolve();
     },
 
+    crystal: (item, player, game) => {
+        item.indication = null
+    },
 };
 // Example usage
 // const key = 'midas';

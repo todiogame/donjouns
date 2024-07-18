@@ -316,9 +316,12 @@ const ieClick = {
         }
     },
     boomerang: (item, player, game) => {
-        h.executeAndDiscard(player, game)
-        game.nextMonsterCondition = (state) => state.inFight();
-        game.nextMonsterAction = (state) => h.execute(player, state);
+        if (!game.trap && !item.broken && game.inFight()) {
+            h.executeAndDiscard(player, game)
+            game.nextMonsterCondition = (state) => state.inFight();
+            game.nextMonsterAction = (state) => h.execute(player, state);
+            item.break()
+        }
     },
     ice_ring: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() && h.currentCardHasType(game, "Skeleton")) {
@@ -390,7 +393,7 @@ const ieClick = {
 
             game.nextMonsterAction = (state) => h.execute(player, state);
             player.alreadyUsedItems.push(item.key)
-            item.indication = ""+arg
+            item.indication = "" + arg
         }
     },
     whip: (item, player, game) => {

@@ -1175,7 +1175,7 @@ export class DisplayManager {
         }
     }
 
-    displayNumberInputInterface(onNumberSelected) {
+    displayNumberInputInterface(item, onNumberSelected) {
         // Ensure any existing number input popup is removed
         if (this.numberInputPopup) {
             this.numberInputPopup.destroy();
@@ -1187,12 +1187,23 @@ export class DisplayManager {
         // Create a container for the popup
         const container = this.scene.add.container(0, 0).setDepth(12);
 
+        //todo display current item on the left and keypad on the right
+        const desiredWidth = 375;
+        const desiredHeight = 525;
+        const scaleX = desiredWidth / 750;
+        const scaleY = desiredHeight / 1050;
+        const xPosition = (this.scene.sys.game.config.width) / 4;
+        const yPosition = (this.scene.sys.game.config.height) /2;
+        let itemCardImage = this.scene.add.image(xPosition, yPosition, item.texture)
+            .setOrigin(0.5, 0.5).setScale(scaleX, scaleY).setDepth(12);
+        container.add(itemCardImage);
+
         // Button dimensions
         const buttonSize = 100;
         const spacing = 20;
 
         // Calculate positions
-        const startX = (this.scene.sys.game.config.width - 3 * (buttonSize + spacing) + spacing) / 2;
+        const startX = (this.scene.sys.game.config.width - 3 * (buttonSize + spacing) + spacing) * 3 / 4;
         const startY = (this.scene.sys.game.config.height - 4 * (buttonSize + spacing) + spacing) / 2;
 
         // Add number buttons to the container
@@ -1242,7 +1253,7 @@ export class DisplayManager {
         const spacing = 20;
 
         // Calculate positions
-        const startX = (this.scene.sys.game.config.width - 3 * (buttonSize + spacing) + spacing) / 2;
+        const startX = (this.scene.sys.game.config.width - 3 * (buttonSize + spacing) + spacing) * 3 / 4;
         const startY = (this.scene.sys.game.config.height - 4 * (buttonSize + spacing) + spacing) / 2;
 
         // Add number buttons to the input container
