@@ -390,6 +390,7 @@ const ieClick = {
 
             game.nextMonsterAction = (state) => h.execute(player, state);
             player.alreadyUsedItems.push(item.key)
+            item.indication = ""+arg
         }
     },
     whip: (item, player, game) => {

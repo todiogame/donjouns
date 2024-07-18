@@ -19,7 +19,7 @@ function loadCSV(filePath, type) {
                 // Only process rows where 'id' is set
                 if (row.id) {
                     if (type === 'Monster') {
-                        const { id, Title: title, Power: power, Description: description, Type_en: cardType } = row;
+                        const { id, Title_en: title, Power: power, Description: description, Type_en: cardType } = row;
                         const types = cardType ? cardType.split(',').map(t => t.trim()) : [];
                         // console.log('Creating card:', { id, title, power, types, description, cardType });
                         const monsterCard = new MonsterCard(id, title, parseInt(power, 10) || 0, types, description, ""); //last row is effect

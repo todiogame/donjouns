@@ -11,6 +11,7 @@ const configPath = path.resolve(__dirname, '../config.json');
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 const { nb_items_deck, nb_items_draft, nb_items_starting, include_items } = config;
 const ieStartGame = require('./ItemEffectsStartGame');
+const iePick = require("./ItemEffectsPick");
 
 class GameState extends Schema {
     constructor(room) {
@@ -181,6 +182,10 @@ class GameState extends Schema {
             this.canTryToEscape = false;
             this.currentCard = this.dungeon.pop();
             this.dungeonLength = this.dungeon.length;
+            // trigger "on pick" items
+            player.stuff.forEach(item => {
+                iePick[item.key]?.(item, player, this);
+            });
             if (this.inFight()) {
                 this.currentCard.damage = this.currentCard.calculateDamage()
                 console.log(`${playerId} picked dungeon card ${this.currentCard.title} :  ${this.currentCard.damage} damage!`);

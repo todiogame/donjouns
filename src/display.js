@@ -612,6 +612,16 @@ export class DisplayManager {
                     itemCardImage.setData("item_id", itemCard.id);
                     itemCardImage.setData("ui", itemCard.ui);
 
+                    if (itemCard.indication) {
+                        this.scene.add.text(xPosition, yPosition, itemCard.indication, {
+                            fontSize: '60px',
+                            fill: '#fff',
+                            fontStyle: 'bold'
+                        }).setOrigin(0.5, 0.5).setDepth(0.1);
+                        itemCardImage.setData('indication', itemCard.indication);
+
+                    }
+
                     itemCardImage.on('pointerover', () => {
                         itemCardImage.setDepth(1);
                         this.scene.tweens.add({
@@ -934,7 +944,7 @@ export class DisplayManager {
                 this.scoutPopup.destroy();
                 this.scoutPopup = null;
             }
-    
+
             if (!this.blurryBackground) {
                 this.blurryBackground = this.scene.add.graphics({ fillStyle: { color: 0x000000, alpha: 0.7 } });
                 this.blurryBackground.fillRect(0, 0, this.scene.sys.game.config.width, this.scene.sys.game.config.height);
@@ -942,9 +952,9 @@ export class DisplayManager {
                 this.blurryBackground.setInteractive(new Phaser.Geom.Rectangle(0, 0, this.scene.sys.game.config.width, this.scene.sys.game.config.height), Phaser.Geom.Rectangle.Contains);
                 this.blurryBackground.on('pointerdown', (pointer) => { });
             }
-    
+
             const container = this.scene.add.container(0, 0).setDepth(12);
-    
+
             let cardWidth = 240;
             let cardHeight = 336;
             const maxCardWidth = 240;
@@ -953,7 +963,7 @@ export class DisplayManager {
             const minCardHeight = 140;
             const spacing = 10;
             let columns;
-    
+
             if (cards.length <= 4) {
                 columns = cards.length;
             } else if (cards.length <= 12) {
@@ -965,26 +975,26 @@ export class DisplayManager {
                 cardWidth = 100;
                 cardHeight = 140;
             }
-    
+
             const scaleX = cardWidth / 750;
             const scaleY = cardHeight / 1050;
-    
+
             let rows = Math.ceil(cards.length / columns);
-    
+
             const startX = (this.scene.sys.game.config.width - (columns * (cardWidth + spacing))) / 2;
             const startY = (this.scene.sys.game.config.height - (rows * (cardHeight + spacing))) / 2;
-    
+
             cards.forEach((card, index) => {
                 const colIndex = index % columns;
                 const rowIndex = Math.floor(index / columns);
                 const cardX = startX + colIndex * (cardWidth + spacing);
                 const cardY = startY + rowIndex * (cardHeight + spacing);
-    
+
                 const cardImage = this.scene.add.image(cardX, cardY, card.texture)
                     .setOrigin(0, 0)
                     .setDisplaySize(cardWidth, cardHeight)
                     .setInteractive({ useHandCursor: true, pixelPerfect: true, alphaTolerance: 1 });
-    
+
                 cardImage.on('pointerover', () => {
                     cardImage.setDepth(15);
                     this.scene.tweens.add({
@@ -995,7 +1005,7 @@ export class DisplayManager {
                         ease: 'Sine.easeInOut'
                     });
                 });
-    
+
                 cardImage.on('pointerout', () => {
                     cardImage.setDepth(12);
                     this.scene.tweens.add({
@@ -1006,7 +1016,7 @@ export class DisplayManager {
                         ease: 'Sine.easeInOut',
                     });
                 });
-    
+
                 if (canPickCard) {
                     cardImage.on('pointerdown', () => {
                         this.scene.tweens.add({
@@ -1023,16 +1033,16 @@ export class DisplayManager {
                         });
                     });
                 }
-    
+
                 container.add(cardImage);
             });
-    
+
             const buttonWidth = 200;
             const buttonHeight = 50;
             const buttonX = this.scene.sys.game.config.width / 2;
             const buttonY = startY + rows * (cardHeight + spacing) + 40;
             const buttonRadius = 10;
-    
+
             const closeButtonBg = this.scene.add.graphics();
             closeButtonBg.fillStyle(0xff0000, 1);
             closeButtonBg.fillRoundedRect(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight, buttonRadius);
@@ -1051,14 +1061,14 @@ export class DisplayManager {
                     }
                 });
             });
-    
+
             const closeButtonText = this.scene.add.text(buttonX, buttonY, 'CLOSE', {
                 fontSize: '32px',
                 fill: '#fff'
             }).setOrigin(0.5, 0.5)
                 .setInteractive({ useHandCursor: true })
                 .setDepth(14);
-    
+
             closeButtonText.on('pointerdown', () => {
                 this.scene.tweens.add({
                     targets: [container, this.blurryBackground],
@@ -1072,20 +1082,20 @@ export class DisplayManager {
                     }
                 });
             });
-    
+
             container.add(closeButtonBg);
             container.add(closeButtonText);
-    
+
             this.scene.tweens.add({
                 targets: [container, this.blurryBackground],
                 alpha: { from: 0, to: 1 },
                 duration: 300
             });
-    
+
             this.scoutPopup = container;
         }
     }
-    
+
 
     createPopupBackground(depth) {
         const bg = this.scene.add.graphics({ fillStyle: { color: 0x000000, alpha: 0.7 } });

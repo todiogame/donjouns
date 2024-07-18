@@ -62,7 +62,7 @@ export class ItemCard {
         const escapeRollModMatch = description.match(/Jet de fuite \+ (\d+)/);
         this.escapeRollModifier = escapeRollModMatch ? parseInt(escapeRollModMatch[1], 10) : 0;
         this.ui = null;
-        this.uiCondition = null;
+        this.indication = null;
     }
 }
 
