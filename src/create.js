@@ -50,7 +50,7 @@ export function create() {
 
         room.onMessage("animate_roll", (message) => {
             cardGame.isDiceRolling = true; // Set flag to disable interactions during dice roll
-            displayManager.updateGameUI(cardGame, localPlayerId);
+            displayManager.updateGameUI(cardGame, localPlayerId, cardGame.phase);
             this.rollDieSound.play();
             const playerId = message.playerId
             displayManager.displayDice(playerId === localPlayerId ? "bottom" :
@@ -69,7 +69,7 @@ export function create() {
             console.log("rolled a", message.result)
             if (diceScene) diceScene.showDiceResult(message.result);
             cardGame.isDiceRolling = false; // Re-enable interactions after dice roll completes
-            if (cardGame.phase.includes("GAME")) displayManager.updateGameUI(cardGame, localPlayerId);
+            if (cardGame.phase.includes("GAME")) displayManager.updateGameUI(cardGame, localPlayerId, cardGame.phase);
         });
 
         room.onMessage("endScores", (message) => {
@@ -132,11 +132,20 @@ export function create() {
                     displayManager.zoomCard(cardImage);
                 } else if (cardImage.getData("type") === "my_item") {
                     if (cardImage.getData("ui")) {
-                        // todo open the right ui
-                        let item = cardGame.players[cardGame.currentPlayerIndex].stuff.find(item => item.id === cardImage.getData("item_id"));
-                        if (cardImage.getData("ui") === "number")
+                        // open the right ui
+                        console.log("ui")
+                        let item = cardGame.getPlayerById(localPlayerId)?.stuff.find(item => {
+                            console.log(item.id, cardImage.getData("item_id"))
+                            return item.id === cardImage.getData("item_id")
+                        });
+                        console.log(item)
+                        if (cardImage.getData("ui") === "number") 
                             displayManager.displayNumberInputInterface(item, (number) =>
                                 room.send("use_item", { item_id: cardImage.getData("item_id"), arg: number }))
+                        if (cardImage.getData("ui") === "monster_type")
+                            displayManager.displayMonsterTypeSelectionInterface(item, (number) =>
+                                room.send("use_item", { item_id: cardImage.getData("item_id"), arg: number }))
+
                     } else room.send("use_item", { item_id: cardImage.getData("item_id") })
                 } else if (cardImage.getData("type") === "escape_roll") {
                     room.send("escape_roll")
@@ -181,7 +190,7 @@ export function create() {
         if (cardGame.phase === "DRAFT") {
             displayManager.updateDraftingUI(cardGame.players, localPlayerId);
         } else if (cardGame.phase.includes("GAME")) {
-            displayManager.updateGameUI(cardGame, localPlayerId);
+            displayManager.updateGameUI(cardGame, localPlayerId, cardGame.phase);
         }
         else if (cardGame.phase === "END") {
             displayManager.updateEndUI(cardGame.winner, cardGame.finalPlayers, localPlayerId);

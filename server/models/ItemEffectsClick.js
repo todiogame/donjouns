@@ -111,7 +111,10 @@ const ieClick = {
         }
     },
     fairy_potion: (item, player, game) => {
-        h.surviveWith(player, game, 1);
+        if (!item.broken && game.inFight()) {
+            h.surviveWith(player, game, 1);
+            item.break()
+        }
     },
     ice_potion: (item, player, game) => {
         if (!item.broken && game.inFight()) {
@@ -120,11 +123,25 @@ const ieClick = {
             item.break()
         }
     },
-    vorpal_sword: (item, player, game) => {
-
+    vorpal_sword: (item, player, game, arg) => {
+        if (!item.indication) { //fisrt time setup
+            item.setIndication(arg, game);
+            item.ui = null;
+        }
+        if (!game.trap && !item.broken && game.inFight() && item.indication
+            && (game.currentCard.power === item.indication)) {
+            h.execute(player, game)
+        }
     },
-    vorpal_dagger: (item, player, game) => {
-
+    vorpal_dagger: (item, player, game, arg) => {
+        if (!item.indication) { //fisrt time setup
+            item.setIndication(arg, game);
+            item.ui = null;
+        }
+        if (!game.trap && !item.broken && game.inFight() && item.indication
+            && (h.currentCardHasType(game, item.indication))) {
+            h.execute(player, game)
+        }
     },
     dragon_potion: (item, player, game) => {
         if (!item.broken) {
@@ -383,8 +400,6 @@ const ieClick = {
         }
     },
     crystal: (item, player, game, arg) => {
-        console.log(player.alreadyUsedItems)
-        console.log(player.alreadyUsedItems.includes(item.key))
         if (!game.trap && !item.broken && !player.alreadyUsedItems.includes(item.key)) {
             const originalNextMonsterCondition = game.nextMonsterCondition;
             game.nextMonsterCondition = (state) =>
@@ -393,7 +408,7 @@ const ieClick = {
 
             game.nextMonsterAction = (state) => h.execute(player, state);
             player.alreadyUsedItems.push(item.key)
-            item.indication = "" + arg
+            item.setIndication(arg, game);
         }
     },
     whip: (item, player, game) => {

@@ -76,7 +76,9 @@ class RandomRoom extends colyseus.Room {
             this.state.dealItemsCardsRandom();
             this.state.setUpDungeonGame(this.allDungeonCards);
             this.broadcast("start_game_random", this.state);
-            this.state.gameLoop()
+            if (this.state.allPlayersSetupReady()) {
+                this.state.gameLoop()
+            }
         }
     }
 

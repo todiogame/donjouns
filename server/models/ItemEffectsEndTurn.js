@@ -28,7 +28,7 @@ const ieEndTurn = {
     },
 
     crystal: (item, player, game) => {
-        item.indication = null
+        item.setIndication(null, game);
     },
 };
 // Example usage

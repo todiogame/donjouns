@@ -13,18 +13,17 @@ class ItemCard extends Schema {
         this.key = key;
         this.description = description;
         this.broken = false;
+        this.requireSetup = this.setRequireSetup()
         // client-side ui
-        this.ui = null;
+        this.ui = this.pickUI()
         this.indication = null;
         this.uiCondition = null;
-        // test to remove
-        this.ui = this.pickUI()
 
     }
-    break(){
+    break() {
         this.broken = true
     }
-    fix(){
+    fix() {
         this.broken = false
     }
     tryToUse(player, game, arg = -1) {
@@ -33,13 +32,25 @@ class ItemCard extends Schema {
     }
 
     pickUI() {
-        if (["crystal", "vorpal_sword","wind_ring"].includes(this.key)) return "number"
+        if (["crystal", "vorpal_sword", "wind_ring"].includes(this.key)) return "number"
         if (["swiss"].includes(this.key)) return "my_items_broken"
         if (["anvil"].includes(this.key)) return "opponent_items_broken"
-        if (["mana_potion","purple_skull"].includes(this.key)) return "my_pile"
-        if (["printer","pirate_bomb"].includes(this.key)) return "my_items_intact"
+        if (["mana_potion", "purple_skull"].includes(this.key)) return "my_pile"
+        if (["printer", "pirate_bomb"].includes(this.key)) return "my_items_intact"
         if (["vorpal_dagger"].includes(this.key)) return "monster_type"
         if (["sceptre"].includes(this.key)) return "opponent_hero"
+    }
+
+    setRequireSetup() {
+        if (["vorpal_dagger", "vorpal_sword", "printer", "sceptre"].includes(this.key)) return true
+    }
+
+    setIndication(indication, game) {
+        //have to cast to a string
+        this.indication = (indication || indication == 0) ? "" + indication : null;
+        if (game.phase === "GAME_SETUP" && game.allPlayersSetupReady()) {
+            game.gameLoop()
+        }
     }
 }
 
@@ -53,6 +64,7 @@ schema.defineTypes(ItemCard, {
     key: "string",
     description: "string",
     broken: "boolean",
+    requireSetup: "boolean",
     ui: "string",
     indication: "string",
 });

@@ -9,7 +9,7 @@ const path = require('path');
 
 const configPath = path.resolve(__dirname, '../config.json');
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-const { nb_items_deck, nb_items_draft, nb_items_starting, include_items } = config;
+const { nb_items_deck, nb_items_draft, nb_items_starting, disabled_items, include_items } = config;
 const ieStartGame = require('./ItemEffectsStartGame');
 const iePick = require("./ItemEffectsPick");
 const ieEndTurn = require("./ItemEffectsEndTurn");
@@ -21,7 +21,7 @@ class GameState extends Schema {
         this.phase = "WAITING";
         this.players = new ArraySchema();
         this.itemDeck = new ArraySchema();
-        this.currentPlayerIndex = 0;
+        this.currentPlayerIndex = null;
         this.dungeon = new ArraySchema();
         this.dungeonLength = 0;
         this.currentCard = null;
@@ -43,6 +43,10 @@ class GameState extends Schema {
         this.itemDeck.clear();
         this.itemDeck.push(...itemsCards.filter(item => item.id > 0 && item.id <= nb_items_deck)
             .map(i => new ItemCard(i.id, i.title, i.active, i.color, i.key, i.description)));
+
+        //remove disabled items
+        this.itemDeck = this.itemDeck.filter(item => !disabled_items.includes(item.key));
+
         this.shuffleItemsDeck();
         // Step 2: Move specified items to the end
         const endItems = this.itemDeck.filter(item => include_items.includes(item.key));
@@ -104,11 +108,17 @@ class GameState extends Schema {
         this.players.forEach(p => p.hand.clear());
     }
 
-    // DUNGEON PHASE
-
     setUpAndPlayDungeon(allDungeonCards) {
         this.setUpDungeonGame(allDungeonCards)
         this.gameLoop();
+    }
+
+    // DUNGEON PHASE
+
+    allPlayersSetupReady() {
+        return this.players.every(player => player.stuff.every(item =>
+            !item.requireSetup || item.indication
+        ));
     }
 
     setUpDungeonGame(allDungeonCards) {
@@ -134,10 +144,8 @@ class GameState extends Schema {
             });
         });
 
-        this.currentPlayerIndex = Math.floor(Math.random() * this.players.length);
-        this.players[this.currentPlayerIndex].turnNumber++
+        // preparation phase
 
-        console.log("donjon set up ok")
     }
 
     shuffleDungeon() {
@@ -312,7 +320,8 @@ class GameState extends Schema {
         console.log("wantToUseItem")
         let player = this.findPlayerById(playerId)
         let item = player.stuff.find(i => i.id === itemId)
-        if (this.isMyTurn(playerId) && item) { // it's his turn and he got the item
+        if (((this.phase == "GAME_SETUP") || (this.phase == "GAME_LOOP" && this.isMyTurn(playerId)))
+            && item) { // it's his turn (or we're setting up the game) and he got the item
             item.tryToUse(player, this, arg)
         }
     }
@@ -320,6 +329,11 @@ class GameState extends Schema {
     gameLoop() {
         this.phase = "GAME_LOOP";
         console.log("game loop")
+
+        this.currentPlayerIndex = Math.floor(Math.random() * this.players.length);
+        this.players[this.currentPlayerIndex].turnNumber++
+
+        console.log("donjon set up ok")
         //     while (this.dungeon.length > 0 && this.players.some(player => player.inDungeon())) {
         //         this.turnNumber++;
         //         this.log(`Turn ${this.turnNumber}`);

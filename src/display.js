@@ -428,6 +428,7 @@ export class DisplayManager {
     updateGameUI(game, localPlayerId) {
         console.log("updateGameUI", game, localPlayerId);
         this.clearPreviousDisplay();
+        this.displayCurrentPhase(game);
         const players = game.players;
         players.forEach(player => {
             if (player.id === localPlayerId) {
@@ -454,7 +455,13 @@ export class DisplayManager {
                 this.addPassTurnButton(game)
         }
     }
-
+    displayCurrentPhase(game){
+        this.scene.add.text(
+            this.scene.sys.game.config.width / 2 - 50,
+            30,
+            game.phase,
+            { fontSize: '20px', fill: '#fff', fontStyle: 'bold' });
+    }
     displayCurrentCard(game) {
         if (game.currentCard) {
             const desiredWidth = 125;
@@ -580,76 +587,12 @@ export class DisplayManager {
         let playerNameText;
 
         if (isPlayer) {
-            const totalItems = stuff.length;
-            const actualWidth = totalItems > maxItemsPerRow ? defaultWidth * (maxItemsPerRow / totalItems) : defaultWidth;
-            const actualHeight = totalItems > maxItemsPerRow ? defaultHeight * (maxItemsPerRow / totalItems) : defaultHeight;
-            const actualScaleX = actualWidth / 750;
-            const actualScaleY = actualHeight / 1050;
-
-            const startingX = (this.scene.sys.game.config.width - (actualWidth + 10) * Math.max(totalItems - 1, maxItemsPerRow - 1)) / 2;
-
-            stuff.forEach((itemCard, index) => {
-                if (itemCard) {
-                    let itemCardImage;
-                    const xPosition = startingX + index * (actualWidth + 10);
-                    const yPosition = this.scene.sys.game.config.height - defaultHeight + (defaultHeight / 2) - 5;
-
-                    itemCardImage = this.scene.add.image(xPosition, yPosition, itemCard.texture)
-                        .setOrigin(0.5, 0.5)
-                        .setScale(actualScaleX, actualScaleY)
-                        .setInteractive({ useHandCursor: true, pixelPerfect: true, alphaTolerance: 1 });
-
-                    if (itemCard.broken) {
-                        itemCardImage.setRotation(Math.PI / 2);
-                        itemCardImage.setDepth(-2);
-                        const overlay = this.scene.add.rectangle(xPosition, yPosition, actualWidth, actualHeight, 0x444444, 0.3)
-                            .setOrigin(0.5, 0.5)
-                            .setRotation(Math.PI / 2)
-                            .setDepth(-1);
-                        itemCardImage.setData('overlay', overlay);
-                    }
-                    itemCardImage.setData("type", "my_item");
-                    itemCardImage.setData("item_id", itemCard.id);
-                    itemCardImage.setData("ui", itemCard.ui);
-
-                    if (itemCard.indication) {
-                        this.scene.add.text(xPosition, yPosition, itemCard.indication, {
-                            fontSize: '60px',
-                            fill: '#fff',
-                            fontStyle: 'bold'
-                        }).setOrigin(0.5, 0.5).setDepth(0.1);
-                        itemCardImage.setData('indication', itemCard.indication);
-
-                    }
-
-                    itemCardImage.on('pointerover', () => {
-                        itemCardImage.setDepth(1);
-                        this.scene.tweens.add({
-                            targets: itemCardImage,
-                            scaleX: hoverScaleX,
-                            scaleY: hoverScaleY,
-                            duration: 50,
-                            ease: 'Sine.easeInOut'
-                        });
-                    });
-                    itemCardImage.on('pointerout', () => {
-                        itemCardImage.setDepth(itemCard.broken ? -2 : 0);
-                        this.scene.tweens.add({
-                            targets: itemCardImage,
-                            scaleX: actualScaleX,
-                            scaleY: actualScaleY,
-                            duration: 50,
-                            ease: 'Sine.easeInOut',
-                        });
-                    });
-                }
-            });
-
-            playerNameText = this.scene.add.text(startingX, this.scene.sys.game.config.height - defaultHeight - 30, playerName, { fontSize: '20px', fill: '#fff', fontStyle: 'bold' });
+            this.displayMyStuff(stuff, playerName, maxItemsPerRow, defaultWidth, defaultHeight, hoverScaleX, hoverScaleY);
+            playerNameText = this.scene.add.text(this.scene.sys.game.config.width / 10, this.scene.sys.game.config.height - defaultHeight - 30, playerName, { fontSize: '20px', fill: '#fff', fontStyle: 'bold' });
         } else {
             let stuffYOffset = 15;
             const maxItemsPerColumn = 2;
-            let stuffXOffset = stuff.length <= 8 ? 10 : - 30;
+            let stuffXOffset = stuff.length <= 8 ? 10 : -30;
             const columnOffset = defaultWidth + stuffXOffset;
             let xPosition;
 
@@ -688,10 +631,86 @@ export class DisplayManager {
             playerNameText = this.scene.add.text(xPosition, 2 * stuffYOffset + (defaultHeight * (maxItemsPerColumn - 1) * 1.5), playerName, { fontSize: '20px', fill: '#fff', fontStyle: 'bold' });
         }
 
-        if (game && game.players[game.currentPlayerIndex].id === player.id) {
+        if (game && game.players[game.currentPlayerIndex]?.id === player.id) {
             this.addShiningEffect(playerNameText);
         }
     }
+
+    displayMyStuff(stuff, playerName, maxItemsPerRow, defaultWidth, defaultHeight, hoverScaleX, hoverScaleY) {
+        const actualWidth = stuff.length > maxItemsPerRow ? defaultWidth * (maxItemsPerRow / stuff.length) : defaultWidth;
+        const actualHeight = stuff.length > maxItemsPerRow ? defaultHeight * (maxItemsPerRow / stuff.length) : defaultHeight;
+        const actualScaleX = actualWidth / 750;
+        const actualScaleY = actualHeight / 1050;
+
+        const startingX = (this.scene.sys.game.config.width - (actualWidth + 10) * Math.max(stuff.length - 1, maxItemsPerRow - 1)) / 2;
+
+        stuff.forEach((itemCard, index) => {
+            if (itemCard) {
+                let itemCardImage;
+                const xPosition = startingX + index * (actualWidth + 10);
+                const yPosition = this.scene.sys.game.config.height - defaultHeight + (defaultHeight / 2) - 5;
+
+                itemCardImage = this.scene.add.image(xPosition, yPosition, itemCard.texture)
+                    .setOrigin(0.5, 0.5)
+                    .setScale(actualScaleX, actualScaleY)
+                    .setInteractive({ useHandCursor: true, pixelPerfect: true, alphaTolerance: 1 });
+
+                if (itemCard.broken) {
+                    itemCardImage.setRotation(Math.PI / 2);
+                    itemCardImage.setDepth(-2);
+                    const overlay = this.scene.add.rectangle(xPosition, yPosition, actualWidth, actualHeight, 0x444444, 0.3)
+                        .setOrigin(0.5, 0.5)
+                        .setRotation(Math.PI / 2)
+                        .setDepth(-1);
+                    itemCardImage.setData('overlay', overlay);
+                }
+                itemCardImage.setData("type", "my_item");
+                itemCardImage.setData("item_id", itemCard.id);
+                itemCardImage.setData("ui", itemCard.ui);
+
+                if (itemCard.indication) {
+                    let fontSize = 60, indicationText;
+                    do {
+                        indicationText?.destroy();
+                        indicationText = this.scene.add.text(xPosition, yPosition, itemCard.indication, {
+                            fontSize: `${fontSize}px`,
+                            fill: '#fff',
+                            fontStyle: 'bold'
+                        }).setOrigin(0.5, 0.5).setDepth(0.1);
+                    } while (indicationText.width > 90 && fontSize-- > 1);
+
+                    itemCardImage.setData('indication', itemCard.indication);
+                }
+
+                itemCardImage.on('pointerover', () => {
+                    itemCardImage.setDepth(1);
+                    this.scene.tweens.add({
+                        targets: itemCardImage,
+                        scaleX: hoverScaleX,
+                        scaleY: hoverScaleY,
+                        duration: 50,
+                        ease: 'Sine.easeInOut'
+                    });
+                });
+                itemCardImage.on('pointerout', () => {
+                    itemCardImage.setDepth(itemCard.broken ? -2 : 0);
+                    this.scene.tweens.add({
+                        targets: itemCardImage,
+                        scaleX: actualScaleX,
+                        scaleY: actualScaleY,
+                        duration: 50,
+                        ease: 'Sine.easeInOut',
+                    });
+                });
+
+                if(itemCard.requireSetup && !itemCard.indication){
+                    this.animateCard(itemCardImage)
+                }
+            }
+        });
+
+    }
+
 
     displayHP(player, isPlayer, position) {
         const hp = player.hp;
@@ -1193,7 +1212,7 @@ export class DisplayManager {
         const scaleX = desiredWidth / 750;
         const scaleY = desiredHeight / 1050;
         const xPosition = (this.scene.sys.game.config.width) / 4;
-        const yPosition = (this.scene.sys.game.config.height) /2;
+        const yPosition = (this.scene.sys.game.config.height) / 2;
         let itemCardImage = this.scene.add.image(xPosition, yPosition, item.texture)
             .setOrigin(0.5, 0.5).setScale(scaleX, scaleY).setDepth(12);
         container.add(itemCardImage);
@@ -1305,6 +1324,82 @@ export class DisplayManager {
         });
     }
 
+    displayMonsterTypeSelectionInterface(item, onMonsterTypeSelected) {
+        if (this.creatureSelectionPopup) {
+            this.creatureSelectionPopup.destroy();
+            this.creatureSelectionPopup = null;
+        }
+
+        const { bg, interactionBlocker } = this.createPopupBackgroundMonsterTypePopup(10);
+        const container = this.scene.add.container(0, 0).setDepth(12);
+
+        const desiredWidth = 375;
+        const desiredHeight = 525;
+        const scaleX = desiredWidth / 750;
+        const scaleY = desiredHeight / 1050;
+        const xPosition = (this.scene.sys.game.config.width) / 4;
+        const yPosition = (this.scene.sys.game.config.height) / 2;
+
+        let itemCardImage = this.scene.add.image(xPosition, yPosition, item.texture)
+            .setOrigin(0.5, 0.5).setScale(scaleX, scaleY).setDepth(12);
+        container.add(itemCardImage);
+
+        const creatures = [
+            'Rat', 'Goblin', 'Skeleton', 'Orc',
+            'Vampire', 'Golem', 'Lich', 'Demon', 'Dragon'
+        ];
+
+        const buttonHeight = 50;
+        const buttonSize = 250;
+        const spacing = 10;
+
+        // Calculate positions
+        const startX = (this.scene.sys.game.config.width - 1 * (buttonSize + spacing) + spacing) * 3 / 4;
+        const startY = yPosition - ((buttonHeight + spacing) * creatures.length) / 2;
+
+        creatures.forEach((creature, index) => {
+            const yPos = startY + index * (buttonHeight + spacing);
+            this.createButtonMonsterTypePopup(container, startX, yPos, creature, () => {
+                this.scene.tweens.add({
+                    targets: [container, bg, interactionBlocker],
+                    alpha: { from: 1, to: 0 },
+                    duration: 300,
+                    onComplete: () => {
+                        container.destroy();
+                        bg.destroy();
+                        interactionBlocker.destroy();
+                        this.creatureSelectionPopup = null;
+                        onMonsterTypeSelected(creature);
+                    }
+                });
+            }, 0x00ff00);
+        });
+
+        this.scene.tweens.add({
+            targets: [container, bg, interactionBlocker],
+            alpha: { from: 0, to: 1 },
+            duration: 300
+        });
+
+        this.creatureSelectionPopup = container;
+    }
+
+    createButtonMonsterTypePopup(container, x, y, label, callback, color) {
+        const button = this.scene.add.text(x, y, label, {
+            fontSize: '32px',
+            fill: '#fff',
+            backgroundColor: color ? Phaser.Display.Color.GetColor(color, color, color) : null
+        }).setInteractive({ useHandCursor: true }).on('pointerdown', callback);
+
+        button.setOrigin(0.5, 0.5);
+        container.add(button);
+    }
+
+    createPopupBackgroundMonsterTypePopup(depth) {
+        const bg = this.scene.add.rectangle(0, 0, this.scene.sys.game.config.width, this.scene.sys.game.config.height, 0x000000, 0.5).setOrigin(0, 0).setDepth(depth);
+        const interactionBlocker = this.scene.add.rectangle(0, 0, this.scene.sys.game.config.width, this.scene.sys.game.config.height, 0x000000, 0).setOrigin(0, 0).setInteractive().setDepth(depth + 1);
+        return { bg, interactionBlocker };
+    }
 
 
 

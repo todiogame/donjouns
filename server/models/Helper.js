@@ -37,6 +37,7 @@ function executeAndLeech(player, game) {
 function surviveWith(player, game, hp) {
     player.setHP(hp)
     if (game.inFight()) {
+        player.lastDamageTaken = Math.min(this.currentCard.damage, player.hp);
         player.addDefeatedMonster(game.currentCard)
         game.currentCard = null;
         player.canPass = true;
