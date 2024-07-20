@@ -2,6 +2,11 @@
 function execute(player, game) {
     if (game.currentCard?.dungeonCardType == "monster") {
         game.room.broadcast("animate_execute", { playerId: player.id });
+
+        //trigger effects on special monster beaten
+        if (game.currentCard.onBeatenMonster)
+            game.currentCard.onBeatenMonster(player, game)
+
         player.addDefeatedMonster(game.currentCard)
         game.currentCard = null;
         player.canPass = true;
@@ -14,12 +19,16 @@ function execute(player, game) {
 function executeAndDiscard(player, game) {
     if (game.currentCard?.dungeonCardType == "monster") {
         game.room.broadcast("animate_execute", { playerId: player.id });
+
+        //trigger effects on special monster beaten
+        if (game.currentCard.onBeatenMonster)
+            game.currentCard.onBeatenMonster(player, game)
+
         game.discard(game.currentCard)
         player.monstersBeatenThisTurn++;
         game.currentCard = null;
         player.canPass = true;
         player.lastDamageTaken = 0;
-        game.canTryToEscape = true;
         game.canExecute = false;
     }
 }
@@ -28,6 +37,11 @@ function surviveWith(player, game, hp) {
     player.setHP(hp)
     if (game.inFight()) {
         player.lastDamageTaken = Math.min(game.currentCard.damage, player.hp);
+
+        //trigger effects on special monster beaten
+        if (game.currentCard.onBeatenMonster)
+            game.currentCard.onBeatenMonster(player, game)
+
         player.addDefeatedMonster(game.currentCard)
         game.currentCard = null;
         player.canPass = true;
@@ -39,7 +53,7 @@ function surviveWith(player, game, hp) {
 function executeAndLeech(player, game) {
     if (game.inFight() && parseInt(game.currentCard?.power) > 0)
         player.gainHP(game.currentCard.power)
-    this.execute(player, game)
+    execute(player, game)
 }
 
 function playerPileContainsType(player, type) {

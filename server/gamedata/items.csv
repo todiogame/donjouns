@@ -1,7 +1,7 @@
 Duplication,Code,id,Title,Commentaire,Active,Color,Image,Key,Description,Title_en,Description_en
 0,,,,,0-1,1-5 : R G B P Y,,,,,
 0,,,,,0,,,,,,
-0,,-1,Égide,SPECIAL,1,5,donjon\v1\items\aegis.png,aegis,<b>Survivez</b> avec vos PV de héros.,,
+0,,0,Égide,SPECIAL,1,5,donjon\v1\items\aegis.png,aegis,<b>Survivez</b> avec vos PV de héros.,,
 0,,,,,0,,,#N/A,,,
 1,1,1,Main de Midas,,1,5,donjon\v1\items\midas.png,midas,"<b>Exécutez</b> un monstre de puissance 4 ou 5, et ajoutez sa puissance à vos PV.",,
 1,1,2,Parchemin de Bahn,,1,4,donjon\v1\items\bahn.png,bahn,"<b>Exécutez</b> puis <b>défaussez</b> un monstre, gagnez <b>1 PV</b>.",,

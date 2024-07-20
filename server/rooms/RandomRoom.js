@@ -36,7 +36,7 @@ class RandomRoom extends colyseus.Room {
         })
         this.onMessage("take_damage", (client, message) => {
             console.log(`Received take_damage message from ${client.sessionId}:`, message);
-            this.state.faceMonster(client.sessionId);
+            this.state.faceMonster(client.sessionId, message?.arg);
         })
 
         this.onMessage("pass_turn", (client, message) => {

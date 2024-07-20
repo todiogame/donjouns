@@ -13,13 +13,13 @@ export function preload() {
     this.load.image("dice-albedo", "assets/obj/dice/dice-albedo.jpg");
     this.load.obj("dice-obj", "assets/obj/dice/dice.obj");
 
-    for (let i = 1; i <= 100; i++) {
+    for (let i = 0; i <= 100; i++) {
         const formattedNumber = String(i).padStart(3, '0'); // Ensure numbers are three digits
         this.load.image('items_' + formattedNumber, `assets/pics/items/items_${formattedNumber}.jpg`);
     }
     this.load.image('back_dungeon', `assets/pics/cardbacks/back_dungeon.jpg`);
     
-    for (let i = 1; i <= 26; i++) {
+    for (let i = 1; i <= 46; i++) {
         const formattedNumber = String(i).padStart(2, '0');
         this.load.image('monster_' + formattedNumber, `assets/pics/monsters/monster_${formattedNumber}.jpg`);
     }

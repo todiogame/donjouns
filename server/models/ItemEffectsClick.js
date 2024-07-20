@@ -1,5 +1,12 @@
 const h = require('./Helper.js');
 const ieClick = {
+
+    aegis: (item, player, game) => {
+        if (!item.broken) {
+            h.surviveWith(player, game, player.baseHP)
+            item.break(player, game)
+        }
+    },
     midas: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() && game.currentCard.power >= 4 && game.currentCard.power <= 5) {
             h.executeAndLeech(player, game)
@@ -42,7 +49,7 @@ const ieClick = {
     },
     hourglass: (item, player, game) => {
         if (!item.broken && game.inFight()) {
-            game.returnCardToDungeon()
+            game.returnCurrentCardToDungeon()
             item.break(player, game)
             game.passTurn(true)
         }
@@ -312,7 +319,7 @@ const ieClick = {
     },
     monkey_grenade: (item, player, game) => {
         if (!item.broken && game.inFight()) {
-            game.returnCardToDungeon()
+            game.returnCurrentCardToDungeon()
             game.shuffleDungeon()
             item.break(player, game)
             game.canTryToEscape = true;
@@ -320,7 +327,7 @@ const ieClick = {
         }
     },
     hex: (item, player, game, arg) => {
-
+        //todo
     },
     heal: (item, player, game) => {
         if (!item.broken && player.lastDamageTaken > 0) {
@@ -334,7 +341,7 @@ const ieClick = {
         }
     },
     divination: (item, player, game) => {
-
+        //todo
     },
     adrenaline: (item, player, game) => {
         if (player.hp === 1) {
@@ -450,11 +457,20 @@ const ieClick = {
         } //todo discard opponents
     },
     seashell: (item, player, game) => {
-        player.pickItem(game)
-        item.break(player, game)
+        if (!item.broken) {
+            player.pickItem(game)
+            item.break(player, game)
+        }
     },
-    purple_skull: (item, player, game) => {
-
+    purple_skull: (item, player, game, arg) => {
+        if (!item.broken && game.inFight() && arg != null) {
+            const card = player.defeatedMonstersPile.find(c => c.id === cardId)
+            if (card.basePower > game.currentCard.power) {
+                h.discardFromPile(arg, player, game)
+                h.surviveWith(player, game, player.baseHP)
+                item.break(player, game)
+            }
+        }
     },
     eternity_leaf: (item, player, game) => {
         if (!game.trap && !item.broken && player.hp > 1 && game.inFight() &&
@@ -464,7 +480,7 @@ const ieClick = {
         }
     },
     luck_potion: (item, player, game) => {
-
+        //todo
     },
     genius_glasses: (item, player, game) => {
         if (!item.broken && player.lastDamageTaken && game.noCurrentCard())

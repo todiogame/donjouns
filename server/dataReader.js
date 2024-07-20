@@ -17,12 +17,12 @@ function loadCSV(filePath, type) {
             .pipe(csv())
             .on('data', (row) => {
                 // Only process rows where 'id' is set
-                if (row.id) {
+                if (row.id || row.id === 0) {
                     if (type === 'Monster') {
-                        const { id, Title_en: title, Power: power, Description: description, Type_en: cardType } = row;
+                        const { id, Title_en: title, Power: power, Description: description, Type_en: cardType, Effect: effect } = row;
                         const types = cardType ? cardType.split(',').map(t => t.trim()) : [];
                         // console.log('Creating card:', { id, title, power, types, description, cardType });
-                        const monsterCard = new MonsterCard(id, title, parseInt(power, 10) || 0, types, description, ""); //last row is effect
+                        const monsterCard = new MonsterCard(id, title, parseInt(power, 10) || 0, types, description, effect); //last row is effect
                         results.push(monsterCard);
                     } else if (type === 'Event') {
                         const { id, Title: title, Description: description } = row;
@@ -51,7 +51,7 @@ async function loadData() {
         const monsters = await loadCSV('gamedata/monsters.csv', 'Monster');
         const events = await loadCSV('gamedata/events.csv', 'Event');
         const items = await loadCSV('gamedata/items.csv', 'Item');
-        return {dungeon:[...monsters, ...events], items: items};
+        return { dungeon: [...monsters, ...events], items: items };
     } catch (error) {
         console.error('Error loading data:', error);
         throw error;

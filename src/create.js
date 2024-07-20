@@ -85,10 +85,9 @@ export function create() {
             console.log("Received scout cards:", message);
             displayManager.displayScoutInterface(message.cards)
         });
-
     }).catch(e => {
         console.error("join error", e);
-    });
+    }); 
 
     displayManager = new DisplayManager(this);
     displayManager.initializeBackground();
@@ -125,7 +124,14 @@ export function create() {
                     room.send("pick_dungeon");
                 } else if (cardImage.getData("type") === "take_damage") {
                     console.log(`Player takes ${cardGame.currentCard.damage} damage.`);
-                    room.send("take_damage")
+                    // special case for GLUTTONOUS_OOZE: have to destroy 1 item
+                    if (cardGame.currentCard.effect === "GLUTTONOUS_OOZE"
+                        && (cardGame.players.find(p => p.id === localPlayerId).stuff.filter(i => !i.broken).length)) {
+                        console.log("Pick an item to ooze:");
+                        const callback = (number) => room.send("take_damage", { arg: number });
+                        displayManager.displayPickItemInterface(cardGame, localPlayerId, (i) => !i.broken, callback, true)
+                    }
+                    else room.send("take_damage")
                 } else if (cardImage.getData("type") === "pass_turn") {
                     room.send("pass_turn")
                 } else if (cardImage.getData("type") === "execute") {
@@ -134,7 +140,7 @@ export function create() {
                     displayManager.zoomCard(cardImage);
                 } else if (cardImage.getData("type") === "my_item") {
                     let itemId = cardImage.getData("item_id")
-                    if (cardImage.getData("ui")) {
+                    if (cardImage.getData("ui") && !cardImage.getData("broken")) {
                         let item = cardGame.getPlayerById(localPlayerId)?.stuff.find(item => item.id === itemId);
                         displayInterface(cardImage, item, room);
                     } else {
@@ -143,7 +149,7 @@ export function create() {
                 } else if (cardImage.getData("type") === "escape_roll") {
                     room.send("escape_roll")
                 }
-            }
+            }   
         }
     });
     function displayInterface(cardImage, item, room) {

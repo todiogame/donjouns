@@ -126,8 +126,9 @@ class GameState extends Schema {
         this.phase = "GAME_SETUP";
         //set up dungeon cards      
         this.dungeon.clear();
-        this.dungeon.push(...allDungeonCards.filter(card => card.dungeonCardType === "monster" && card.id <= 26)
-            .map(d => new MonsterCard(d.id, d.title, d.power, d.types, d.description, d.effects)));
+        this.dungeon.push(...allDungeonCards.filter(card =>
+            card.dungeonCardType === "monster" && card.id >= 27)
+            .map(d => new MonsterCard(d.id, d.title, d.power, d.types, d.description, d.effect)));
         this.shuffleDungeon();
         this.dungeonLength = this.dungeon.length;
 
@@ -178,7 +179,7 @@ class GameState extends Schema {
     discard(card) {
         this.discardPile.push(card);
     }
-    returnCardToDungeon() {
+    returnCurrentCardToDungeon() {
         console.log('Initial dungeon:', this.dungeon.map(obj => obj.id).join(', '));
         console.log('Current card:', this.currentCard.id);
 
@@ -197,6 +198,9 @@ class GameState extends Schema {
             this.canTryToEscape = false;
             this.currentCard = this.dungeon.pop();
             this.dungeonLength = this.dungeon.length;
+            //trigger effects
+            if (this.currentCard.onMeetMonster)
+                this.currentCard.onMeetMonster(player, this)
             // trigger "on pick" items
             player.stuff.forEach(item => {
                 iePick[item.key]?.(item, player, this);
@@ -209,16 +213,30 @@ class GameState extends Schema {
         }
     }
 
-    faceMonster(playerId) {
+    faceMonster(playerId, itemToOoze) {
         if (this.inFight() && this.isMyTurn(playerId)) {
             let player = this.findPlayerById(playerId)
             this.canTryToEscape = true; //either if player dies or if monster dies, we can try to escape
+            this.canExecute = false;
+            //trigger effects before taking damage
+            this.currentCard.onFaceBeforeDamageMonster(player, this, itemToOoze)
 
             console.log(`${playerId} takes ${this.currentCard.damage} damage!`);
-            player.loseHP(this, this.currentCard.damage)
+            for (let i = 0; i < this.currentCard.timesDealDamage; i++) {
+                player.loseHP(this, this.currentCard.damage)
+            }
             player.lastDamageTaken = this.currentCard.damage;
-            if (player.inDungeon()) {
-                player.addDefeatedMonster(this.currentCard)
+
+            //trigger effects after taking damage
+            this.currentCard.onFaceAfterDamageMonster(player, this)
+
+            if (this.isMyTurn(playerId) && player.inDungeon()) {
+
+                if (this.currentCard) {
+                    player.addDefeatedMonster(this.currentCard)
+                    //trigger effects on special monster beaten
+                    this.currentCard.onBeatenMonster(player, this)
+                }
                 this.currentCard = null;
                 player.canPass = true;
             }
@@ -304,7 +322,10 @@ class GameState extends Schema {
 
             //if there is an active card, reset its stats
             if (this.inFight()) {
-                this.currentCard.power = this.currentCard.originalPower;
+                this.currentCard.power = this.currentCard.basePower;
+                //trigger effects
+                if (this.currentCard.onMeetMonster)
+                    this.currentCard.onMeetMonster(newPlayer, this)
                 this.currentCard.damage = this.currentCard.calculateDamage();
             }
 
@@ -498,7 +519,13 @@ class GameState extends Schema {
                 console.log("Des joueurs sont arrivés vivants au bout du donjon, les fuyards sont exclus.");
             } else {
                 finalPlayers = this.players.filter(player => !player.dead);
-                console.log("Aucun joueur n'a poncé le donjon, tous les joueurs vivants comptent.");
+                if (finalPlayers.length > 0) {
+                    console.log("Aucun joueur n'a poncé le donjon, tous les joueurs vivants comptent.");
+                } else {
+                    console.log("Tous les joueurs sont morts. Personne ne gagne.");
+                    this.room.broadcast("endScores", { "winner": null, "finalPlayers": [] });
+                    return;
+                }
             }
             // Include players with always_count attribute
             const alwaysCountPlayers = this.players.filter(player => player.always_count);

@@ -667,6 +667,7 @@ export class DisplayManager {
                         .setRotation(Math.PI / 2)
                         .setDepth(-1);
                     itemCardImage.setData('overlay', overlay);
+                    itemCardImage.setData("broken", itemCard.broken);
                 }
                 itemCardImage.setData("type", "my_item");
                 itemCardImage.setData("item_id", itemCard.id);
@@ -783,7 +784,8 @@ export class DisplayManager {
     }
 
     addDamageButton(game) {
-        const buttonText = `Take ${game.currentCard.damage} Damage`;
+        const t = game.currentCard.timesDealDamage;
+        const buttonText = `Take ${(t > 1 ? t + "x" : "") + game.currentCard.damage} Damage`;
         const buttonWidth = 200;
         const buttonHeight = 30;
         const buttonX = this.scene.sys.game.config.width / 2;
@@ -1465,7 +1467,7 @@ export class DisplayManager {
         return { bg, interactionBlocker };
     }
 
-    displayPickItemInterface( cardGame, localPlayerId, condition, callback, isPlayerItems = true) {
+    displayPickItemInterface(cardGame, localPlayerId, condition, callback, isPlayerItems = true) {
         // Ensure any existing pick item popup is removed
         if (this.pickItemPopup) {
             this.pickItemPopup.destroy();

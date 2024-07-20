@@ -82,6 +82,7 @@ export class MonsterCard extends DungeonCard {
         this.power = power;
         this.types = types;
         this.damage = 0;
+        this.timesDealDamage = 1;
     }
 }
 
