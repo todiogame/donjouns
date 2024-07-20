@@ -2,34 +2,25 @@
 function execute(player, game) {
     if (game.currentCard?.dungeonCardType == "monster") {
         game.room.broadcast("animate_execute", { playerId: player.id });
-
         //trigger effects on special monster beaten
-        if (game.currentCard.onBeatenMonster)
             game.currentCard.onBeatenMonster(player, game)
 
         player.addDefeatedMonster(game.currentCard)
-        game.currentCard = null;
-        player.canPass = true;
         player.lastDamageTaken = 0;
-        game.canTryToEscape = true;
-        game.canExecute = false;
+        game.afterDoneWithMonster(player)
     }
 }
 
 function executeAndDiscard(player, game) {
     if (game.currentCard?.dungeonCardType == "monster") {
         game.room.broadcast("animate_execute", { playerId: player.id });
-
         //trigger effects on special monster beaten
-        if (game.currentCard.onBeatenMonster)
             game.currentCard.onBeatenMonster(player, game)
 
         game.discard(game.currentCard)
         player.monstersBeatenThisTurn++;
-        game.currentCard = null;
-        player.canPass = true;
         player.lastDamageTaken = 0;
-        game.canExecute = false;
+        game.afterDoneWithMonster(player)
     }
 }
 
@@ -37,16 +28,11 @@ function surviveWith(player, game, hp) {
     player.setHP(hp)
     if (game.inFight()) {
         player.lastDamageTaken = Math.min(game.currentCard.damage, player.hp);
-
         //trigger effects on special monster beaten
-        if (game.currentCard.onBeatenMonster)
-            game.currentCard.onBeatenMonster(player, game)
+        game.currentCard.onBeatenMonster(player, game)
 
         player.addDefeatedMonster(game.currentCard)
-        game.currentCard = null;
-        player.canPass = true;
-        game.canTryToEscape = true;
-        game.canExecute = false;
+        game.afterDoneWithMonster(player)
     }
 }
 

@@ -137,7 +137,13 @@ export function create() {
                 } else if (clickedElement.getData("type") === "execute") {
                     room.send("execute")
                 } else if (clickedElement.getData("type") === "special_effect") {
-                    room.send("special_effect")
+                    // special case for SHAPESHIFTER: have to destroy 1 item
+                    if (cardGame.currentCard.effect === "SHAPESHIFTER") {
+                        console.log("Pick a type:");
+                        const callback = (type) => room.send("special_effect", { arg: type });
+                        displayManager.displayMonsterTypeSelectionInterface(cardGame.currentCard, callback)
+                    }
+                    else room.send("special_effect")
                 } else if (clickedElement.getData("type") === "opponent_item") {
                     displayManager.zoomCard(clickedElement);
                 } else if (clickedElement.getData("type") === "my_item") {

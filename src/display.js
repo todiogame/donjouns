@@ -1406,11 +1406,11 @@ export class DisplayManager {
         const scaleY = desiredHeight / 1050;
         const xPosition = (this.scene.sys.game.config.width) / 4;
         const yPosition = (this.scene.sys.game.config.height) / 2;
-
-        let itemCardImage = this.scene.add.image(xPosition, yPosition, item.texture)
-            .setOrigin(0.5, 0.5).setScale(scaleX, scaleY).setDepth(12);
-        container.add(itemCardImage);
-
+        if (item) {
+            let itemCardImage = this.scene.add.image(xPosition, yPosition, item.texture)
+                .setOrigin(0.5, 0.5).setScale(scaleX, scaleY).setDepth(12);
+            container.add(itemCardImage);
+        }
         const creatures = [
             'Rat', 'Goblin', 'Skeleton', 'Orc',
             'Vampire', 'Golem', 'Lich', 'Demon', 'Dragon'
@@ -1623,57 +1623,57 @@ export class DisplayManager {
             'GUARDIAN_ANGEL': 'Discard',
             'SHAPESHIFTER': 'Select type'
         }[card.effect] || 'Effect';
-    
+
         const buttonWidth = 130;
         const buttonHeight = 50;
         const buttonX = this.scene.sys.game.config.width / 2;
         const buttonY = 100;
         const buttonRadius = 10; // For rounded corners
-    
+
         // Create a graphics object to draw the button
         const graphics = this.scene.add.graphics();
-    
+
         // Draw the rounded rectangle button
         graphics.fillStyle(0x99ccff, 1); // Lighter blue color
         graphics.fillRoundedRect(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight, buttonRadius);
-    
+
         // Add the text on top of the button
         const text = this.scene.add.text(buttonX, buttonY, buttonText, {
             fontSize: '20px',
             fill: '#000',
             fontStyle: 'bold'
         }).setOrigin(0.5, 0.5);
-    
+
         // Create an interactive zone over the button
         const button = this.scene.add.zone(buttonX, buttonY, buttonWidth, buttonHeight)
             .setOrigin(0.5, 0.5)
             .setInteractive({ useHandCursor: true });
-    
+
         button.setData("type", "special_effect");
         // Handle the click event
         button.on('pointerdown', () => {
             console.log(`Effect button clicked: ${buttonText}`);
             // Example: Trigger the effect or update the game state
         });
-    
+
         // Set depths
         button.setDepth(0.1);
         graphics.setDepth(0.1);
         text.setDepth(0.1);
-    
+
         // Add a hover effect to the button and text
         button.on('pointerover', () => {
             graphics.clear();
             graphics.fillStyle(0xb3d9ff, 1); // Lighter blue for hover
             graphics.fillRoundedRect(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight, buttonRadius);
         });
-    
+
         button.on('pointerout', () => {
             graphics.clear();
             graphics.fillStyle(0x99ccff, 1);
             graphics.fillRoundedRect(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight, buttonRadius);
         });
-    
+
         this.scene.tweens.add({
             targets: [text],
             scaleX: 1.1,
@@ -1684,7 +1684,7 @@ export class DisplayManager {
             duration: 500
         });
     }
-    
+
     updateEndUI(winner, finalPlayers, localPlayerId) {
         console.log("updateEndUI", winner, finalPlayers);
 

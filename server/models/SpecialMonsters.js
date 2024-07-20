@@ -62,6 +62,9 @@ const onMeet = {
             card.timesDealDamage = roll
         })
     },
+    SHAPESHIFTER: (card, player, game) => {
+        card.types.clear();
+    },
 };
 const onSpecialEffect = {
 
@@ -69,22 +72,13 @@ const onSpecialEffect = {
         if (card.specialUI) {
             card.specialUI = false
             game.returnCurrentCardUnderDungeon()
-            game.canTryToEscape = true;
-            player.canPass = true;
-            game.canExecute = false;
-            game.nextMonsterCondition = null;
-            game.nextMonsterAction = null;
+            game.afterDoneWithMonster(player)
         }
     },
 
     GUARDIAN_ANGEL: (card, player, game) => {
         game.discard(card)
-        game.currentCard = null;
-        game.canTryToEscape = true;
-        player.canPass = true;
-        game.canExecute = false;
-        game.nextMonsterCondition = null;
-        game.nextMonsterAction = null;
+        game.afterDoneWithMonster(player)
     },
 
     SHAPESHIFTER: (card, player, game, arg) => {

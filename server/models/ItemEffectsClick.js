@@ -51,6 +51,7 @@ const ieClick = {
         if (!item.broken && game.inFight()) {
             game.returnCurrentCardToDungeon()
             item.break(player, game)
+            game.afterDoneWithMonster(player)
             game.passTurn(true)
         }
     },
@@ -322,8 +323,7 @@ const ieClick = {
             game.returnCurrentCardToDungeon()
             game.shuffleDungeon()
             item.break(player, game)
-            game.canTryToEscape = true;
-            player.canPass = true;
+            game.afterDoneWithMonster(player)
         }
     },
     hex: (item, player, game, arg) => {

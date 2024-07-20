@@ -182,7 +182,7 @@ class GameState extends Schema {
     returnCurrentCardToDungeon() {
         console.log('Initial dungeon:', this.dungeon.map(obj => obj.id).join(', '));
         console.log('Current card:', this.currentCard.id);
-
+        this.currentCard.power = this.currentCard.basePower
         this.dungeonLength = this.dungeon.push(this.currentCard);
         this.currentCard = null;
 
@@ -193,6 +193,7 @@ class GameState extends Schema {
     returnCurrentCardUnderDungeon() {
         console.log('Initial dungeon:', this.dungeon.map(obj => obj.id).join(', '));
         console.log('Current card:', this.currentCard.id);
+        this.currentCard.power = this.currentCard.basePower
         const dungeonBackUp = [];
         this.dungeon.forEach(c => dungeonBackUp.push(c))
         this.dungeon.clear()
@@ -231,7 +232,6 @@ class GameState extends Schema {
     faceMonster(playerId, itemToOoze) {
         if (this.inFight() && this.isMyTurn(playerId)) {
             let player = this.findPlayerById(playerId)
-            this.canTryToEscape = true; //either if player dies or if monster dies, we can try to escape
             this.canExecute = false;
             //trigger effects before taking damage
             this.currentCard.onFaceBeforeDamageMonster(player, this, itemToOoze)
@@ -251,19 +251,21 @@ class GameState extends Schema {
                     //trigger effects on special monster beaten
                     this.currentCard.onBeatenMonster(player, this)
                 }
-                this.currentCard = null;
-                this.canExecute = false;
-                this.nextMonsterCondition = null;
-                this.nextMonsterAction = null;
-                player.canPass = true;
+                this.afterDoneWithMonster(player)
             }
         }
     }
 
-    afterBeatMonster() {
+    afterDoneWithMonster(player) {
         if (this.dungeon.length <= 0) {
             this.endGame()
         }
+        this.currentCard = null;
+        player.canPass = true;
+        this.canTryToEscape = true;
+        this.canExecute = false;
+        this.nextMonsterCondition = null;
+        this.nextMonsterAction = null;
     }
 
     givePromptExecuteNextMonster() {
