@@ -130,14 +130,19 @@ class GameState extends Schema {
             .map(d => new MonsterCard(d.id, d.title, d.power, d.types, d.description, d.effects)));
         this.shuffleDungeon();
         this.dungeonLength = this.dungeon.length;
+
         // set up HP, panos and start of game effects
         this.players.forEach(player => {
             player.hp = player.baseHP;
             const colorCount = {};
 
             player.stuff.forEach(item => {
+                item.hp = 0; // Ensure default hp is set
                 colorCount[item.color] = (colorCount[item.color] || 0) + 1;
-                ieStartGame[item.key]?.(item, player, this);
+                if (ieStartGame[item.key]) {
+                    ieStartGame[item.key](item, player, this);
+                    player.gainHP(item.hp); // Apply the HP gain after setting item.hp
+                }
             });
 
             Object.values(colorCount).forEach(count => {

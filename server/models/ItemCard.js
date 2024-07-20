@@ -12,6 +12,7 @@ class ItemCard extends Schema {
         this.color = color;
         this.key = key;
         this.description = description;
+        this.hp = 0;
         this.broken = false;
         this.requireSetup = this.setRequireSetup()
         // client-side ui
@@ -20,14 +21,16 @@ class ItemCard extends Schema {
         this.uiCondition = null;
 
     }
-    break() {
+    break(player, game) {
         this.broken = true
+        if (this.hp) player.loseHP(game, this.hp)
     }
-    fix() {
+    fix(player, game) {
         this.broken = false
+        player.gainHP(this.hp);
     }
     tryToUse(player, game, arg = -1) {
-        console.log(player.name, "tryToUse", this.title)
+        console.log(player.name, "tryToUse", this.title, arg)
         ieClick[this.key]?.(this, player, game, arg);
     }
 

@@ -50,6 +50,10 @@ function currentCardHasType(game, type) {
     return game.currentCard?.types.includes(type)
 }
 
+function currentCardHasTitle(game, title) {
+    return game.currentCard?.title === title;
+}
+
 function reduceDamage(game, item, player, value, minDamage = 0) {
     if (game.currentCard?.dungeonCardType == "monster" && !player.alreadyUsedItems.includes(item.key)
         && game.currentCard.damage > minDamage) {
@@ -86,15 +90,13 @@ function playerRollDice(game, player, callback) {
     }, 1000); // 1000 milliseconds delay
 }
 
-
-
-
 module.exports = {
     execute,
     executeAndDiscard,
     executeAndLeech,
     playerPileContainsType,
     currentCardHasType,
+    currentCardHasTitle,
     surviveWith,
     reduceDamage,
     scout,

@@ -146,13 +146,12 @@ export function create() {
             }
         }
     });
-
     function displayInterface(cardImage, item, room) {
         const uiType = cardImage.getData("ui");
         const itemId = cardImage.getData("item_id");
 
         const callback = (number) => {
-            console.log("use_item", { item_id: itemId, arg: number })
+            console.log("use_item", { item_id: itemId, arg: number });
             room.send("use_item", { item_id: itemId, arg: number });
         };
 
@@ -163,6 +162,18 @@ export function create() {
         } else if (uiType === "my_pile") {
             const defeatedMonstersPile = cardGame.getPlayerById(localPlayerId)?.defeatedMonstersPile;
             if (defeatedMonstersPile.length) displayManager.displayScoutInterface(defeatedMonstersPile, callback);
+        } else if (uiType === "my_items_intact") {
+            const condition = (i) => !i.broken && i.id != item.id;
+            if (cardGame.players.find(p => p.id === localPlayerId).stuff.some(i => !i.broken && item.id != i.id))
+                displayManager.displayPickItemInterface(cardGame, localPlayerId, condition, callback, true);
+        } else if (uiType === "my_items_broken") {
+            const condition = (i) => i.broken;
+            if (cardGame.players.find(p => p.id === localPlayerId).stuff.some(i => i.broken))
+                displayManager.displayPickItemInterface(cardGame, localPlayerId, condition, callback, true);
+        } else if (uiType === "opponent_items_broken") {
+            const condition = (i) => i.broken;
+            if (cardGame.players.filter(p => p.id != localPlayerId).some(p => p.stuff.some(i => i.broken)))
+                displayManager.displayPickItemInterface(cardGame, localPlayerId, condition, callback, false);
         }
     }
 

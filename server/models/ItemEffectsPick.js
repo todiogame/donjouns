@@ -6,13 +6,13 @@ const iePick = {
 
     dragon_shield: (item, player, game) => {
         if (item.broken && game.inFight() && h.currentCardHasType(game, "Dragon")) {
-            item.fix()
+            item.fix(player, game)
         }
     },
 
     fairy_potion: (item, player, game) => {
         if (item.broken && game.inFight() && h.currentCardHasTitle(game, "Fairy")) {
-            item.fix()
+            item.fix(player, game)
         }
     },
 };

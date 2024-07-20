@@ -4,5 +4,5 @@
     "nb_items_draft" : 7,
     "nb_items_starting" : 6,
     "disabled_items": ["sceptre","printer"],
-    "include_items": ["vorpal_sword","hammer","monkey","ball","scuba"]
+    "include_items": ["pirate_bomb","swiss","anvil","ball","shells"]
 }

@@ -1465,6 +1465,154 @@ export class DisplayManager {
         return { bg, interactionBlocker };
     }
 
+    displayPickItemInterface( cardGame, localPlayerId, condition, callback, isPlayerItems = true) {
+        // Ensure any existing pick item popup is removed
+        if (this.pickItemPopup) {
+            this.pickItemPopup.destroy();
+            this.pickItemPopup = null;
+        }
+
+        // Create a blurred background
+        if (!this.blurryBackground) {
+            this.blurryBackground = this.scene.add.graphics({ fillStyle: { color: 0x000000, alpha: 0.7 } });
+            this.blurryBackground.fillRect(0, 0, this.scene.sys.game.config.width, this.scene.sys.game.config.height);
+            this.blurryBackground.setDepth(10);
+            this.blurryBackground.setInteractive(new Phaser.Geom.Rectangle(0, 0, this.scene.sys.game.config.width, this.scene.sys.game.config.height), Phaser.Geom.Rectangle.Contains);
+            this.blurryBackground.on('pointerdown', (pointer) => { });
+        }
+
+        // Create a container for the popup
+        const container = this.scene.add.container(0, 0).setDepth(12);
+
+        // Get all items from the right players
+        const items = [];
+        cardGame.players.forEach(player => {
+            if ((isPlayerItems && player.id === localPlayerId)
+                || (!isPlayerItems && player.id !== localPlayerId)) {
+                items.push(...player.stuff.filter(condition));
+            }
+        });
+
+        const desiredWidth = 240;
+        const desiredHeight = 336;
+        const scaleX = desiredWidth / 750;
+        const scaleY = desiredHeight / 1050;
+        const spacing = 10;
+
+        const columns = Math.min(items.length, 6);
+        const rows = Math.ceil(items.length / columns);
+
+        const startX = (this.scene.sys.game.config.width - (columns * (desiredWidth + spacing))) / 2;
+        const startY = (this.scene.sys.game.config.height - (rows * (desiredHeight + spacing))) / 2;
+
+        items.forEach((item, index) => {
+            const colIndex = index % columns;
+            const rowIndex = Math.floor(index / columns);
+            const itemX = startX + colIndex * (desiredWidth + spacing);
+            const itemY = startY + rowIndex * (desiredHeight + spacing);
+
+            const itemImage = this.scene.add.image(itemX, itemY, item.texture)
+                .setOrigin(0, 0)
+                .setDisplaySize(desiredWidth, desiredHeight)
+                .setInteractive({ useHandCursor: true, pixelPerfect: true, alphaTolerance: 1 });
+
+            itemImage.on('pointerover', () => {
+                itemImage.setDepth(15);
+                this.scene.tweens.add({
+                    targets: itemImage,
+                    scaleX: scaleX * 1.1,
+                    scaleY: scaleY * 1.1,
+                    duration: 50,
+                    ease: 'Sine.easeInOut'
+                });
+            });
+
+            itemImage.on('pointerout', () => {
+                itemImage.setDepth(12);
+                this.scene.tweens.add({
+                    targets: itemImage,
+                    scaleX: scaleX,
+                    scaleY: scaleY,
+                    duration: 50,
+                    ease: 'Sine.easeInOut',
+                });
+            });
+
+            itemImage.on('pointerdown', () => {
+                this.scene.tweens.add({
+                    targets: [container, this.blurryBackground],
+                    alpha: { from: 1, to: 0 },
+                    duration: 300,
+                    onComplete: () => {
+                        container.destroy();
+                        this.blurryBackground.destroy();
+                        this.pickItemPopup = null;
+                        this.blurryBackground = null;
+                        callback(item.id);
+                    }
+                });
+            });
+
+            container.add(itemImage);
+        });
+
+        const buttonWidth = 200;
+        const buttonHeight = 50;
+        const buttonX = this.scene.sys.game.config.width / 2;
+        const buttonY = startY + rows * (desiredHeight + spacing) + 40;
+        const buttonRadius = 10;
+
+        const closeButtonBg = this.scene.add.graphics();
+        closeButtonBg.fillStyle(0xff0000, 1);
+        closeButtonBg.fillRoundedRect(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight, buttonRadius);
+        closeButtonBg.setDepth(13);
+        closeButtonBg.setInteractive(new Phaser.Geom.Rectangle(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight), Phaser.Geom.Rectangle.Contains);
+        closeButtonBg.on('pointerdown', () => {
+            this.scene.tweens.add({
+                targets: [container, this.blurryBackground],
+                alpha: { from: 1, to: 0 },
+                duration: 300,
+                onComplete: () => {
+                    container.destroy();
+                    this.blurryBackground.destroy();
+                    this.pickItemPopup = null;
+                    this.blurryBackground = null;
+                }
+            });
+        });
+
+        const closeButtonText = this.scene.add.text(buttonX, buttonY, 'CLOSE', {
+            fontSize: '32px',
+            fill: '#fff'
+        }).setOrigin(0.5, 0.5)
+            .setInteractive({ useHandCursor: true })
+            .setDepth(14);
+
+        closeButtonText.on('pointerdown', () => {
+            this.scene.tweens.add({
+                targets: [container, this.blurryBackground],
+                alpha: { from: 1, to: 0 },
+                duration: 300,
+                onComplete: () => {
+                    container.destroy();
+                    this.blurryBackground.destroy();
+                    this.pickItemPopup = null;
+                    this.blurryBackground = null;
+                }
+            });
+        });
+
+        container.add(closeButtonBg);
+        container.add(closeButtonText);
+
+        this.scene.tweens.add({
+            targets: [container, this.blurryBackground],
+            alpha: { from: 0, to: 1 },
+            duration: 300
+        });
+
+        this.pickItemPopup = container;
+    }
 
 
     updateEndUI(winner, finalPlayers, localPlayerId) {

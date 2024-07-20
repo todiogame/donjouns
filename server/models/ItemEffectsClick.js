@@ -3,14 +3,14 @@ const ieClick = {
     midas: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() && game.currentCard.power >= 4 && game.currentCard.power <= 5) {
             h.executeAndLeech(player, game)
-            item.break()
+            item.break(player, game)
         }
     },
     bahn: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight()) {
             h.executeAndDiscard(player, game)
             player.gainHP(1)
-            item.break()
+            item.break(player, game)
         }
     },
     hammer: (item, player, game) => {
@@ -27,17 +27,23 @@ const ieClick = {
                 } else {
                     player.flee(game);
                 }
-                item.break();
+                item.break(player, game);
             });
         }
     },
     swiss: (item, player, game, arg) => {
-
+        if (!item.broken && arg != null) {
+            const itemToFix = player.stuff.find(i => i.id == arg)
+            if (itemToFix) {
+                itemToFix.fix(player, game);
+                item.break(player, game);
+            }
+        }
     },
     hourglass: (item, player, game) => {
         if (!item.broken && game.inFight()) {
             game.returnCardToDungeon()
-            item.break()
+            item.break(player, game)
             game.passTurn(true)
         }
     },
@@ -47,7 +53,7 @@ const ieClick = {
                 if (roll >= game.currentCard.power)
                     h.execute(player, game)
                 if (roll == 1)
-                    item.break();
+                    item.break(player, game);
             })
             player.alreadyUsedItems.push(item.key)
         }
@@ -57,9 +63,23 @@ const ieClick = {
             h.execute(player, game)
             player.gainHP(6)
         }
-    },
-    anvil: (item, player, game, arg) => {
-
+    }, anvil: (item, player, game, arg) => {
+        if (!item.broken && arg != null) {
+            // Find the owner of the item with the given ID
+            const owner = game.players.find(p => p.stuff.some(i => i.id == arg));
+            if (owner) {
+                const itemToSteal = owner.stuff.find(i => i.id == arg);
+                if (itemToSteal) {
+                    // Remove the item from the owner's stuff
+                    owner.stuff = owner.stuff.filter(i => i.id != arg);
+                    // Add the item to the player's stuff
+                    player.stuff.push(itemToSteal);
+                    itemToSteal.fix(player, game);
+                    // Break the current item
+                    item.break(player, game);
+                }
+            }
+        }
     },
     golem_shield: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() && h.currentCardHasType(game, "Golem") && !h.playerPileContainsType(player, "Golem")) {
@@ -70,14 +90,14 @@ const ieClick = {
         if (!game.trap && !item.broken && player.hp > 3) {
             player.loseHP(game, 3)
             h.execute(player, game)
-            item.break()
+            item.break(player, game)
         }
     },
     dragon_mask: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() && h.currentCardHasType(game, "Dragon")) {
             h.execute(player, game)
             player.pickItem(game)
-            item.break()
+            item.break(player, game)
         }
     },
     dragon_shield: (item, player, game) => {
@@ -85,7 +105,7 @@ const ieClick = {
             h.playerRollDice(game, player, (roll1) => {
                 h.playerRollDice(game, player, (roll2) => {
                     h.reduceDamage(game, item, player, roll1 + roll2)
-                    item.break();
+                    item.break(player, game);
                 })
             })
         }
@@ -94,19 +114,19 @@ const ieClick = {
         if (!item.broken && game.inFight() && arg != null) {
             h.discardFromPile(arg, player, game)
             h.surviveWith(player, game, player.baseHP)
-            item.break()
+            item.break(player, game)
         }
     },
     kebab: (item, player, game) => {
         if (!item.broken && player.turnNumber >= 3) {
             player.gainHP(7)
-            item.break();
+            item.break(player, game);
         }
     },
     glass_axe: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight()) {
             h.execute(player, game)
-            item.break()
+            item.break(player, game)
         }
     },
     tp: (item, player, game) => {
@@ -117,14 +137,14 @@ const ieClick = {
     fairy_potion: (item, player, game) => {
         if (!item.broken && game.inFight()) {
             h.surviveWith(player, game, 1);
-            item.break()
+            item.break(player, game)
         }
     },
     ice_potion: (item, player, game) => {
         if (!item.broken && game.inFight()) {
             game.currentCard.power = 0;
             game.currentCard.damage = game.currentCard.calculateDamage()
-            item.break()
+            item.break(player, game)
         }
     },
     vorpal_sword: (item, player, game, arg) => {
@@ -154,7 +174,7 @@ const ieClick = {
             } else {
                 h.surviveWith(player, game, 1);
             }
-            item.break()
+            item.break(player, game)
         }
     },
     pickaxe: (item, player, game) => {
@@ -163,14 +183,14 @@ const ieClick = {
             const isGolem = h.currentCardHasType(game, "Golem")
             h.execute(player, game);
             if (!isGolem) {
-                item.break();
+                item.break(player, game);
             }
         }
     },
     totem: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight()) {
             h.executeAndDiscard(player, game)
-            item.break()
+            item.break(player, game)
         }
     },
     noob_geta: (item, player, game) => {
@@ -189,7 +209,7 @@ const ieClick = {
     noob_ring: (item, player, game) => {
         if (!item.broken) {
             h.surviveWith(player, game, player.medals ? 1 : player.baseHP);
-            item.break();
+            item.break(player, game);
         }
     },
     noob_hat: (item, player, game) => {
@@ -205,7 +225,7 @@ const ieClick = {
         if (!game.trap && !item.broken && game.inFight() && (!player.medals || game.currentCard.odd())) {
             h.execute(player, game)
         }
-        item.break();
+        item.break(player, game);
     },
     rat_lich: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() && (h.currentCardHasType(game, "Rat") || h.currentCardHasType(game, "Lich"))) {
@@ -216,7 +236,7 @@ const ieClick = {
         if (!item.broken) {
             player.gainHP(3)
             h.scout(game, player, 3)
-            item.break();
+            item.break(player, game);
         }
     },
     pest: (item, player, game) => {
@@ -234,9 +254,11 @@ const ieClick = {
     },
     shells: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight()) {
-            h.execute(player, game)
-            item.break()
-            //todo dice fix pv
+            h.playerRollDice(game, player, (roll) => {
+                player.setHP(roll)
+                h.execute(player, game)
+                item.break(player, game);
+            });
         }
     },
     pirate_pistol: (item, player, game) => {
@@ -285,14 +307,14 @@ const ieClick = {
             h.execute(player, game)
             game.nextMonsterCondition = (state) => (state.inFight() && state.currentCard.power < currentPower);
             game.nextMonsterAction = (state) => h.execute(player, state);
-            item.break()
+            item.break(player, game)
         }
     },
     monkey_grenade: (item, player, game) => {
         if (!item.broken && game.inFight()) {
             game.returnCardToDungeon()
             game.shuffleDungeon()
-            item.break()
+            item.break(player, game)
             game.canTryToEscape = true;
             player.canPass = true;
         }
@@ -303,7 +325,7 @@ const ieClick = {
     heal: (item, player, game) => {
         if (!item.broken && player.lastDamageTaken > 0) {
             player.gainHP(player.lastDamageTaken)
-            item.break();
+            item.break(player, game);
         }
     },
     mage_armor: (item, player, game) => {
@@ -320,10 +342,16 @@ const ieClick = {
         } else {
             player.gainHP(2)
         }
-        item.break()
+        item.break(player, game)
     },
     pirate_bomb: (item, player, game, arg) => {
-
+        if (!item.broken && game.inFight() && arg != null) {
+            const itemToBreak = player.stuff.find(i => i.id != item.id && i.id == arg)
+            if (itemToBreak) {
+                itemToBreak.break(player, game);
+                h.execute(player, game)
+            }
+        }
     },
     ocean_ring: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() && game.currentCard.power >= 8) {
@@ -341,7 +369,7 @@ const ieClick = {
             h.executeAndDiscard(player, game)
             game.nextMonsterCondition = (state) => state.inFight();
             game.nextMonsterAction = (state) => h.execute(player, state);
-            item.break()
+            item.break(player, game)
         }
     },
     ice_ring: (item, player, game) => {
@@ -369,7 +397,7 @@ const ieClick = {
         if (!game.trap && !item.broken && game.inFight()) {
             h.executeAndDiscard(player, game)
             player.setHP(6)
-            item.break()
+            item.break(player, game)
         }
     },
     lich_skull: (item, player, game) => {
@@ -418,12 +446,12 @@ const ieClick = {
     whip: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight()) {
             h.executeAndDiscard(player, game)
-            item.break()
+            item.break(player, game)
         } //todo discard opponents
     },
     seashell: (item, player, game) => {
         player.pickItem(game)
-        item.break()
+        item.break(player, game)
     },
     purple_skull: (item, player, game) => {
 
@@ -472,7 +500,7 @@ const ieClick = {
             h.execute(player, game)
             game.nextMonsterCondition = (state) => state.inFight() && state.currentCard.even();
             game.nextMonsterAction = (state) => h.execute(player, state);
-            item.break()
+            item.break(player, game)
         }
     },
 };
