@@ -1,7 +1,7 @@
 const schema = require("@colyseus/schema");
 const { Schema, type } = schema;
 const { DungeonCard } = require('./DungeonCard');
-const { onMeet, onFaceBeforeDamage, onFaceAfterDamage, onBeaten, onScore } = require('./SpecialMonsters');
+const { onMeet, onSpecialEffect, onFaceBeforeDamage, onFaceAfterDamage, onBeaten, onScore } = require('./SpecialMonsters');
 
 class MonsterCard extends DungeonCard {
     constructor(id, title, power, types = [], description = "", effect = "") {
@@ -13,6 +13,7 @@ class MonsterCard extends DungeonCard {
         this.timesDealDamage = 1;
         this.damage = this.calculateDamage();
         this.baseEffect = this.effect;
+        this.specialUI = ["KRAKEN","GUARDIAN_ANGEL","SHAPESHIFTER"].includes(this.effect)
     }
 
     calculateDamage() {
@@ -29,6 +30,11 @@ class MonsterCard extends DungeonCard {
     onMeetMonster(player, game) {
         if (onMeet[this.effect]) {
             onMeet[this.effect](this, player, game);
+        }
+    }
+    onSpecialEffect(player, game, shapeshifterType) {
+        if (onSpecialEffect[this.effect]) {
+            onSpecialEffect[this.effect](this, player, game, shapeshifterType);
         }
     }
     onFaceBeforeDamageMonster(player, game, itemToOoze) {
@@ -58,6 +64,7 @@ schema.defineTypes(MonsterCard, {
     types: ["string"],
     damage: "number",
     timesDealDamage: "number",
+    specialUI:"boolean"
 });
 
 module.exports = { MonsterCard };

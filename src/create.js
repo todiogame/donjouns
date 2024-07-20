@@ -87,7 +87,7 @@ export function create() {
         });
     }).catch(e => {
         console.error("join error", e);
-    }); 
+    });
 
     displayManager = new DisplayManager(this);
     displayManager.initializeBackground();
@@ -117,12 +117,12 @@ export function create() {
                 }
             }
             else if (cardGame.phase.includes("GAME")) {
-                const cardImage = gameObjects[0];
-                console.log(cardImage)
-                if (cardImage.getData("type") === "dungeon") {
+                const clickedElement = gameObjects[0];
+                console.log(clickedElement)
+                if (clickedElement.getData("type") === "dungeon") {
                     console.log("pick donjon")
                     room.send("pick_dungeon");
-                } else if (cardImage.getData("type") === "take_damage") {
+                } else if (clickedElement.getData("type") === "take_damage") {
                     console.log(`Player takes ${cardGame.currentCard.damage} damage.`);
                     // special case for GLUTTONOUS_OOZE: have to destroy 1 item
                     if (cardGame.currentCard.effect === "GLUTTONOUS_OOZE"
@@ -132,24 +132,26 @@ export function create() {
                         displayManager.displayPickItemInterface(cardGame, localPlayerId, (i) => !i.broken, callback, true)
                     }
                     else room.send("take_damage")
-                } else if (cardImage.getData("type") === "pass_turn") {
+                } else if (clickedElement.getData("type") === "pass_turn") {
                     room.send("pass_turn")
-                } else if (cardImage.getData("type") === "execute") {
+                } else if (clickedElement.getData("type") === "execute") {
                     room.send("execute")
-                } else if (cardImage.getData("type") === "opponent_item") {
-                    displayManager.zoomCard(cardImage);
-                } else if (cardImage.getData("type") === "my_item") {
-                    let itemId = cardImage.getData("item_id")
-                    if (cardImage.getData("ui") && !cardImage.getData("broken")) {
+                } else if (clickedElement.getData("type") === "special_effect") {
+                    room.send("special_effect")
+                } else if (clickedElement.getData("type") === "opponent_item") {
+                    displayManager.zoomCard(clickedElement);
+                } else if (clickedElement.getData("type") === "my_item") {
+                    let itemId = clickedElement.getData("item_id")
+                    if (clickedElement.getData("ui") && !clickedElement.getData("broken")) {
                         let item = cardGame.getPlayerById(localPlayerId)?.stuff.find(item => item.id === itemId);
-                        displayInterface(cardImage, item, room);
+                        displayInterface(clickedElement, item, room);
                     } else {
                         room.send("use_item", { item_id: itemId });
                     }
-                } else if (cardImage.getData("type") === "escape_roll") {
+                } else if (clickedElement.getData("type") === "escape_roll") {
                     room.send("escape_roll")
                 }
-            }   
+            }
         }
     });
     function displayInterface(cardImage, item, room) {

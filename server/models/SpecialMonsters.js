@@ -54,29 +54,46 @@ const onMeet = {
         if (player.medals)
             card.bonusDamage = 4
     },
-    KRAKEN: (card, player, game) => {
-        if (!card.isKrakenAwake) {
-            card.isKrakenAwake = true
-            card.specialUI = true
-        }
-    },
     SPECTRE: (card, player, game) => {
         card.power = Math.floor(player.hp / 2);
-    },
-    GUARDIAN_ANGEL: (card, player, game) => {
-        card.specialUI = true
-        // Prompt discard
     },
     MONKEY_TEAM: (card, player, game) => {
         h.playerRollDice(game, player, (roll) => {
             card.timesDealDamage = roll
         })
     },
-    SHAPESHIFTER: (card, player, game) => {
-        card.specialUI = true
-        // Prompt choose type
-    },
 };
+const onSpecialEffect = {
+
+    KRAKEN: (card, player, game) => {
+        if (card.specialUI) {
+            card.specialUI = false
+            game.returnCurrentCardUnderDungeon()
+            game.canTryToEscape = true;
+            player.canPass = true;
+            game.canExecute = false;
+            game.nextMonsterCondition = null;
+            game.nextMonsterAction = null;
+        }
+    },
+
+    GUARDIAN_ANGEL: (card, player, game) => {
+        game.discard(card)
+        game.currentCard = null;
+        game.canTryToEscape = true;
+        player.canPass = true;
+        game.canExecute = false;
+        game.nextMonsterCondition = null;
+        game.nextMonsterAction = null;
+    },
+
+    SHAPESHIFTER: (card, player, game, arg) => {
+        if (arg) {
+            card.types.push(arg)
+            card.specialUI = false
+        }
+    },
+}
 
 const onFaceBeforeDamage = {
     MEDAL_GRINDER: (card, player, game) => {
@@ -131,4 +148,4 @@ const onScore = {
     }
 };
 
-module.exports = { onMeet, onFaceBeforeDamage, onFaceAfterDamage, onBeaten, onScore };
+module.exports = { onMeet, onFaceBeforeDamage, onSpecialEffect, onFaceAfterDamage, onBeaten, onScore };

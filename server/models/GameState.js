@@ -190,6 +190,21 @@ class GameState extends Schema {
         console.log('Dungeon length:', this.dungeonLength);
     }
 
+    returnCurrentCardUnderDungeon() {
+        console.log('Initial dungeon:', this.dungeon.map(obj => obj.id).join(', '));
+        console.log('Current card:', this.currentCard.id);
+        const dungeonBackUp = [];
+        this.dungeon.forEach(c => dungeonBackUp.push(c))
+        this.dungeon.clear()
+        this.dungeon.push(this.currentCard)
+        dungeonBackUp.forEach(c => this.dungeon.push(c))
+        this.dungeonLength = this.dungeon.length;
+        this.currentCard = null;
+
+        console.log('Updated dungeon:', this.dungeon.map(obj => obj.id).join(', '));
+        console.log('Dungeon length:', this.dungeonLength);
+    }
+
     pickDungeonCard(playerId) {
         let player = this.findPlayerById(playerId)
         // Logic to handle picking a dungeon card
@@ -231,13 +246,15 @@ class GameState extends Schema {
             this.currentCard.onFaceAfterDamageMonster(player, this)
 
             if (this.isMyTurn(playerId) && player.inDungeon()) {
-
                 if (this.currentCard) {
                     player.addDefeatedMonster(this.currentCard)
                     //trigger effects on special monster beaten
                     this.currentCard.onBeatenMonster(player, this)
                 }
                 this.currentCard = null;
+                this.canExecute = false;
+                this.nextMonsterCondition = null;
+                this.nextMonsterAction = null;
                 player.canPass = true;
             }
         }
@@ -267,6 +284,11 @@ class GameState extends Schema {
             this.nextMonsterCondition = null;
             this.nextMonsterAction = null;
         }
+    }
+
+    specialEffect(playerId, arg) {
+        let player = this.findPlayerById(playerId)
+        this.currentCard.onSpecialEffect(player, this, arg)
     }
 
     wantToPassTurn(playerId) {
