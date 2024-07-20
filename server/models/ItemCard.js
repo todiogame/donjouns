@@ -36,6 +36,8 @@ class ItemCard extends Schema {
         if (["swiss"].includes(this.key)) return "my_items_broken"
         if (["anvil"].includes(this.key)) return "opponent_items_broken"
         if (["mana_potion", "purple_skull"].includes(this.key)) return "my_pile"
+        // if (["divination"].includes(this.key)) return "dungeon_pile"
+        if ([].includes(this.key)) return "discard_pile"
         if (["printer", "pirate_bomb"].includes(this.key)) return "my_items_intact"
         if (["vorpal_dagger"].includes(this.key)) return "monster_type"
         if (["sceptre"].includes(this.key)) return "opponent_hero"

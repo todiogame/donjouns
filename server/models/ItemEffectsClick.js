@@ -91,7 +91,11 @@ const ieClick = {
         }
     },
     mana_potion: (item, player, game, arg) => {
-
+        if (!item.broken && game.inFight() && arg != null) {
+            h.discardFromPile(arg, player, game)
+            h.surviveWith(player, game, player.baseHP)
+            item.break()
+        }
     },
     kebab: (item, player, game) => {
         if (!item.broken && player.turnNumber >= 3) {
@@ -297,10 +301,10 @@ const ieClick = {
 
     },
     heal: (item, player, game) => {
-        if (!item.broken && player.lastDamageTaken) {
+        if (!item.broken && player.lastDamageTaken > 0) {
             player.gainHP(player.lastDamageTaken)
+            item.break();
         }
-        item.break();
     },
     mage_armor: (item, player, game) => {
         if (!item.broken && game.inFight() && (h.currentCardHasType(game, "Lich") || h.currentCardHasType(game, "Demon"))) {
@@ -389,8 +393,8 @@ const ieClick = {
             h.execute(player, game)
         }
     },
-    future: (item, player, game) => {
-        if (!item.broken && !player.lastDamageTaken && game.noCurrentCard()) //todo start of turn
+    future: (item, player, game) => { //todo start of turn
+        if (!item.broken && !player.lastDamageTaken && game.noCurrentCard())
             h.scout(game, player, 1, 2)
     },
     rat_ring: (item, player, game) => {

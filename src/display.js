@@ -446,8 +446,10 @@ export class DisplayManager {
         this.displayDungeon(game, localPlayerId);
         this.displayDiscardPile(game);
         if (game.isMyTurn(localPlayerId) && !game.isDiceRolling) {
-            if (game.currentCard?.dungeonCardType === "monster")
+            if (game.currentCard?.dungeonCardType === "monster") {
                 this.addDamageButton(game);
+                if (game.canExecute) this.addExecuteButton(game);
+            }
             if (game.canTryToEscape && game.dungeon.length) {
                 this.addEscapeButton(game)
             }
@@ -455,7 +457,7 @@ export class DisplayManager {
                 this.addPassTurnButton(game)
         }
     }
-    displayCurrentPhase(game){
+    displayCurrentPhase(game) {
         this.scene.add.text(
             this.scene.sys.game.config.width / 2 - 50,
             30,
@@ -703,7 +705,7 @@ export class DisplayManager {
                     });
                 });
 
-                if(itemCard.requireSetup && !itemCard.indication){
+                if (itemCard.requireSetup && !itemCard.indication) {
                     this.animateCard(itemCardImage)
                 }
             }
@@ -781,9 +783,9 @@ export class DisplayManager {
     addDamageButton(game) {
         const buttonText = `Take ${game.currentCard.damage} Damage`;
         const buttonWidth = 200;
-        const buttonHeight = 50;
+        const buttonHeight = 30;
         const buttonX = this.scene.sys.game.config.width / 2;
-        const buttonY = this.scene.sys.game.config.height - 375;
+        const buttonY = this.scene.sys.game.config.height - 365;
         // const buttonY = this.scene.sys.game.config.height / 2 - 50;
         const buttonRadius = 10; // For rounded corners
 
@@ -836,6 +838,66 @@ export class DisplayManager {
             duration: 500
         });
     }
+
+    addExecuteButton(game) {
+        const buttonText = `Execute`;
+        const buttonWidth = 120;
+        const buttonHeight = 30;
+        const buttonX = this.scene.sys.game.config.width / 2;
+        const buttonY = this.scene.sys.game.config.height - 400;
+        // const buttonY = this.scene.sys.game.config.height / 2 - 50;
+        const buttonRadius = 10; // For rounded corners
+
+        // Create a graphics object to draw the button
+        const graphics = this.scene.add.graphics();
+
+        // Draw the rounded rectangle button
+        graphics.fillStyle(0xff1100, 1);
+        graphics.fillRoundedRect(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight, buttonRadius);
+
+        // Add the text on top of the button
+        const text = this.scene.add.text(buttonX, buttonY, buttonText, {
+            fontSize: '20px',
+            fill: '#000',
+            fontStyle: 'bold'
+        }).setOrigin(0.5, 0.5);
+
+        // Create an interactive zone over the button
+        const button = this.scene.add.zone(buttonX, buttonY, buttonWidth, buttonHeight)
+            .setOrigin(0.5, 0.5)
+            .setInteractive({ useHandCursor: true });
+
+        button.setData("type", "execute")
+        // Handle the click event
+        button.on('pointerdown', () => {
+            console.log(`Player wants to execute.`);
+            // Example: Apply damage to the player or update the game state
+        });
+
+        // Add a hover effect to the button and text
+        button.on('pointerover', () => {
+            graphics.clear();
+            graphics.fillStyle(0xff3332, 1); // Lighter orange for hover
+            graphics.fillRoundedRect(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight, buttonRadius);
+        });
+
+        button.on('pointerout', () => {
+            graphics.clear();
+            graphics.fillStyle(0xff1100, 1);
+            graphics.fillRoundedRect(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight, buttonRadius);
+        });
+
+        this.scene.tweens.add({
+            targets: [text],
+            scaleX: 1.1,
+            scaleY: 1.1,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut',
+            duration: 500
+        });
+    }
+
 
 
     addPassTurnButton(game) {
@@ -897,11 +959,10 @@ export class DisplayManager {
         });
     }
 
-
     addEscapeButton(game) {
         const buttonText = `Try to escape`;
         const buttonWidth = 200;
-        const buttonHeight = 50;
+        const buttonHeight = 30;
         const buttonX = this.scene.sys.game.config.width / 2;
         const buttonY = this.scene.sys.game.config.height - 320;
         // const buttonY = this.scene.sys.game.config.height / 2 - 50;
@@ -957,7 +1018,7 @@ export class DisplayManager {
         });
     }
 
-    displayScoutInterface(cards, canPickCard = false) {
+    displayScoutInterface(cards, onPickCard = () => {}) {
         if (cards?.length) {
             if (this.scoutPopup) {
                 this.scoutPopup.destroy();
@@ -1036,7 +1097,7 @@ export class DisplayManager {
                     });
                 });
 
-                if (canPickCard) {
+                if (onPickCard) {
                     cardImage.on('pointerdown', () => {
                         this.scene.tweens.add({
                             targets: [container, this.blurryBackground],
@@ -1048,6 +1109,7 @@ export class DisplayManager {
                                 this.scoutPopup = null;
                                 this.blurryBackground = null;
                                 console.log(`Picked card id: ${card.id}`); // Replace this with the necessary action to handle the picked card
+                                onPickCard(card.id)
                             }
                         });
                     });

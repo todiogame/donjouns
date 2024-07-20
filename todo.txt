@@ -1,22 +1,17 @@
 JEU
 
-- kill next monster : add a button instead of it being automatic
 - ajouter plus d'objets
 - ajouter les events
 - ajouter les monstres speciaux
 
-- faire les objets 
+- objets: mecaniques manquantes: 
 - modif jet de fuite + modif des + rerolls
 - qui pick d'autre items avec une UI comme bombe / couteau suisse ou enclume
-- qui pick dans la defausse / dans les piles de monstres
-- qui pick un nombre (ex. boule de cristal) ou un type (afficher l'objet a cote du clavier)
 
-=> on doit donner au client l'info de l'UI associee a ces objets
-=> colonne UI dans le google sheets ? 
-MY_BROKEN_ITEMS MY_INTACT_ITEMS OPPONENTS_BROKEN_ITEMS
-DISCARD_1 MY_PILE_1
-NUMBER TYPE
-et ensuite dans le create => if "ui" ca balance l'UI sinon comme mtn
+- items debut du tour : les faire gigoter tant que c'est le debut du tour
+- items fin du tour : si on en a. changer le prompt passe tour par fin du tour et faire gigoter les items ?
+
+AI player
 
 INTERFACE
 - Loading screen

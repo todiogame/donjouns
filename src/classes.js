@@ -8,6 +8,7 @@ export class Game {
         this.dungeonLength = 0;
         this.currentCard = null; 
         this.canTryToEscape = true;
+        this.canExecute = false;
         this.discardPile = [];
     }
     noCurrentCard() {

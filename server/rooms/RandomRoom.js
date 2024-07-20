@@ -43,6 +43,10 @@ class RandomRoom extends colyseus.Room {
             console.log(`Received pass_turn message from ${client.sessionId}:`, message);
             this.state.wantToPassTurn(client.sessionId);
         })
+        this.onMessage("execute", (client, message) => {
+            console.log(`Received execute message from ${client.sessionId}:`, message);
+            this.state.wantToExecuteNextMonster(client.sessionId);
+        })
 
         this.onMessage("use_item", (client, message) => {
             console.log(`Received use_item message from ${client.sessionId}:`, message.item_id);
@@ -75,10 +79,10 @@ class RandomRoom extends colyseus.Room {
             console.log("start_game");
             this.state.dealItemsCardsRandom();
             this.state.setUpDungeonGame(this.allDungeonCards);
-            this.broadcast("start_game_random", this.state);
             if (this.state.allPlayersSetupReady()) {
                 this.state.gameLoop()
             }
+            this.broadcast("start_game_random", this.state);
         }
     }
 

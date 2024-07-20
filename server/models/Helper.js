@@ -7,6 +7,7 @@ function execute(player, game) {
         player.canPass = true;
         player.lastDamageTaken = 0;
         game.canTryToEscape = true;
+        game.canExecute = false;
     }
 }
 
@@ -14,35 +15,31 @@ function executeAndDiscard(player, game) {
     if (game.currentCard?.dungeonCardType == "monster") {
         game.room.broadcast("animate_execute", { playerId: player.id });
         game.discard(game.currentCard)
-        player.monstersBeatenThisTurn ++;
+        player.monstersBeatenThisTurn++;
         game.currentCard = null;
         player.canPass = true;
         player.lastDamageTaken = 0;
         game.canTryToEscape = true;
-    }
-}
-
-function executeAndLeech(player, game) {
-    if (game.currentCard?.dungeonCardType == "monster") {
-        game.room.broadcast("animate_execute", { playerId: player.id });
-        if (parseInt(game.currentCard.power) > 0) player.gainHP(game.currentCard.power)
-        player.addDefeatedMonster(game.currentCard)
-        game.currentCard = null;
-        player.canPass = true;
-        player.lastDamageTaken = 0;
-        game.canTryToEscape = true;
+        game.canExecute = false;
     }
 }
 
 function surviveWith(player, game, hp) {
     player.setHP(hp)
     if (game.inFight()) {
-        player.lastDamageTaken = Math.min(this.currentCard.damage, player.hp);
+        player.lastDamageTaken = Math.min(game.currentCard.damage, player.hp);
         player.addDefeatedMonster(game.currentCard)
         game.currentCard = null;
         player.canPass = true;
         game.canTryToEscape = true;
+        game.canExecute = false;
     }
+}
+
+function executeAndLeech(player, game) {
+    if (game.inFight() && parseInt(game.currentCard?.power) > 0)
+        player.gainHP(game.currentCard.power)
+    this.execute(player, game)
 }
 
 function playerPileContainsType(player, type) {
@@ -71,6 +68,13 @@ function scout(game, player, nbCards, position = 0) {
     }
 }
 
+function discardFromPile(cardId, player, game) {
+    const card = player.defeatedMonstersPile.find(c => c.id === cardId)
+    // // find the index of the item you'd like to remove
+    const cardIndex = player.defeatedMonstersPile.findIndex(c => c.id === cardId)
+    player.defeatedMonstersPile.splice(cardIndex, 1);
+    game.discard(card)
+}
 
 function playerRollDice(game, player, callback) {
     game.room.broadcast("animate_roll", { playerId: player.id });
@@ -94,5 +98,6 @@ module.exports = {
     surviveWith,
     reduceDamage,
     scout,
+    discardFromPile,
     playerRollDice,
 };

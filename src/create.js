@@ -128,31 +128,43 @@ export function create() {
                     room.send("take_damage")
                 } else if (cardImage.getData("type") === "pass_turn") {
                     room.send("pass_turn")
+                } else if (cardImage.getData("type") === "execute") {
+                    room.send("execute")
                 } else if (cardImage.getData("type") === "opponent_item") {
                     displayManager.zoomCard(cardImage);
                 } else if (cardImage.getData("type") === "my_item") {
+                    let itemId = cardImage.getData("item_id")
                     if (cardImage.getData("ui")) {
-                        // open the right ui
-                        console.log("ui")
-                        let item = cardGame.getPlayerById(localPlayerId)?.stuff.find(item => {
-                            console.log(item.id, cardImage.getData("item_id"))
-                            return item.id === cardImage.getData("item_id")
-                        });
-                        console.log(item)
-                        if (cardImage.getData("ui") === "number") 
-                            displayManager.displayNumberInputInterface(item, (number) =>
-                                room.send("use_item", { item_id: cardImage.getData("item_id"), arg: number }))
-                        if (cardImage.getData("ui") === "monster_type")
-                            displayManager.displayMonsterTypeSelectionInterface(item, (number) =>
-                                room.send("use_item", { item_id: cardImage.getData("item_id"), arg: number }))
-
-                    } else room.send("use_item", { item_id: cardImage.getData("item_id") })
+                        let item = cardGame.getPlayerById(localPlayerId)?.stuff.find(item => item.id === itemId);
+                        displayInterface(cardImage, item, room);
+                    } else {
+                        room.send("use_item", { item_id: itemId });
+                    }
                 } else if (cardImage.getData("type") === "escape_roll") {
                     room.send("escape_roll")
                 }
             }
         }
     });
+
+    function displayInterface(cardImage, item, room) {
+        const uiType = cardImage.getData("ui");
+        const itemId = cardImage.getData("item_id");
+
+        const callback = (number) => {
+            console.log("use_item", { item_id: itemId, arg: number })
+            room.send("use_item", { item_id: itemId, arg: number });
+        };
+
+        if (uiType === "number") {
+            displayManager.displayNumberInputInterface(item, callback);
+        } else if (uiType === "monster_type") {
+            displayManager.displayMonsterTypeSelectionInterface(item, callback);
+        } else if (uiType === "my_pile") {
+            const defeatedMonstersPile = cardGame.getPlayerById(localPlayerId)?.defeatedMonstersPile;
+            if (defeatedMonstersPile.length) displayManager.displayScoutInterface(defeatedMonstersPile, callback);
+        }
+    }
 
     function copyPlayerState(playerState) {
         const player = new Player(playerState.id, playerState.name);
@@ -184,6 +196,7 @@ export function create() {
         cardGame.dungeonLength = state.dungeonLength;
         cardGame.currentCard = state.currentCard;
         cardGame.canTryToEscape = state.canTryToEscape;
+        cardGame.canExecute = state.canExecute;
         cardGame.discardPile = state.discardPile; // Direct assignment
         cardGame.turnNumber = state.turnNumber;
 

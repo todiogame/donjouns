@@ -26,6 +26,7 @@ class GameState extends Schema {
         this.dungeonLength = 0;
         this.currentCard = null;
         this.canTryToEscape = true;
+        this.canExecute = false;
         this.discardPile = new ArraySchema();
 
         this.nextMonsterCondition = null;
@@ -198,11 +199,8 @@ class GameState extends Schema {
             if (this.inFight()) {
                 this.currentCard.damage = this.currentCard.calculateDamage()
                 console.log(`${playerId} picked dungeon card ${this.currentCard.title} :  ${this.currentCard.damage} damage!`);
-                this.tryToExecuteNextMonster()
+                this.givePromptExecuteNextMonster()
             }
-
-            this.nextMonsterCondition = null;
-            this.nextMonsterAction = null;
         }
     }
 
@@ -228,9 +226,23 @@ class GameState extends Schema {
         }
     }
 
-    tryToExecuteNextMonster() {
+    givePromptExecuteNextMonster() {
+        console.log("try to givePromptExecuteNextMonster ")
         if (this.nextMonsterCondition && this.nextMonsterAction && this.nextMonsterCondition(this)) {
-            this.nextMonsterAction(this);
+            console.log("givePromptExecuteNextMonster ")
+            this.canExecute = true;
+        }
+    }
+
+    wantToExecuteNextMonster(playerId) {
+        if (this.isMyTurn(playerId) && this.inFight()) {
+            if (this.nextMonsterCondition && this.nextMonsterAction
+                && this.nextMonsterCondition(this)) {
+                this.nextMonsterAction(this);
+            }
+            this.canExecute = false;
+            this.nextMonsterCondition = null;
+            this.nextMonsterAction = null;
         }
     }
 
@@ -259,6 +271,7 @@ class GameState extends Schema {
 
         this.nextMonsterCondition = null;
         this.nextMonsterAction = null;
+        this.canExecute = false;
 
         //calculate next player
         let originalIndex = this.currentPlayerIndex;
@@ -542,6 +555,7 @@ schema.defineTypes(GameState, {
     dungeonLength: "number",
     currentCard: DungeonCard,
     canTryToEscape: "boolean",
+    canExecute: "boolean",
     discardPile: [DungeonCard],
     turnNumber: "number",
 });
