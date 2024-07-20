@@ -5,7 +5,7 @@ JEU
 - ajouter les monstres speciaux
 
 - objets: mecaniques manquantes: 
-- modif jet de fuite + modif des + rerolls
+- rerolls de jet de des
 - qui pick d'autre items avec une UI comme bombe / couteau suisse ou enclume
 
 - items debut du tour : les faire gigoter tant que c'est le debut du tour

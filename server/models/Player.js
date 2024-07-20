@@ -4,6 +4,7 @@ const { ItemCard } = require('./ItemCard');
 const { DungeonCard } = require('./DungeonCard');
 const ieScore = require('./ItemEffectsScore');
 const ieStartGame = require("./ItemEffectsStartGame");
+const ieEscapeRoll = require("./ItemEffectsEscapeRoll");
 
 class Player extends Schema {
     constructor(id, name) {
@@ -24,7 +25,7 @@ class Player extends Schema {
         this.fled = false;
         this.turnNumber = 0;
         this.monstersBeatenThisTurn = 0;
-        
+
         this.lastDamageTaken = 0;
         this.alreadyUsedItems = [];
     }
@@ -82,10 +83,22 @@ class Player extends Schema {
     }
 
     rollToEscape() {
-        const diceRoll = Math.floor(Math.random() * 6) + 1;
-        return diceRoll;
+        let roll = this.rollDice()
+        return roll;
     }
-    
+
+    getEscapeModifier(game){
+        console.log("getEscapeModifier")
+        let escapeModifier = 0;
+        let res = 0
+        this.stuff.forEach(item => {
+            res = ieEscapeRoll[item.key]?.(item, this, game, escapeModifier);
+            if(res) escapeModifier += res
+        });
+        console.log("getEscapeModifier return",escapeModifier)
+        return escapeModifier
+    }
+
     rollDice() {
         const diceRoll = Math.floor(Math.random() * 6) + 1;
         return diceRoll;

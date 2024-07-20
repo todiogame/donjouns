@@ -57,12 +57,12 @@ class RandomRoom extends colyseus.Room {
             console.log(`Received escape_roll message from ${client.sessionId}:`, message);
             this.broadcast('animate_roll', { playerId: client.sessionId });
             // Simulate a delay before broadcasting the result
-            const escapeRoll = this.state.wantToEscape(client.sessionId);
-            if (escapeRoll > -1) { // if allowed to escape roll
+            const { escapeRoll, escapeModifier } = this.state.wantToEscape(client.sessionId);
+            if (escapeRoll) { // if allowed to escape roll
                 setTimeout(() => {
-                    console.log(`broadcast escape_roll result for ${client.sessionId}:`, escapeRoll);
-                    this.state.tryToEscape(client.sessionId, escapeRoll);
-                    this.broadcast('roll_result', { result: escapeRoll });
+                    console.log(`broadcast escape_roll result for ${client.sessionId}:`, { escapeRoll, escapeModifier });
+                    this.state.tryToEscape(client.sessionId, escapeRoll + escapeModifier);
+                    this.broadcast('roll_result', { result: escapeRoll, modifier: escapeModifier });
                 }, 1000); // 1000 milliseconds delay
             }
         })

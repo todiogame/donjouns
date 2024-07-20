@@ -67,7 +67,7 @@ export function create() {
         room.onMessage('roll_result', (message) => {
             const diceScene = this.game.scene.getScene('DiceScene');
             console.log("rolled a", message.result)
-            if (diceScene) diceScene.showDiceResult(message.result);
+            if (diceScene) diceScene.showDiceResult(message.result, message.modifier);
             cardGame.isDiceRolling = false; // Re-enable interactions after dice roll completes
             if (cardGame.phase.includes("GAME")) displayManager.updateGameUI(cardGame, localPlayerId, cardGame.phase);
         });

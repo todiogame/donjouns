@@ -133,7 +133,7 @@ const ieClick = {
             item.ui = null;
         }
         if (!game.trap && !item.broken && game.inFight() && item.indication
-            && (game.currentCard.power === item.indication)) {
+            && (game.currentCard.power === parseInt(item.indication))) {
             h.execute(player, game)
         }
     },

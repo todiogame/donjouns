@@ -311,8 +311,11 @@ class GameState extends Schema {
     wantToEscape(playerId) {
         if (this.canTryToEscape) {
             let player = this.findPlayerById(playerId)
-            return player.rollToEscape();
-        } else return -1
+            return {
+                escapeRoll: player.rollToEscape(),
+                escapeModifier: player.getEscapeModifier(this)
+            }
+        } else return {}
     }
 
     tryToEscape(playerId, escapeRoll) {

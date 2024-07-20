@@ -1,4 +1,3 @@
-import { createDice } from './dice.js';
 import Phaser from 'phaser';
 
 export class TitleScene extends Phaser.Scene {
@@ -132,7 +131,7 @@ export class DiceScene extends Phaser.Scene {
             }
         };
 
-        const showDiceResult = (diceRoll) => {
+        const showDiceResult = (diceRoll, modifier) => {
             if (diceIsRolling) {
                 stopDiceAnimation();
 
@@ -164,11 +163,14 @@ export class DiceScene extends Phaser.Scene {
                 }
 
                 // Show the dice value
-                const textDiceValue = this.add.text(this.scale.width / 2, this.scale.height / 2, diceRoll, {
-                    fontFamily: 'Arial Black',
-                    fontSize: 74,
-                    color: '#c51b00'
-                });
+                const textDiceValue = this.add.text(
+                    this.scale.width / 2, this.scale.height / 2,
+                    modifier ? `${diceRoll + modifier} (${diceRoll} ${modifier > 0 ? '+' : '-'} ${Math.abs(modifier)})` : diceRoll,
+                    {
+                        fontFamily: 'Arial Black',
+                        fontSize: 74,
+                        color: '#c51b00'
+                    });
                 textDiceValue.setStroke('#de77ae', 16).setScale(0);
                 textDiceValue.setOrigin(0.5);
                 textDiceValue.setPosition(this.scale.width / 2, this.scale.height / 2);
@@ -1018,7 +1020,7 @@ export class DisplayManager {
         });
     }
 
-    displayScoutInterface(cards, onPickCard = () => {}) {
+    displayScoutInterface(cards, onPickCard = () => { }) {
         if (cards?.length) {
             if (this.scoutPopup) {
                 this.scoutPopup.destroy();
