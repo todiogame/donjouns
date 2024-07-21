@@ -6,7 +6,7 @@ export class Game {
         this.currentPlayerIndex = 0;
         this.dungeon = [];
         this.dungeonLength = 0;
-        this.currentCard = null; 
+        this.currentCard = null;
         this.canTryToEscape = true;
         this.canExecute = false;
         this.trap = false;
@@ -15,13 +15,13 @@ export class Game {
     noCurrentCard() {
         return !this.currentCard || this.currentCard._id === undefined
     }
-    isMyTurn(myId){
+    isMyTurn(myId) {
         return this.players[this.currentPlayerIndex]?.id === myId
     }
-    getCurrentPlayer(){
+    getCurrentPlayer() {
         return this.players[this.currentPlayerIndex];
     }
-    getPlayerById(myId){
+    getPlayerById(myId) {
         return this.players.find(p => p.id === myId);
     }
 }

@@ -75,12 +75,7 @@ function scout(game, player, nbCards, position = 0) {
 function selectDungeonCard(game, player, cards = game.dungeon) {
     const targetClient = game.room.clients.find(c => c.id === player.id);
     if (targetClient) {
-        const cards = game.dungeon
-        game.waitingPlayerInput = ((message, arg) => {
-            if (message === "scout_pick") {
-                pickDungeonCard(playerId, arg)
-            }
-        })
+        game.canPickSpecificCard = true
         targetClient.send("scout_pick", { cards });
     }
 }

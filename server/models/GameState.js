@@ -35,7 +35,7 @@ class GameState extends Schema {
         this.nextMonsterCondition = null;
         this.nextMonsterAction = null;
 
-        this.waitingPlayerInput = "scout_pick";
+        this.canPickSpecificCard = false; // allow to choose the card id to pick in the dungeon
     }
 
     findPlayerById(id) {
@@ -213,16 +213,20 @@ class GameState extends Schema {
     }
 
     pickDungeonCard(playerId, cardId = null) {
+        console.log('Picking',cardId)
         let player = this.findPlayerById(playerId)
         // Logic to handle picking a dungeon card
         if (this.dungeon.length && this.noCurrentCard() && this.isMyTurn(playerId)) {
             player.alreadyUsedItems = [];
             this.canTryToEscape = false;
-            if (!cardId)
-                this.currentCard = this.dungeon.pop();
-            else
+            if (cardId && this.canPickSpecificCard)
                 this.currentCard = h.pickSpecificCard(this, cardId);
+            else
+                this.currentCard = this.dungeon.pop();
+
             this.dungeonLength = this.dungeon.length;
+            this.canPickSpecificCard = false;
+
             //trigger special monster effects
             if (this.inFight()) this.currentCard.onMeetMonster(player, this)
 

@@ -462,6 +462,8 @@ export class DisplayManager {
             if (game.noCurrentCard() && game.dungeon.length && game.getCurrentPlayer().canPass)
                 this.addPassTurnButton(game)
         }
+        if(game.getPlayerById(localPlayerId).dead) this.showDeathOverlay();
+        if(game.getPlayerById(localPlayerId).fled) this.showFledOverlay();
     }
     displayCurrentPhase(game) {
         this.scene.add.text(
@@ -1804,7 +1806,37 @@ export class DisplayManager {
             duration: 500
         });
     }
-
+    showOverlay(color, message) {
+        const { width, height } = this.scene.sys.game.config;
+        const graphics = this.scene.add.graphics();
+        graphics.fillStyle(color, 0.5);
+        const overlay = graphics.fillRect(0, height / 2, width, height / 2);
+        
+        const text = this.scene.add.text(width / 2, height / 2 + 50, message, {
+            fontSize: '48px',
+            fill: '#ffffff',
+            fontStyle: 'bold'
+        }).setOrigin(0.5, 0.5);
+        
+        graphics.setDepth(20);
+        text.setDepth(20);
+    
+        this.scene.tweens.add({
+            targets: [overlay, text],
+            alpha: { from: 0, to: 1 },
+            duration: 1000,
+            ease: 'Sine.easeInOut'
+        });
+    }
+    
+    showDeathOverlay() {
+        this.showOverlay(0x808080, 'You are dead');
+    }
+    
+    showFledOverlay() {
+        this.showOverlay(0x006400, 'You fled');
+    }
+    
     updateEndUI(winner, finalPlayers, localPlayerId) {
         console.log("updateEndUI", winner, finalPlayers);
 
