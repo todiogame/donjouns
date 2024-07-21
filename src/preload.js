@@ -23,10 +23,10 @@ export function preload() {
         const formattedNumber = String(i).padStart(2, '0');
         this.load.image('monster_' + formattedNumber, `assets/pics/monsters/monster_${formattedNumber}.jpg`);
     }
-    // for (let i = 1; i <= 10; i++) {
-    //     const formattedNumber = String(i).padStart(2, '0');
-    //     this.load.image('event_' + formattedNumber, `assets/pics/events/event_${formattedNumber}.jpg`);
-    // }
+    for (let i = 1; i <= 10; i++) {
+        const formattedNumber = String(i).padStart(2, '0');
+        this.load.image('event_1' + formattedNumber, `assets/pics/events/event_${formattedNumber}.jpg`);
+    }
 
 
 

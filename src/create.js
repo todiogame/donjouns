@@ -156,6 +156,24 @@ export function create() {
                     }
                 } else if (clickedElement.getData("type") === "escape_roll") {
                     room.send("escape_roll")
+                } else if (clickedElement.getData("type") === "accept_event") {
+                    // special case for SECRET_SHOP: have to discard 1 item
+                    if (cardGame.currentCard.effect === "SECRET_SHOP"
+                        && (cardGame.players.find(p => p.id === localPlayerId).stuff.filter(i => !i.broken).length > 3)) {
+                        console.log("Pick an item to discard:");
+                        const callback = (number) => room.send("accept_event", { arg: number });
+                        displayManager.displayPickItemInterface(cardGame, localPlayerId, (i) => !i.broken, callback, true)
+                    }
+                    // special case for HANDYMAN: have to fix 1 item
+                    else if (cardGame.currentCard.effect === "HANDYMAN"
+                        && (cardGame.players.find(p => p.id === localPlayerId).stuff.filter(i => i.broken).length)) {
+                        console.log("Pick an item to fix:");
+                        const callback = (number) => room.send("accept_event", { arg: number });
+                        displayManager.displayPickItemInterface(cardGame, localPlayerId, (i) => !i.broken, callback, true)
+                    }
+                    else room.send("accept_event")
+                } else if (clickedElement.getData("type") === "decline_event") {
+                    room.send("decline_event")
                 }
             }
         }

@@ -9,6 +9,7 @@ export class Game {
         this.currentCard = null; 
         this.canTryToEscape = true;
         this.canExecute = false;
+        this.trap = false;
         this.discardPile = [];
     }
     noCurrentCard() {
@@ -88,8 +89,9 @@ export class MonsterCard extends DungeonCard {
 }
 
 export class EventCard extends DungeonCard {
-    constructor(id, title, description, effect = "") {
+    constructor(id, title, description, effect = "", optional = false) {
         super(id, title, "event", description, effect);
         this.event = true;
+        this.optional = !!optional;
     }
 }

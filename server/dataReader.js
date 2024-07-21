@@ -25,9 +25,9 @@ function loadCSV(filePath, type) {
                         const monsterCard = new MonsterCard(id, title, parseInt(power, 10) || 0, types, description, effect); //last row is effect
                         results.push(monsterCard);
                     } else if (type === 'Event') {
-                        const { id, Title: title, Description: description } = row;
+                        const { id, Title: title, Description: description, Effect: effect, Optional : optional } = row;
                         // console.log('Creating card:', { id, title, description });
-                        const eventCard = new EventCard(id, title, description);
+                        const eventCard = new EventCard(id, title, description, effect, optional);
                         results.push(eventCard);
                     } else if (type === 'Item') {
                         const { id, Title: title, Active: active, Color: color, Key: key, Description: description } = row;

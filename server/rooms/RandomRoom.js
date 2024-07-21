@@ -69,6 +69,15 @@ class RandomRoom extends colyseus.Room {
                 }, 1000); // 1000 milliseconds delay
             }
         })
+        
+        this.onMessage("accept_event", (client, message) => {
+            console.log(`Received accept_event message from ${client.sessionId}:`, message);
+            this.state.dealWithEvent(client.sessionId, true, message?.arg);
+        })
+        this.onMessage("decline_event", (client, message) => {
+            console.log(`Received decline_event message from ${client.sessionId}:`, message);
+            this.state.dealWithEvent(client.sessionId, false, message?.arg);
+        })
     }
 
     onJoin(client, options) {

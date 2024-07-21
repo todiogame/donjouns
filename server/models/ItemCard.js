@@ -29,6 +29,11 @@ class ItemCard extends Schema {
         this.broken = false
         player.gainHP(this.hp);
     }
+    discard(player, game) {
+        const cardIndex = player.stuff.findIndex(c => c.id === this.id)
+        player.stuff.splice(cardIndex, 1);
+        if (!this.broken && this.hp) player.loseHP(game, this.hp)
+    }
     tryToUse(player, game, arg = -1) {
         console.log(player.name, "tryToUse", this.title, arg)
         ieClick[this.key]?.(this, player, game, arg);
