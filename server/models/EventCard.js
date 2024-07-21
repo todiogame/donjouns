@@ -7,8 +7,9 @@ class EventCard extends DungeonCard {
     constructor(id, title, description, effect = "", optional = false) {
         super(id, title, "event", description, effect);
         this.event = true;
+        this.baseEffect = this.effect;
         this.optional = optional === "1" || optional === 1 || optional === true;
-        console.log(this.id, this.title, this.dungeonCardType, this.texture, this.effect, optional, this.optional)
+        // console.log(this.id, this.title, this.dungeonCardType, this.texture, this.effect, optional, this.optional)
     }
 
 
@@ -57,14 +58,15 @@ const onEvent = {
         game.nextMonsterAction = (state) => h.execute(player, state);
     },
     HANDYMAN: (card, player, game, itemToFix) => {
-        let item = player.stuff.find(i => !i.broken && i.id === itemToFix)
+        let item = player.stuff.find(i => i.broken && i.id === itemToFix)
         if (item) item.fix(player, game)
     },
-    INCEPTION: (card, player, game) => {
+    INCEPTION: (card, player, game, itemId) => {
         const lastEventCard = game.discardPile.reverse().find(c => c.type === 'event');
         if (lastEventCard) {
-            //todo
-            console.log(lastEventCard?.effect);
+            card.effect = lastEventCard.effect
+            card.optional = lastEventCard.optional
+            onEvent[this.effect](this, player, game, itemId);
         }
     },
     DRAGON_SKINNER: (card, player, game) => {

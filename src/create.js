@@ -85,6 +85,12 @@ export function create() {
             console.log("Received scout cards:", message);
             displayManager.displayScoutInterface(message.cards)
         });
+        
+        room.onMessage("scout_pick", (message) => {
+            console.log("Received scout cards, pick 1:", message);
+            const callback = (id) => room.send("scout_pick", { arg: id });
+            displayManager.displayScoutInterface(message.cards, callback)
+        });
     }).catch(e => {
         console.error("join error", e);
     });
@@ -169,7 +175,7 @@ export function create() {
                         && (cardGame.players.find(p => p.id === localPlayerId).stuff.filter(i => i.broken).length)) {
                         console.log("Pick an item to fix:");
                         const callback = (number) => room.send("accept_event", { arg: number });
-                        displayManager.displayPickItemInterface(cardGame, localPlayerId, (i) => !i.broken, callback, true)
+                        displayManager.displayPickItemInterface(cardGame, localPlayerId, (i) => i.broken, callback, true)
                     }
                     else room.send("accept_event")
                 } else if (clickedElement.getData("type") === "decline_event") {

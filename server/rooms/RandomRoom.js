@@ -56,6 +56,11 @@ class RandomRoom extends colyseus.Room {
             this.state.wantToUseItem(client.sessionId, message.item_id, message.arg);
         })
 
+        this.onMessage("scout_pick", (client, message) => {
+            console.log(`Received scout_pick message from ${client.sessionId}:`, message.item_id);
+            this.state.pickDungeonCard(client.sessionId, message.arg);
+        })
+
         this.onMessage("escape_roll", (client, message) => {
             console.log(`Received escape_roll message from ${client.sessionId}:`, message);
             this.broadcast('animate_roll', { playerId: client.sessionId });

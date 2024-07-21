@@ -3,7 +3,7 @@ function execute(player, game) {
     if (game.currentCard?.dungeonCardType == "monster") {
         game.room.broadcast("animate_execute", { playerId: player.id });
         //trigger effects on special monster beaten
-            game.currentCard.onBeatenMonster(player, game)
+        game.currentCard.onBeatenMonster(player, game)
 
         player.addDefeatedMonster(game.currentCard)
         player.lastDamageTaken = 0;
@@ -15,7 +15,7 @@ function executeAndDiscard(player, game) {
     if (game.currentCard?.dungeonCardType == "monster") {
         game.room.broadcast("animate_execute", { playerId: player.id });
         //trigger effects on special monster beaten
-            game.currentCard.onBeatenMonster(player, game)
+        game.currentCard.onBeatenMonster(player, game)
 
         game.discard(game.currentCard)
         player.monstersBeatenThisTurn++;
@@ -72,6 +72,34 @@ function scout(game, player, nbCards, position = 0) {
     }
 }
 
+function selectDungeonCard(game, player, cards = game.dungeon) {
+    const targetClient = game.room.clients.find(c => c.id === player.id);
+    if (targetClient) {
+        const cards = game.dungeon
+        game.waitingPlayerInput = ((message, arg) => {
+            if (message === "scout_pick") {
+                pickDungeonCard(playerId, arg)
+            }
+        })
+        targetClient.send("scout_pick", { cards });
+    }
+}
+
+function pickSpecificCard(game, cardId) {
+    console.log('Initial dungeon:', game.dungeon.map(obj => obj.id).join(', '));
+    const card = game.dungeon.find(c => c.id == cardId)
+    console.log('card picked:', card.id);
+    const dungeonBackUp = [];
+    dungeonBackUp.push(...game.dungeon);
+    game.dungeon.clear()
+    game.dungeon.push(...dungeonBackUp.filter(c => c.id != cardId));
+    game.shuffleDungeon();
+    game.dungeonLength = game.dungeon.length;
+    console.log('Updated dungeon:', game.dungeon.map(obj => obj.id).join(', '));
+    console.log('Dungeon length:', game.dungeonLength);
+    return card;
+}
+
 function discardFromPile(cardId, player, game) {
     const card = player.defeatedMonstersPile.find(c => c.id === cardId)
     // // find the index of the item you'd like to remove
@@ -100,6 +128,8 @@ module.exports = {
     surviveWith,
     reduceDamage,
     scout,
+    pickSpecificCard,
+    selectDungeonCard,
     discardFromPile,
     playerRollDice,
 };

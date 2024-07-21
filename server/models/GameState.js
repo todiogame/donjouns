@@ -4,6 +4,7 @@ const { ItemCard } = require('./ItemCard');
 const { Player } = require('./Player');
 const { MonsterCard } = require('./MonsterCard');
 const { DungeonCard } = require('./DungeonCard');
+const h = require('./Helper.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -33,6 +34,8 @@ class GameState extends Schema {
 
         this.nextMonsterCondition = null;
         this.nextMonsterAction = null;
+
+        this.waitingPlayerInput = "scout_pick";
     }
 
     findPlayerById(id) {
@@ -128,10 +131,10 @@ class GameState extends Schema {
         this.phase = "GAME_SETUP";
         //set up dungeon cards      
         this.dungeon.clear();
-        this.dungeon.push(...allDungeonCards.filter(card =>
-            card.id >= 45
-        ).map(d => d.event ? new EventCard(d.id, d.title, d.description, d.effect, d.optional)
-            : new MonsterCard(d.id, d.title, d.power, d.types, d.description, d.effect)));
+        this.dungeon.push(...allDungeonCards
+            // .filter(card => card.id >= 45)
+            .map(d => d.event ? new EventCard(d.id, d.title, d.description, d.effect, d.optional)
+                : new MonsterCard(d.id, d.title, d.power, d.types, d.description, d.effect)));
         this.shuffleDungeon();
         this.dungeonLength = this.dungeon.length;
 
@@ -209,13 +212,16 @@ class GameState extends Schema {
         console.log('Dungeon length:', this.dungeonLength);
     }
 
-    pickDungeonCard(playerId) {
+    pickDungeonCard(playerId, cardId = null) {
         let player = this.findPlayerById(playerId)
         // Logic to handle picking a dungeon card
         if (this.dungeon.length && this.noCurrentCard() && this.isMyTurn(playerId)) {
             player.alreadyUsedItems = [];
             this.canTryToEscape = false;
-            this.currentCard = this.dungeon.pop();
+            if (!cardId)
+                this.currentCard = this.dungeon.pop();
+            else
+                this.currentCard = h.pickSpecificCard(this, cardId);
             this.dungeonLength = this.dungeon.length;
             //trigger special monster effects
             if (this.inFight()) this.currentCard.onMeetMonster(player, this)
@@ -346,6 +352,7 @@ class GameState extends Schema {
         this.nextMonsterCondition = null;
         this.nextMonsterAction = null;
         this.canExecute = false;
+        this.trap = false;
 
         //calculate next player
         let originalIndex = this.currentPlayerIndex;

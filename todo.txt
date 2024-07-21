@@ -11,6 +11,10 @@ JEU
 - items debut du tour : les faire gigoter tant que c'est le debut du tour
 - items fin du tour : si on en a. changer le prompt passe tour par fin du tour et faire gigoter les items ?
 
+UI
+improve ui pour scout interface pour plus de 40 cartes 
+improve ui pour select item pour plus de 5 cartes
+
 AI player
 
 INTERFACE

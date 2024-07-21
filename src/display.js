@@ -453,8 +453,8 @@ export class DisplayManager {
                 if (game.canExecute) this.addExecuteButton(game);
                 if (game.currentCard?.specialUI) this.addSpecialEffectButton(game, game.currentCard)
             } else if (game.currentCard?.dungeonCardType === "event") {
-                this.addAcceptEventButton(game);
-                if (game.currentCard.optional) this.addDeclineEventButton(game);
+                if (game.currentCard.effect) this.addAcceptEventButton(game);
+                if (game.currentCard.optional || !game.currentCard.effect) this.addDeclineEventButton(game);
             }
             if (game.canTryToEscape && game.dungeon.length) {
                 this.addEscapeButton(game)

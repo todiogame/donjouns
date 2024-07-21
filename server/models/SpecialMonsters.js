@@ -37,25 +37,32 @@ const onMeet = {
     NOOB_POWNER: (card, player, game) => {
         if (player.medals)
             card.power = 2
+        card.damage = card.calculateDamage()
     },
     MEDAL_GRINDER: (card, player, game) => {
         card.power = game.players.reduce((acc, p) => acc + p.medals, 0);
+        card.damage = card.calculateDamage()
+
     },
     RAT_RIDER: (card, player, game) => {
         card.bonusDamage = 2
+
     },
     BIG_DISGUSTING_RAT: (card, player, game) => {
         card.bonusDamage = 2
     },
     SCAVENGER_RAT: (card, player, game) => {
         card.power = player.defeatedMonstersPile.length
+        card.damage = card.calculateDamage()
     },
     VAMPIRE_LORD: (card, player, game) => {
         if (player.medals)
             card.bonusDamage = 4
+        card.damage = card.calculateDamage()
     },
     SPECTRE: (card, player, game) => {
         card.power = Math.floor(player.hp / 2);
+        card.damage = card.calculateDamage()
     },
     MONKEY_TEAM: (card, player, game) => {
         h.playerRollDice(game, player, (roll) => {

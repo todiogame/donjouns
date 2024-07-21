@@ -327,7 +327,12 @@ const ieClick = {
         }
     },
     hex: (item, player, game, arg) => {
-        //todo
+        if (!item.broken && game.inFight()) {
+            game.discard(game.currentCard)
+            game.currentCard = null;
+            h.selectDungeonCard(game, player, game.dungeon.filter(d => d.dungeonCardType === "monster"))
+            item.break();
+        }
     },
     heal: (item, player, game) => {
         if (!item.broken && player.lastDamageTaken > 0) {
@@ -341,7 +346,10 @@ const ieClick = {
         }
     },
     divination: (item, player, game) => {
-        //todo
+        if (!item.broken && game.noCurrentCard()) {
+            h.selectDungeonCard(game, player)
+            item.break();
+        }
     },
     adrenaline: (item, player, game) => {
         if (player.hp === 1) {
@@ -492,9 +500,21 @@ const ieClick = {
         }
     },
     silence: (item, player, game) => {
-        if (!item.broken && game.inFight()) {
+        if (!item.broken) {
             player.gainHP(2)
-            //todo
+            card = game.currentCard;
+            if (game.inFight()) {
+                if (["MIMIC", "SLEEPING_DRAGON", "EVIL_MIRROR", "MEDAL_GRINDER", "SCAVENGER_RAT", "SPECTRE",]
+                    .includes(card.baseEffect))
+                    card.power = 0
+                card.effect = ""
+                card.bonusDamage = 0
+                card.timesDealDamage = 0
+                card.damage = card.calculateDamage()
+            } else if (game.inEvent()) {
+                card.effect = ""
+            }
+            item.break();
         }
     },
     golem_heart: (item, player, game) => {
