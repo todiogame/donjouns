@@ -71,6 +71,7 @@ const onMeet = {
     },
     SHAPESHIFTER: (card, player, game) => {
         card.types.clear();
+        card.specialUI = true
     },
 };
 const onSpecialEffect = {
@@ -140,6 +141,7 @@ const onBeaten = {
     },
     SHAPESHIFTER: (card, player, game) => {
         card.types.clear();
+        card.specialUI = true
     },
 };
 

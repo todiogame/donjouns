@@ -1,12 +1,16 @@
 JEU
 
 - ajouter plus d'objets
-- finir les events
+- finir les events:
+    - ui tempete des ames pour chaque joueur
+    - ui dragonnier pour chaque joueur concerne
 
 - objets: mecaniques manquantes: 
 - BUG quand on roll une vorpale avec la lootbox (ou peut etre juste quand on la pick en cours de jeu)
 - rerolls de jet de des
 - survive automatique ou mieux : cartes qui s'animent a la mort du joueur
+
+il va falloir recoder la fuite pour ne pas piocher auto
 
 - items debut du tour : les faire gigoter tant que c'est le debut du tour
 - items fin du tour : si on en a. changer le prompt passe tour par fin du tour et faire gigoter les items ?

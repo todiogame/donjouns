@@ -137,7 +137,7 @@ const ieClick = {
         }
     },
     tp: (item, player, game) => {
-        if (!item.broken && player.canPass) {//check if that works
+        if (!item.broken && player.canPass && game.noCurrentCard()) {//check if that works
             player.flee(game)
         }
     },

@@ -40,7 +40,7 @@ const ieStartGame = {
     },
     slayer_bike: (item, player, game) => {
         item.hp = 6;
-        //todo rentre en premier
+        return true; // player starts the game
     },
     tattoo: (item, player, game) => {
         item.hp = 6;

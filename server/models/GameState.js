@@ -149,7 +149,8 @@ class GameState extends Schema {
                 item.hp = 0; // Ensure default hp is set
                 colorCount[item.color] = (colorCount[item.color] || 0) + 1;
                 if (ieStartGame[item.key]) {
-                    ieStartGame[item.key](item, player, this);
+                    // set up the start of game effect, and set startGame to true if an item makes the player start first
+                    player.startGame = ieStartGame[item.key](item, player, this) || player.startGame;
                     player.gainHP(item.hp); // Apply the HP gain after setting item.hp
                 }
             });
@@ -396,6 +397,7 @@ class GameState extends Schema {
             //if there is an active card, reset its stats
             if (this.inFight()) {
                 this.currentCard.power = this.currentCard.basePower;
+                this.currentCard.bonusDamage = 0;
                 //trigger effects
                 if (this.currentCard.onMeetMonster)
                     this.currentCard.onMeetMonster(newPlayer, this)
@@ -445,8 +447,9 @@ class GameState extends Schema {
         this.phase = "GAME_LOOP";
         console.log("game loop")
 
-        this.currentPlayerIndex = Math.floor(Math.random() * this.players.length);
-        this.players[this.currentPlayerIndex].turnNumber++
+        this.currentPlayerIndex = this.players.findIndex(player => player.startGame)
+            || Math.floor(Math.random() * this.players.length);
+        this.players[this.currentPlayerIndex].turnNumber++;
 
         console.log("donjon set up ok")
     }
@@ -476,9 +479,7 @@ class GameState extends Schema {
                 if (finalPlayers.length > 0) {
                     console.log("Aucun joueur n'a poncé le donjon, tous les joueurs vivants comptent.");
                 } else {
-                    console.log("Tous les joueurs sont morts. Personne ne gagne.");
-                    this.room.broadcast("endScores", { "winner": null, "finalPlayers": [] });
-                    return;
+                    console.log("Tous les joueurs sont morts.");
                 }
             }
             // Include players with always_count attribute
@@ -488,6 +489,13 @@ class GameState extends Schema {
                     finalPlayers.push(player);
                 }
             });
+            // case no one won
+            if (!finalPlayers.length) {
+                console.log("Personne ne gagne.");
+                this.room.broadcast("endScores", { "winner": null, "finalPlayers": [] });
+                return;
+            }
+
             this.players.forEach(player => {
                 if (finalPlayers.includes(player)) {
                     console.log(`${player.name} est inclus dans le décompte final.`);
