@@ -4,5 +4,5 @@
     "nb_items_draft" : 7,
     "nb_items_starting" : 6,
     "disabled_items": ["sceptre","printer"],
-    "include_items": ["silence","divination","hex"]
+    "include_items": ["silence","chalice","hex","monkey","lootbox","breach", "lich_skull"]
 }

@@ -43,6 +43,7 @@ const ieScore = {
     honor_armor: (item, player, game, final = false) => {
         if (!item.broken) {
             if (player.dead) {
+                console.log("Player is dead, Honor Armor gives score = 4.")
                 player.score = 4
                 player.score_blocked = true;
                 if (final) player.always_count = true;

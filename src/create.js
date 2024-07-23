@@ -53,8 +53,7 @@ export function create() {
             displayManager.updateGameUI(cardGame, localPlayerId, cardGame.phase);
             this.rollDieSound.play();
             const playerId = message.playerId
-            displayManager.displayDice(playerId === localPlayerId ? "bottom" :
-                displayManager.getOpponentPosition(playerId, localPlayerId, cardGame.players))
+            displayManager.displayDice(displayManager.getPlayerPositionAroundTable(playerId, localPlayerId, cardGame.players))
         });
 
 
@@ -85,7 +84,7 @@ export function create() {
             console.log("Received scout cards:", message);
             displayManager.displayScoutInterface(message.cards)
         });
-        
+
         room.onMessage("scout_pick", (message) => {
             console.log("Received scout cards, pick 1:", message);
             const callback = (id) => room.send("scout_pick", { arg: id });

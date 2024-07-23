@@ -30,18 +30,21 @@ const onEvent = {
         } else if (itemId != null) {
             let item = player.stuff.find(i => !i.broken && i.id === itemId)
             if (item) {
-                item.discard(player, game)
                 player.pickItem(game);
+                item.discard(player, game)
             }
         }
     },
-    WHEEL_OF_FORTUNE: (card, player, game) => {
-        h.playerRollDice(game, player, (roll) => {
-            if (roll <= 2) {
-                player.loseHP(game, 2);
-            } else if (roll >= 5) {
-                player.gainHP(2);
-            }
+    WHEEL_OF_FORTUNE: async (card, player, game) => {
+        await new Promise((resolve) => {
+            h.playerRollDice(game, player, (roll) => {
+                if (roll <= 2) {
+                    player.loseHP(game, 2);
+                } else if (roll >= 5) {
+                    player.gainHP(2);
+                }
+                resolve();
+            });
         });
     },
     HEALING_ANGEL: (card, player, game) => {

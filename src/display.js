@@ -261,12 +261,8 @@ export class DisplayManager {
 
         this.clearPreviousDisplay();
         players.forEach(player => {
-            if (player.id === localPlayerId) {
-                this.displayStuff(player.stuff, true, 'bottom', player);
-            } else {
-                const position = this.getOpponentPosition(player.id, localPlayerId, players);
-                this.displayStuff(player.stuff, false, position, player);
-            }
+            const position = this.getPlayerPositionAroundTable(player.id, localPlayerId, players);
+            this.displayStuff(player.stuff, player.id === localPlayerId, position, player);
         });
         players.forEach(player => {
             if (player.id === localPlayerId) {
@@ -370,8 +366,8 @@ export class DisplayManager {
         });
     }
 
-    getOpponentPosition(playerId, localPlayerId, players) {
-
+    getPlayerPositionAroundTable(playerId, localPlayerId, players) {
+        if (playerId === localPlayerId) return 'bottom';
         const positions = ['top-left', 'top-right'];
         const currentIndex = players.findIndex(p => p.id === localPlayerId);
         const opponentIndex = players.findIndex(p => p.id === playerId);
@@ -433,16 +429,12 @@ export class DisplayManager {
         this.displayCurrentPhase(game);
         const players = game.players;
         players.forEach(player => {
-            if (player.id === localPlayerId) {
-                this.displayStuff(player.stuff, true, 'bottom', player, game);
-                this.displayHP(player, true, 'bottom');
-                this.displayMonstersPiles(player, true, 'bottom');
-            } else {
-                const position = this.getOpponentPosition(player.id, localPlayerId, players);
-                this.displayStuff(player.stuff, false, position, player, game);
-                this.displayHP(player, false, position);
-                this.displayMonstersPiles(player, false, position);
-            }
+            const position = this.getPlayerPositionAroundTable(player.id, localPlayerId, players);
+            this.displayStuff(player.stuff, (player.id === localPlayerId), position, player, game);
+            this.displayHP(player, (player.id === localPlayerId), position);
+            this.displayMonstersPiles(player, (player.id === localPlayerId), position);
+            if (player.dead) this.showDeathOverlay(player, this.getPlayerPositionAroundTable(player.id, localPlayerId, players));
+            if (player.fled) this.showFledOverlay(player, this.getPlayerPositionAroundTable(player.id, localPlayerId, players));
         });
         this.displayCurrentCard(game, localPlayerId);
         this.displayDungeon(game, localPlayerId);
@@ -451,7 +443,7 @@ export class DisplayManager {
             if (game.currentCard?.dungeonCardType === "monster") {
                 this.addDamageButton(game);
                 if (game.canExecute) this.addExecuteButton(game);
-                if (game.currentCard?.specialUI) this.addSpecialEffectButton(game, game.currentCard)
+                if (game.currentCard?.specialUI && game.currentCard?.effect) this.addSpecialEffectButton(game, game.currentCard)
             } else if (game.currentCard?.dungeonCardType === "event") {
                 if (game.currentCard.effect) this.addAcceptEventButton(game);
                 if (game.currentCard.optional || !game.currentCard.effect) this.addDeclineEventButton(game);
@@ -462,8 +454,6 @@ export class DisplayManager {
             if (game.noCurrentCard() && game.dungeon.length && game.getCurrentPlayer().canPass)
                 this.addPassTurnButton(game)
         }
-        if(game.getPlayerById(localPlayerId).dead) this.showDeathOverlay();
-        if(game.getPlayerById(localPlayerId).fled) this.showFledOverlay();
     }
     displayCurrentPhase(game) {
         this.scene.add.text(
@@ -1806,37 +1796,56 @@ export class DisplayManager {
             duration: 500
         });
     }
-    showOverlay(color, message) {
+    showOverlay(color, message, playerPosition, player) {
         const { width, height } = this.scene.sys.game.config;
         const graphics = this.scene.add.graphics();
         graphics.fillStyle(color, 0.5);
-        const overlay = graphics.fillRect(0, height / 2, width, height / 2);
-        
-        const text = this.scene.add.text(width / 2, height / 2 + 50, message, {
+
+        let overlay, textX, textY, scoreTextY;
+
+        if (playerPosition === 'bottom') {
+            overlay = graphics.fillRect(0, height / 2, width, height / 2);
+            textX = width / 2;
+            textY = height / 2 + 100;
+            scoreTextY = textY + 50;
+        } else if (playerPosition === 'top-left') {
+            overlay = graphics.fillRect(0, 0, width / 3, height / 3 + 20);
+            textX = width / 7;
+            textY = height / 5;
+            scoreTextY = textY + 50;
+        } else if (playerPosition === 'top-right') {
+            overlay = graphics.fillRect(width * 2 / 3, 0, width / 3, height / 3 + 20);
+            textX = width * 6 / 7;
+            textY = height / 4;
+            scoreTextY = textY + 50;
+        }
+
+        const text = this.scene.add.text(textX, textY, message, {
             fontSize: '48px',
             fill: '#ffffff',
             fontStyle: 'bold'
         }).setOrigin(0.5, 0.5);
-        
-        graphics.setDepth(20);
-        text.setDepth(20);
-    
-        this.scene.tweens.add({
-            targets: [overlay, text],
-            alpha: { from: 0, to: 1 },
-            duration: 1000,
-            ease: 'Sine.easeInOut'
-        });
+
+        const scoreText = this.scene.add.text(textX, scoreTextY, `Score: ${player.score}${player.stuff.some(i => i.key == "monkey") ? "+🐵" : ""}`, {
+            fontSize: '36px',
+            fill: '#ffffff',
+            fontStyle: 'bold'
+        }).setOrigin(0.5, 0.5);
+
+        graphics.setDepth(3);
+        text.setDepth(3);
+        scoreText.setDepth(3);
     }
-    
-    showDeathOverlay() {
-        this.showOverlay(0x808080, 'You are dead');
+
+    showDeathOverlay(player, playerPosition = 'bottom') {
+        this.showOverlay(0x808080, playerPosition == 'bottom' ? 'You died' : 'Player died', playerPosition, player);
     }
-    
-    showFledOverlay() {
-        this.showOverlay(0x006400, 'You fled');
+
+    showFledOverlay(player, playerPosition = 'bottom') {
+        this.showOverlay(0x006400, playerPosition == 'bottom' ? 'You fled' : 'Player fled', playerPosition, player);
     }
-    
+
+
     updateEndUI(winner, finalPlayers, localPlayerId) {
         console.log("updateEndUI", winner, finalPlayers);
 

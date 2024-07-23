@@ -84,7 +84,7 @@ const onSpecialEffect = {
     },
 
     GUARDIAN_ANGEL: (card, player, game) => {
-        game.discard(card)
+        game.discard(player, card)
         game.afterDoneWithMonster(player)
     },
 
@@ -117,12 +117,12 @@ const onFaceBeforeDamage = {
 
 const onFaceAfterDamage = {
     FAIRY: (card, player, game) => {
-        player.addDefeatedMonster(game.currentCard)
-        game.currentCard = null;
+        player.addDefeatedMonster(game.currentCard, game)
+        game.afterDoneWithMonster(player)
         game.passTurn()
     },
     GHOST_GOBLIN: (card, player, game) => {
-        game.discard(game.currentCard)
+        game.discard(player, game.currentCard)
         player.monstersBeatenThisTurn++;
         game.currentCard = null;
         player.canPass = true;
@@ -145,7 +145,7 @@ const onBeaten = {
 
 const onScore = {
     GOLDEN_GOLEM: (card, player, game) => {
-        // Fill in the code
+        // Code is in Player.calculateScore(game)
     }
 };
 

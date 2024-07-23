@@ -24,7 +24,7 @@ const ieEndTurn = {
                 });
             }
         }
-        return Promise.resolve();
+        // return Promise.resolve();
     },
 
     crystal: (item, player, game) => {

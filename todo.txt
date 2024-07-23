@@ -1,10 +1,10 @@
 JEU
 
 - ajouter plus d'objets
-- ajouter les events
-- finir les monstres speciaux
+- finir les events
 
 - objets: mecaniques manquantes: 
+- BUG quand on roll une vorpale avec la lootbox (ou peut etre juste quand on la pick en cours de jeu)
 - rerolls de jet de des
 - survive automatique ou mieux : cartes qui s'animent a la mort du joueur
 

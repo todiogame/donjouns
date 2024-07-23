@@ -15,6 +15,11 @@ const iePick = {
             item.fix(player, game)
         }
     },
+    bow: (item, player, game) => {
+        if (!item.broken && game.inFight() && game.currentCard.odd()) {
+            game.currentCard.bonusDamage++;
+        }
+    },
 };
 // Example usage
 // const key = 'midas';

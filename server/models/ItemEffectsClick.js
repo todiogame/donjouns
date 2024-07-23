@@ -95,8 +95,7 @@ const ieClick = {
         }
     },
     bard: (item, player, game) => {
-        if (!game.trap && !item.broken && player.hp > 3) {
-            player.loseHP(game, 3)
+        if (!game.trap && !item.broken) {
             h.execute(player, game)
             item.break(player, game)
         }
@@ -304,7 +303,7 @@ const ieClick = {
         }
     },
     chainsaw: (item, player, game) => {
-        if (!game.trap && !item.broken && game.inFight() && player.hp > 3) {
+        if (!game.trap && !item.broken && game.inFight()) {
             player.loseHP(game, 3)
             h.execute(player, game)
         }
@@ -328,7 +327,7 @@ const ieClick = {
     },
     hex: (item, player, game, arg) => {
         if (!item.broken && game.inFight()) {
-            game.discard(game.currentCard)
+            game.discard(player, game.currentCard)
             game.currentCard = null;
             h.selectDungeonCard(game, player, game.dungeon.filter(d => d.dungeonCardType === "monster"))
             item.break();
@@ -472,16 +471,15 @@ const ieClick = {
     },
     purple_skull: (item, player, game, arg) => {
         if (!item.broken && game.inFight() && arg != null) {
-            const card = player.defeatedMonstersPile.find(c => c.id === cardId)
+            const card = player.defeatedMonstersPile.find(c => c.id === arg)
             if (card.basePower > game.currentCard.power) {
                 h.discardFromPile(arg, player, game)
-                h.surviveWith(player, game, player.baseHP)
-                item.break(player, game)
+                h.execute(player, game)
             }
         }
     },
     eternity_leaf: (item, player, game) => {
-        if (!game.trap && !item.broken && player.hp > 1 && game.inFight() &&
+        if (!game.trap && !item.broken && game.inFight() &&
             (h.currentCardHasType(game, "Demon") || h.currentCardHasType(game, "Dragon"))) {
             player.loseHP(game, 1)
             h.execute(player, game)
@@ -509,7 +507,7 @@ const ieClick = {
                     card.power = 0
                 card.effect = ""
                 card.bonusDamage = 0
-                card.timesDealDamage = 0
+                card.timesDealDamage = 1
                 card.damage = card.calculateDamage()
             } else if (game.inEvent()) {
                 card.effect = ""

@@ -5,6 +5,7 @@ const { DungeonCard } = require('./DungeonCard');
 const ieScore = require('./ItemEffectsScore');
 const ieStartGame = require("./ItemEffectsStartGame");
 const ieEscapeRoll = require("./ItemEffectsEscapeRoll");
+const ieAddMonsterToPile = require("./ItemEffectsAddMonsterToPile");
 
 class Player extends Schema {
     constructor(id, name) {
@@ -61,6 +62,8 @@ class Player extends Schema {
         this.stuff.push(item);
         // this.hp += item.hp;
         ieStartGame[item.key]?.(item, this, game);
+        this.gainHP(item.hp); // Apply the HP gain after setting item.hp
+
     }
 
     loseHP(game, damage) {
@@ -87,15 +90,15 @@ class Player extends Schema {
         return roll;
     }
 
-    getEscapeModifier(game){
+    getEscapeModifier(game) {
         console.log("getEscapeModifier")
         let escapeModifier = 0;
         let res = 0
         this.stuff.forEach(item => {
             res = ieEscapeRoll[item.key]?.(item, this, game, escapeModifier);
-            if(res) escapeModifier += res
+            if (res) escapeModifier += res
         });
-        console.log("getEscapeModifier return",escapeModifier)
+        console.log("getEscapeModifier return", escapeModifier)
         return escapeModifier
     }
 
@@ -105,20 +108,26 @@ class Player extends Schema {
     }
 
     flee(game) {
-        console.log(this.name + "flee!")
+        this.calculateScore(game)
+        console.log(this.name + "flee! Score is " + this.score)
         this.fled = true;
         game.passTurn()
     }
 
     die(game) {
-        console.log(this.name + "died!")
+        this.calculateScore(game)
+        console.log(this.name + "died! Score was " + this.score)
         this.dead = true;
         game.passTurn()
     }
 
-    addDefeatedMonster(card) {
+    addDefeatedMonster(card, game) {
         this.defeatedMonstersPile.push(card);
         this.monstersBeatenThisTurn += 1;
+        // trigger items on-beaten monster effects
+        game.players.filter(p => p.inDungeon()).forEach(owner => owner.stuff.forEach(item =>
+            ieAddMonsterToPile[item.key]?.(item, this, owner, game)))
+
     }
 
     scoreBonus(value) {
@@ -134,7 +143,7 @@ class Player extends Schema {
             this.score += 1;
         }
         this.stuff.forEach(item => {
-            ieScore[item.key]?.(item, player, game, false);
+            ieScore[item.key]?.(item, this, game, false);
         });
     }
     async calculateFinalScore(game) {

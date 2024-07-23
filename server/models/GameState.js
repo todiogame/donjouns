@@ -15,6 +15,8 @@ const ieStartGame = require('./ItemEffectsStartGame');
 const iePick = require("./ItemEffectsPick");
 const ieEndTurn = require("./ItemEffectsEndTurn");
 const { EventCard } = require("./EventCard");
+const ieTakeDamage = require("./ItemEffectsTakeDamage.js");
+const ieDiscard = require("./ItemEffectsDiscard.js");
 
 class GameState extends Schema {
     constructor(room) {
@@ -182,8 +184,12 @@ class GameState extends Schema {
     isMyTurn(myId) {
         return this.getCurrentPlayer().id === myId
     }
-    discard(card) {
+    discard(player, card) {
         this.discardPile.push(card);
+        //trigger effects on discarded cards
+        this.players.filter(p => p.inDungeon()).forEach(owner => owner.stuff.forEach(item =>
+            ieDiscard[item.key]?.(item, player, owner, this)))
+
     }
     returnCurrentCardToDungeon() {
         console.log('Initial dungeon:', this.dungeon.map(obj => obj.id).join(', '));
@@ -213,7 +219,7 @@ class GameState extends Schema {
     }
 
     pickDungeonCard(playerId, cardId = null) {
-        console.log('Picking',cardId)
+        console.log('Picking', cardId)
         let player = this.findPlayerById(playerId)
         // Logic to handle picking a dungeon card
         if (this.dungeon.length && this.noCurrentCard() && this.isMyTurn(playerId)) {
@@ -252,17 +258,22 @@ class GameState extends Schema {
             this.currentCard.onFaceBeforeDamageMonster(player, this, itemToOoze)
 
             console.log(`${playerId} takes ${this.currentCard.damage} damage!`);
+            player.lastDamageTaken = Math.min(this.currentCard.timesDealDamage * this.currentCard.damage, player.hp);
+
             for (let i = 0; i < this.currentCard.timesDealDamage; i++) {
                 player.loseHP(this, this.currentCard.damage)
             }
-            player.lastDamageTaken = this.currentCard.damage;
 
-            //trigger effects after taking damage
+            // trigger items on-damage effects
+            this.players.filter(p => p.inDungeon()).forEach(owner => owner.stuff.forEach(item =>
+                ieTakeDamage[item.key]?.(item, player, owner, this)))
+
+            //trigger special monster effects after taking damage
             this.currentCard.onFaceAfterDamageMonster(player, this)
 
             if (this.isMyTurn(playerId) && player.inDungeon()) {
                 if (this.currentCard) {
-                    player.addDefeatedMonster(this.currentCard)
+                    player.addDefeatedMonster(this.currentCard, this)
                     //trigger effects on special monster beaten
                     this.currentCard.onBeatenMonster(player, this)
                 }
@@ -284,7 +295,7 @@ class GameState extends Schema {
         this.trap = false;
     }
 
-    dealWithEvent(playerId, isAccepted, itemId) {
+    async dealWithEvent(playerId, isAccepted, itemId) {
         if (this.currentCard.dungeonCardType === "event") {
             let player = this.findPlayerById(playerId)
             this.canExecute = false;
@@ -293,9 +304,9 @@ class GameState extends Schema {
             this.trap = false;
 
             if (isAccepted)
-                this.currentCard.onAcceptEvent(player, this, itemId)
+                await this.currentCard.onAcceptEvent(player, this, itemId)
 
-            this.discard(this.currentCard)
+            this.discard(player, this.currentCard)
             if (this.dungeon.length <= 0) {
                 this.endGame()
             }

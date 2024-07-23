@@ -5,7 +5,7 @@ function execute(player, game) {
         //trigger effects on special monster beaten
         game.currentCard.onBeatenMonster(player, game)
 
-        player.addDefeatedMonster(game.currentCard)
+        player.addDefeatedMonster(game.currentCard, game)
         player.lastDamageTaken = 0;
         game.afterDoneWithMonster(player)
     }
@@ -17,7 +17,7 @@ function executeAndDiscard(player, game) {
         //trigger effects on special monster beaten
         game.currentCard.onBeatenMonster(player, game)
 
-        game.discard(game.currentCard)
+        game.discard(player, game.currentCard)
         player.monstersBeatenThisTurn++;
         player.lastDamageTaken = 0;
         game.afterDoneWithMonster(player)
@@ -31,7 +31,7 @@ function surviveWith(player, game, hp) {
         //trigger effects on special monster beaten
         game.currentCard.onBeatenMonster(player, game)
 
-        player.addDefeatedMonster(game.currentCard)
+        player.addDefeatedMonster(game.currentCard, game)
         game.afterDoneWithMonster(player)
     }
 }
@@ -100,7 +100,7 @@ function discardFromPile(cardId, player, game) {
     // // find the index of the item you'd like to remove
     const cardIndex = player.defeatedMonstersPile.findIndex(c => c.id === cardId)
     player.defeatedMonstersPile.splice(cardIndex, 1);
-    game.discard(card)
+    game.discard(player, card)
 }
 
 function playerRollDice(game, player, callback) {
