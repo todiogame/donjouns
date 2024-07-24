@@ -9,10 +9,27 @@ class GameController {
     }
 
     initialize(options) {
-        this.allDungeonCards = options.dungeon || [];
-        this.allItemsCards = options.itemsCards || [];
+        this.room.allDungeonCards = options.dungeon || [];
+        this.room.allItemsCards = options.itemsCards || [];
 
-        this.state.initializeItemsDeck(this.allItemsCards);
+        this.state.initializeItemsDeck(this.room.allItemsCards);
+    }
+
+    onPlayerJoin(client) {
+        const player = new Player(client.sessionId, `Player ${this.state.players.length + 1}`);
+        this.state.addPlayer(player);
+        console.log("player", player.id, player.name, player.stuff.length);
+
+        if (this.state.players.length === this.room.maxClients) {
+            this.room.lock();
+            console.log("start_game");
+            this.state.dealItemsCardsRandom();
+            this.state.setUpDungeonGame(this.room.allDungeonCards);
+            if (this.state.allPlayersSetupReady()) {
+                this.state.gameLoop();
+            }
+            this.room.broadcast("start_game_random", this.state);
+        }
     }
 
     handleMessage(type, client, message) {
@@ -53,31 +70,14 @@ class GameController {
 
     handleEscapeRoll(client) {
         console.log(`Received escape_roll message from ${client.sessionId}`);
-        this.room.broadcast('animate_roll', { playerId: client.sessionId });
+        this.room.broadcast('game_action', { action: 'animate_roll', playerId: client.sessionId });
         const { escapeRoll, escapeModifier } = this.state.wantToEscape(client.sessionId);
         if (escapeRoll) { // if allowed to escape roll
             setTimeout(() => {
                 console.log(`Broadcast escape_roll result for ${client.sessionId}:`, { escapeRoll, escapeModifier });
                 this.state.tryToEscape(client.sessionId, escapeRoll + escapeModifier);
-                this.room.broadcast('roll_result', { result: escapeRoll, modifier: escapeModifier });
+                this.room.broadcast('game_action', { action: 'roll_result', result: escapeRoll, modifier: escapeModifier });
             }, 1000); // 1000 milliseconds delay
-        }
-    }
-
-    onPlayerJoin(client) {
-        const player = new Player(client.sessionId, `Player ${this.state.players.length + 1}`);
-        this.state.addPlayer(player);
-        console.log("player", player.id, player.name, player.stuff.length);
-
-        if (this.state.players.length === this.room.maxClients) {
-            this.room.lock();
-            console.log("start_game");
-            this.state.dealItemsCardsRandom();
-            this.state.setUpDungeonGame(this.allDungeonCards);
-            if (this.state.allPlayersSetupReady()) {
-                this.state.gameLoop();
-            }
-            this.room.broadcast("start_game_random", this.state);
         }
     }
 }

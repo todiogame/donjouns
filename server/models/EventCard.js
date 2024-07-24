@@ -90,7 +90,7 @@ const onEvent = {
         });
     },
     SOULSTORM: (card, player, game) => {
-        game.players.forEach(p => {
+        game.players.filter(p => p.inDungeon()).forEach(p => {
             //todo let players pick
             const monsterCard = p.defeatedMonstersPile.pop();
             if (monsterCard) {

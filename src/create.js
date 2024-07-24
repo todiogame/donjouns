@@ -1,6 +1,7 @@
 import { Client } from "colyseus.js";
 import { Game, Player } from './classes';
 import { DisplayManager } from './display';
+
 let cardGame;
 let displayManager;
 let client;
@@ -33,62 +34,59 @@ export function create() {
             console.log("Received start_game message:", state);
             cardGame = new Game(); // Initialize the card game
             updateGameState(state);
-
-            displayManager.displayTitle("Le Draft démarre !")
+            displayManager.displayTitle("Le Draft démarre !");
         });
+
         room.onMessage("start_game_random", (state) => {
             console.log("Received start_game_random message:", state);
             cardGame = new Game(); // Initialize the card game
             updateGameState(state);
-
-            displayManager.displayTitle("La partie démarre !")
-
+            displayManager.displayTitle("La partie démarre !");
         });
+
         room.onMessage("end_draft", (state) => {
-            displayManager.displayTitle("Fin du Draft !")
-        });
-
-        room.onMessage("animate_roll", (message) => {
-            cardGame.isDiceRolling = true; // Set flag to disable interactions during dice roll
-            displayManager.updateGameUI(cardGame, localPlayerId, cardGame.phase);
-            this.rollDieSound.play();
-            const playerId = message.playerId
-            displayManager.displayDice(displayManager.getPlayerPositionAroundTable(playerId, localPlayerId, cardGame.players))
-        });
-
-
-        room.onMessage("animate_execute", () => {
-            const animScene = this.game.scene.getScene('AnimScene');
-            if (animScene) animScene.executeAnimation();
-        });
-
-        // Handle dice roll results from the server
-        room.onMessage('roll_result', (message) => {
-            const diceScene = this.game.scene.getScene('DiceScene');
-            console.log("rolled a", message.result)
-            if (diceScene) diceScene.showDiceResult(message.result, message.modifier);
-            cardGame.isDiceRolling = false; // Re-enable interactions after dice roll completes
-            if (cardGame.phase.includes("GAME")) displayManager.updateGameUI(cardGame, localPlayerId, cardGame.phase);
+            displayManager.displayTitle("Fin du Draft !");
         });
 
         room.onMessage("endScores", (message) => {
             console.log("Received end scores data:", message);
-            const { winner, finalPlayers } = message;
-            cardGame.winner = winner;
-            cardGame.finalPlayers = finalPlayers;
+            cardGame.winner = message.winner;
+            cardGame.finalPlayers = message.finalPlayers;
             displayManager.updateEndUI(cardGame.winner, cardGame.finalPlayers, localPlayerId);
         });
 
-
-        room.onMessage("scout", (message) => {
-            console.log("Received scout cards:", message);
-            displayManager.displayScoutInterface(message.cards)
-        });
-
-        room.onMessage("scout_pick", (message) => {
-            console.log("Received scout cards, pick 1:", message);
-            const callback = (id) => room.send("scout_pick", { arg: id });
-            displayManager.displayScoutInterface(message.cards, callback)
+        // Consolidated game_action message handler
+        room.onMessage("game_action", (message) => {
+            switch (message.action) {
+                case "animate_roll":
+                    cardGame.isDiceRolling = true;
+                    displayManager.updateGameUI(cardGame, localPlayerId, cardGame.phase);
+                    this.rollDieSound.play();
+                    displayManager.displayDice(displayManager.getPlayerPositionAroundTable(message.playerId, localPlayerId, cardGame.players));
+                    break;
+                case "animate_execute":
+                    const animScene = this.game.scene.getScene('AnimScene');
+                    if (animScene) animScene.executeAnimation();
+                    break;
+                case "roll_result":
+                    const diceScene = this.game.scene.getScene('DiceScene');
+                    console.log("rolled a", message.result);
+                    if (diceScene) diceScene.showDiceResult(message.result, message.modifier);
+                    cardGame.isDiceRolling = false;
+                    if (cardGame.phase.includes("GAME")) displayManager.updateGameUI(cardGame, localPlayerId, cardGame.phase);
+                    break;
+                case "scout":
+                    displayManager.displayScoutInterface(message.cards);
+                    break;
+                case "scout_pick":
+                    console.log("Received scout cards, pick 1:", message);
+                    const callback = (id) => room.send("scout_pick", { arg: id });
+                    displayManager.displayScoutInterface(message.cards, callback);
+                    break;
+                default:
+                    console.error("Unknown game action:", message.action);
+                    break;
+            }
         });
     }).catch(e => {
         console.error("join error", e);

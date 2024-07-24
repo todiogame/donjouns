@@ -486,7 +486,11 @@ const ieClick = {
         }
     },
     luck_potion: (item, player, game) => {
-        //todo
+        if (!item.brokem){
+            player.gainHP(3)
+            //todo modify dice
+            item.break();
+        }
     },
     genius_glasses: (item, player, game) => {
         if (!item.broken && player.lastDamageTaken && game.noCurrentCard())

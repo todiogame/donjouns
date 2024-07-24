@@ -1,7 +1,7 @@
 
 function execute(player, game) {
     if (game.currentCard?.dungeonCardType == "monster") {
-        game.room.broadcast("animate_execute", { playerId: player.id });
+        game.room.broadcast("game_action", { action: 'animate_execute', playerId: player.id });
         //trigger effects on special monster beaten
         game.currentCard.onBeatenMonster(player, game)
 
@@ -13,7 +13,7 @@ function execute(player, game) {
 
 function executeAndDiscard(player, game) {
     if (game.currentCard?.dungeonCardType == "monster") {
-        game.room.broadcast("animate_execute", { playerId: player.id });
+        game.room.broadcast("game_action", { action: 'animate_execute', playerId: player.id });
         //trigger effects on special monster beaten
         game.currentCard.onBeatenMonster(player, game)
 
@@ -68,7 +68,7 @@ function scout(game, player, nbCards, position = 0) {
     const targetClient = game.room.clients.find(c => c.id === player.id);
     if (targetClient) {
         const cards = game.dungeon.slice(-position - nbCards, -position || undefined).reverse();
-        targetClient.send("scout", { cards });
+        targetClient.send("game_action", { action: "scout", cards });
     }
 }
 
@@ -76,7 +76,7 @@ function selectDungeonCard(game, player, cards = game.dungeon) {
     const targetClient = game.room.clients.find(c => c.id === player.id);
     if (targetClient) {
         game.canPickSpecificCard = true
-        targetClient.send("scout_pick", { cards });
+        targetClient.send("game_action", { action: "scout_pick", cards });
     }
 }
 
@@ -104,11 +104,11 @@ function discardFromPile(cardId, player, game) {
 }
 
 function playerRollDice(game, player, callback) {
-    game.room.broadcast("animate_roll", { playerId: player.id });
+    game.room.broadcast('game_action', { action: 'animate_roll', playerId: player.id });
     let diceRoll = player.rollDice();
     setTimeout(() => {
         console.log(`broadcast dice_roll result for ${player.id}:`, diceRoll);
-        game.room.broadcast('roll_result', { result: diceRoll });
+        game.room.broadcast('game_action', { action: 'roll_result', result: diceRoll });
         callback(diceRoll);
     }, 1000); // 1000 milliseconds delay
 }
