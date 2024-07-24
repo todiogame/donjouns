@@ -61,6 +61,7 @@ const onEvent = {
         game.nextMonsterAction = (state) => h.execute(player, state);
     },
     HANDYMAN: (card, player, game, itemToFix) => {
+        //todo (all events?) block items usage to stop someone from having a free use on an item
         let item = player.stuff.find(i => i.broken && i.id === itemToFix)
         if (item) item.fix(player, game)
     },
