@@ -4,8 +4,49 @@
     <meta charset="UTF-8">
     <title>Le Donjouns</title>
     <style>
-        body { margin: 0; }
-        canvas { display: block; }
+        html, body {
+            height: 100%;
+            margin: 0;
+            font-family: 'Segoe UI', 'Trebuchet MS', sans-serif;
+            color: #f6f7fb;
+            background: #04060c;
+        }
+
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-image:
+                radial-gradient(circle at 20% 20%, rgba(97, 114, 255, 0.4), transparent 45%),
+                radial-gradient(circle at 80% 0%, rgba(255, 188, 112, 0.35), transparent 40%),
+                linear-gradient(135deg, #0b1335, #091123 60%, #04060c);
+            background-attachment: fixed;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 80px 80px;
+            opacity: 0.25;
+            pointer-events: none;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow:
+                0 20px 50px rgba(5, 5, 15, 0.75),
+                0 0 60px rgba(60, 115, 255, 0.35);
+            background-color: #05070f;
+        }
     </style>
 </head>
 <body>

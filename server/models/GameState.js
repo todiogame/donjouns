@@ -17,6 +17,9 @@ const ieEndTurn = require("./ItemEffectsEndTurn");
 const { EventCard } = require("./EventCard");
 const ieTakeDamage = require("./ItemEffectsTakeDamage.js");
 const ieDiscard = require("./ItemEffectsDiscard.js");
+const ieCanUse = require('./ItemEffectsClick').ieCanUse;
+
+
 
 class GameState extends Schema {
     constructor(room) {
@@ -24,6 +27,10 @@ class GameState extends Schema {
         this.room = room;
         this.phase = "WAITING";
         this.players = new ArraySchema();
+        this.hostId = "";
+        this.minPlayersToStart = config.min_players_to_start || config.nb_players;
+        this.maxPlayers = (room && room.maxClients) ? room.maxClients : config.nb_players;
+        this.gameMode = "";
         this.itemDeck = new ArraySchema();
         this.currentPlayerIndex = null;
         this.dungeon = new ArraySchema();
@@ -72,6 +79,53 @@ class GameState extends Schema {
 
     addPlayer(player) {
         this.players.push(player);
+        if (!this.hostId) {
+            this.hostId = player.id;
+        }
+    }
+
+    removePlayer(playerId) {
+        const index = this.players.findIndex(player => player.id === playerId);
+        if (index === -1) {
+            return;
+        }
+
+        const player = this.players[index];
+        const isLobbyPhase = this.phase === "WAITING" || this.phase === "DRAFT";
+        const isGamePhase = typeof this.phase === "string" && this.phase.includes("GAME");
+
+        if (isLobbyPhase) {
+            this.players.splice(index, 1);
+            if (this.hostId === playerId) {
+                this.hostId = this.players.length ? this.players[0].id : "";
+            }
+        } else if (isGamePhase) {
+            const currentPlayer = (typeof this.currentPlayerIndex === "number") ? this.getCurrentPlayer() : null;
+            const wasCurrentPlayer = currentPlayer && currentPlayer.id === playerId;
+            if (typeof player.calculateScore === "function") {
+                player.calculateScore(this);
+            }
+            player.dead = true;
+            player.hp = 0;
+            if (wasCurrentPlayer && typeof this.passTurn === "function") {
+                this.passTurn();
+            }
+        } else {
+            player.dead = true;
+            player.hp = 0;
+        }
+    }
+
+    setPlayerName(playerId, rawName = "") {
+        const player = this.findPlayerById(playerId);
+        if (!player || typeof rawName !== "string") {
+            return;
+        }
+        const sanitized = rawName.replace(/\s+/g, " ").trim();
+        if (!sanitized) {
+            return;
+        }
+        player.name = sanitized.substring(0, 24);
     }
 
     dealItemsCardsDraft() {
@@ -81,8 +135,8 @@ class GameState extends Schema {
             });
         }
     }
-    dealItemsCardsRandom() {
-        for (let i = 0; i < nb_items_starting; i++) {
+    dealItemsCardsRandom(handSize = nb_items_starting) {
+        for (let i = 0; i < handSize; i++) {
             this.players.forEach(player => {
                 player.addItemCardRandom(this.itemDeck.pop());
             });
@@ -248,6 +302,7 @@ class GameState extends Schema {
             } else if (this.inEvent()) {
                 console.log('picked event')
             }
+            this.updateItemsUsability();
         }
     }
 
@@ -280,6 +335,7 @@ class GameState extends Schema {
                 }
                 this.afterDoneWithMonster(player)
             }
+            this.updateItemsUsability();
         }
     }
 
@@ -294,6 +350,7 @@ class GameState extends Schema {
         this.nextMonsterCondition = null;
         this.nextMonsterAction = null;
         this.trap = false;
+        this.updateItemsUsability();
     }
 
     async dealWithEvent(playerId, isAccepted, itemId) {
@@ -314,6 +371,7 @@ class GameState extends Schema {
             this.currentCard = null;
             player.canPass = false;
             this.canTryToEscape = true;
+            this.updateItemsUsability();
         }
     }
 
@@ -323,6 +381,7 @@ class GameState extends Schema {
             console.log("givePromptExecuteNextMonster ")
             this.canExecute = true;
         }
+        this.updateItemsUsability();
     }
 
     wantToExecuteNextMonster(playerId) {
@@ -334,12 +393,14 @@ class GameState extends Schema {
             this.canExecute = false;
             this.nextMonsterCondition = null;
             this.nextMonsterAction = null;
+            this.updateItemsUsability();
         }
     }
 
     specialEffect(playerId, arg) {
         let player = this.findPlayerById(playerId)
         this.currentCard.onSpecialEffect(player, this, arg)
+        this.updateItemsUsability();
     }
 
     wantToPassTurn(playerId) {
@@ -407,6 +468,7 @@ class GameState extends Schema {
         } else {
             this.endGame();
         }
+        this.updateItemsUsability();
     }
 
     wantToEscape(playerId) {
@@ -431,6 +493,7 @@ class GameState extends Schema {
             console.log("escape roll failed")
             this.canTryToEscape = false;
         }
+        this.updateItemsUsability();
     }
 
     wantToUseItem(playerId, itemId, arg) {
@@ -439,17 +502,38 @@ class GameState extends Schema {
         let item = player.stuff.find(i => i.id === itemId)
         if (((this.phase == "GAME_SETUP") || (this.phase == "GAME_LOOP" && this.isMyTurn(playerId)))
             && item) { // it's his turn (or we're setting up the game) and he got the item
-            item.tryToUse(player, this, arg)
+            item.tryToUse(player, this, arg);
+            this.updateItemsUsability();
         }
+    }
+
+    updateItemsUsability() {
+        const player = this.getCurrentPlayer();
+        if (!player) return;
+        player.stuff.forEach(item => {
+            if (ieCanUse[item.key]) {
+                item.canBeUsed = ieCanUse[item.key](item, player, this);
+                if (item.canBeUsed) console.log(`Item ${item.title} (${item.key}) is usable for ${player.name}`);
+            } else {
+                item.canBeUsed = false;
+            }
+        });
     }
 
     gameLoop() {
         this.phase = "GAME_LOOP";
         console.log("game loop")
 
-        this.currentPlayerIndex = this.players.findIndex(player => player.startGame)
-            || Math.floor(Math.random() * this.players.length);
-        this.players[this.currentPlayerIndex].turnNumber++;
+        if (!this.players.length) {
+            console.warn("No players available to start the game loop");
+            return;
+        }
+
+        const preferredIndex = this.players.findIndex(player => player.startGame);
+        const randomIndex = Math.floor(Math.random() * this.players.length);
+        this.currentPlayerIndex = preferredIndex >= 0 ? preferredIndex : randomIndex;
+        const currentPlayer = this.players[this.currentPlayerIndex];
+        currentPlayer.turnNumber++;
 
         console.log("donjon set up ok")
     }
@@ -470,7 +554,7 @@ class GameState extends Schema {
             if (playersInDungeon.length > 0) {
                 console.log("Les joueurs suivants ont poncé le donjon :");
                 playersInDungeon.forEach(player => {
-                    console.log(`- ${player.name}`);
+                    console.log(`- ${player.name} `);
                 });
                 finalPlayers = playersInDungeon;
                 console.log("Des joueurs sont arrivés vivants au bout du donjon, les fuyards sont exclus.");
@@ -505,7 +589,7 @@ class GameState extends Schema {
                     } else if (player.fled) {
                         console.log(`${player.name} est exclu du décompte final car il a fui le donjon.`);
                     } else {
-                        console.log(`${player.name} A BUG ?? ${player.alive} ${player.fled} ${player.inDungeon}`);
+                        console.log(`${player.name} A BUG ?? ${player.alive} ${player.fled} ${player.inDungeon} `);
                     }
                 }
             });
@@ -546,6 +630,10 @@ class GameState extends Schema {
 schema.defineTypes(GameState, {
     phase: "string",
     players: [Player],
+    hostId: "string",
+    minPlayersToStart: "number",
+    maxPlayers: "number",
+    gameMode: "string",
     itemDeck: [ItemCard],
     currentPlayerIndex: "number",
     dungeon: [DungeonCard],

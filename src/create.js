@@ -2,6 +2,67 @@ import { Client } from "colyseus.js";
 import { Game, Player } from './classes';
 import { DisplayManager } from './display';
 
+const GAME_MODE_OPTIONS = [
+    {
+        key: "random",
+        label: "Random",
+        description: "Jeu classique avec objets aleatoires."
+    },
+    {
+        key: "draft",
+        label: "Draft",
+        description: "Phase de draft avant d'entrer dans le donjon."
+    }
+];
+
+const PLAYER_NAME_STORAGE_KEY = "donjouns_player_name";
+let cachedStoredPlayerName;
+
+function getStoredPlayerName() {
+    if (cachedStoredPlayerName !== undefined) {
+        return cachedStoredPlayerName;
+    }
+    cachedStoredPlayerName = "";
+    if (typeof window !== "undefined" && window.localStorage) {
+        try {
+            cachedStoredPlayerName = window.localStorage.getItem(PLAYER_NAME_STORAGE_KEY) || "";
+        } catch (err) {
+            console.warn("Unable to read stored player name", err);
+            cachedStoredPlayerName = "";
+        }
+    }
+    return cachedStoredPlayerName;
+}
+
+function persistPlayerName(name) {
+    cachedStoredPlayerName = name;
+    if (typeof window !== "undefined" && window.localStorage) {
+        try {
+            if (name) {
+                window.localStorage.setItem(PLAYER_NAME_STORAGE_KEY, name);
+            } else {
+                window.localStorage.removeItem(PLAYER_NAME_STORAGE_KEY);
+            }
+        } catch (err) {
+            console.warn("Unable to store player name", err);
+        }
+    }
+}
+
+function isDefaultPlayerName(name) {
+    if (!name) return true;
+    return /^Player\s+\d+$/i.test(name.trim());
+}
+
+const ADJECTIVES = ["Vif", "Puissant", "Sage", "Furtif", "Brave", "Joyeux", "Sombre", "Lumineux", "Rouge", "Bleu"];
+const NOUNS = ["Guerrier", "Mage", "Voleur", "Paladin", "Gobelin", "Dragon", "Chevalier", "Sorcier", "Elfe", "Nain"];
+
+function generateRandomName() {
+    const adj = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
+    const noun = NOUNS[Math.floor(Math.random() * NOUNS.length)];
+    return `${noun} ${adj}`;
+}
+
 let cardGame;
 let displayManager;
 let client;
@@ -10,6 +71,7 @@ let localPlayerId;
 
 export function create() {
     console.log("Creating the scene...");
+    cardGame = new Game();
 
     this.playcardSound = this.sound.add('playcard');
     this.drawSound = this.sound.add('draw');
@@ -20,10 +82,22 @@ export function create() {
 
     client = new Client("ws://localhost:2567");
 
-    client.joinOrCreate("room").then(roomInstance => {
+    displayManager = new DisplayManager(this);
+    displayManager.initializeBackground();
+
+    const setupRoomListeners = (roomInstance) => {
         room = roomInstance;
         localPlayerId = room.sessionId;
         console.log(room.sessionId, "joined", room.name);
+
+        let storedName = getStoredPlayerName();
+        if (!storedName) {
+            storedName = generateRandomName();
+            persistPlayerName(storedName);
+        }
+        if (storedName) {
+            room.send("set_name", { name: storedName });
+        }
 
         room.onStateChange((state) => {
             console.log("New state:", state);
@@ -34,14 +108,14 @@ export function create() {
             console.log("Received start_game message:", state);
             cardGame = new Game(); // Initialize the card game
             updateGameState(state);
-            displayManager.displayTitle("Le Draft démarre !");
+            displayManager.displayTitle("Le Draft demarre !");
         });
 
         room.onMessage("start_game_random", (state) => {
             console.log("Received start_game_random message:", state);
             cardGame = new Game(); // Initialize the card game
             updateGameState(state);
-            displayManager.displayTitle("La partie démarre !");
+            displayManager.displayTitle("La partie demarre !");
         });
 
         room.onMessage("end_draft", (state) => {
@@ -88,17 +162,27 @@ export function create() {
                     break;
             }
         });
-    }).catch(e => {
+    };
+
+    client.joinOrCreate("room").then(setupRoomListeners).catch(e => {
         console.error("join error", e);
     });
-
-    displayManager = new DisplayManager(this);
-    displayManager.initializeBackground();
 
     this.input.on('pointerdown', (pointer, gameObjects) => {
         if (displayManager.zoomedItemCard) {
             displayManager.closeZoom();
-        } else if (cardGame.isDiceRolling) {
+            return;
+        }
+
+        if (!room) {
+            return;
+        }
+
+        if (!cardGame || cardGame.phase === "WAITING") {
+            return; // Ignore input until the game state is available
+        }
+
+        if (cardGame.isDiceRolling) {
             return; // Disable interactions during dice roll
         }
         else if (gameObjects.length > 0) {
@@ -229,11 +313,6 @@ export function create() {
         return player;
     }
     function updateGameState(state) {
-        if (!cardGame) {
-            console.log("cardGame is not yet initialized");
-            return;
-        }
-
         cardGame.phase = state.phase;
         cardGame.players = state.players.map(copyPlayerState);
         cardGame.itemDeck = state.itemDeck; // Direct assignment
@@ -245,6 +324,46 @@ export function create() {
         cardGame.canExecute = state.canExecute;
         cardGame.discardPile = state.discardPile; // Direct assignment
         cardGame.turnNumber = state.turnNumber;
+
+        if (cardGame.phase === "WAITING") {
+            const minPlayersToStart = state.minPlayersToStart || state.maxPlayers || cardGame.players.length || 1;
+            const maxPlayers = state.maxPlayers || minPlayersToStart;
+            const localPlayer = cardGame.getPlayerById?.(localPlayerId) || cardGame.players.find(p => p.id === localPlayerId);
+            const storedName = getStoredPlayerName();
+            const resolvedName = localPlayer && !isDefaultPlayerName(localPlayer.name)
+                ? localPlayer.name
+                : storedName;
+
+            displayManager.updateLobby(cardGame.players, localPlayerId, {
+                hostId: state.hostId || (cardGame.players[0]?.id ?? ""),
+                minPlayersToStart,
+                maxPlayers,
+                startModes: GAME_MODE_OPTIONS,
+                selectedMode: state.gameMode,
+                onStartMode: (modeKey) => {
+                    if (room) {
+                        room.send("start_game_request", { mode: modeKey });
+                    }
+                },
+                nameInput: {
+                    value: resolvedName,
+                    placeholder: "Ton pseudo",
+                    onSubmit: (value) => {
+                        const trimmed = (value || "").trim();
+                        if (!trimmed) {
+                            return;
+                        }
+                        persistPlayerName(trimmed);
+                        if (room) {
+                            room.send("set_name", { name: trimmed });
+                        }
+                    }
+                }
+            });
+            return;
+        }
+
+        displayManager.hideNameInput();
 
         if (cardGame.phase === "DRAFT") {
             displayManager.updateDraftingUI(cardGame.players, localPlayerId);

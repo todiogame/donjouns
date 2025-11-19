@@ -9,14 +9,17 @@ const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 
 // Access config parameters
 const nb_players = config.nb_players;
+const min_players_to_start = config.min_players_to_start || nb_players;
 
 class RandomRoom extends colyseus.Room {
     onCreate(options) {
         console.log("Room created!");
         this.maxClients = nb_players;
 
-        this.gameController = new GameController(this);
+        this.gameController = new GameController(this, min_players_to_start);
         this.gameController.initialize(options);
+        this.gameController.state.minPlayersToStart = min_players_to_start;
+        this.gameController.state.maxPlayers = this.maxClients;
 
         // Centralize message handling
         this.onMessage("*", (client, type, message) => {
@@ -31,7 +34,7 @@ class RandomRoom extends colyseus.Room {
 
     onLeave(client, consented) {
         console.log(client.sessionId, "left!");
-        // Handle player leaving logic if necessary
+        this.gameController.state.removePlayer(client.sessionId);
     }
 
     onDispose() {

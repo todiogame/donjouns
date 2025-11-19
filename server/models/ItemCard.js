@@ -1,6 +1,7 @@
 const schema = require("@colyseus/schema");
 const { Schema, type } = schema;
-const ieClick = require('./ItemEffectsClick');
+const { ieClick } = require('./ItemEffectsClick');
+
 
 class ItemCard extends Schema {
     constructor(id, title, active, color, key, description = "") {
@@ -19,6 +20,7 @@ class ItemCard extends Schema {
         this.ui = this.pickUI()
         this.indication = null;
         this.uiCondition = null;
+        this.canBeUsed = false;
 
     }
     break(player, game) {
@@ -77,6 +79,7 @@ schema.defineTypes(ItemCard, {
     requireSetup: "boolean",
     ui: "string",
     indication: "string",
+    canBeUsed: "boolean",
 });
 
 module.exports = { ItemCard };

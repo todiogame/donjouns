@@ -17,12 +17,16 @@ const nb_players = config.nb_players;
 const nb_items_deck = config.nb_items_deck;
 const nb_items_draft = config.nb_items_draft;
 const nb_items_starting = config.nb_items_starting;
+const min_players_to_start = config.min_players_to_start || nb_players;
 
 class DraftRoom extends colyseus.Room {
     onCreate(options) {
         console.log("Room created!");
         this.maxClients = nb_players;
         this.setState(new GameState());
+        this.state.minPlayersToStart = min_players_to_start;
+        this.state.maxPlayers = this.maxClients;
+        this.gameStarted = false;
 
         // Initialize room-specific data
         this.allDungeonCards = options.dungeon || [];
@@ -54,6 +58,24 @@ class DraftRoom extends colyseus.Room {
                 console.error(`Player with id ${client.sessionId} not found`);
             }
         });
+
+        this.onMessage("set_name", (client, message) => {
+            const desiredName = typeof message === "string" ? message : message?.name;
+            this.state.setPlayerName(client.sessionId, desiredName);
+        });
+
+        this.onMessage("start_game_request", (client) => {
+            if (this.gameStarted) {
+                return;
+            }
+            if (this.state.hostId !== client.sessionId) {
+                return;
+            }
+            if (this.state.players.length < min_players_to_start) {
+                return;
+            }
+            this.startDraftPhase();
+        });
     }
 
     onJoin(client, options) {
@@ -62,25 +84,26 @@ class DraftRoom extends colyseus.Room {
         this.state.addPlayer(player);
         console.log("player", player.id, player.name, player.stuff.length);
 
-        if (this.state.players.length === this.maxClients) {
-            console.log("start_game");
-            this.state.phase = "DRAFT";
-            this.state.dealItemsCardsDraft();
-            this.broadcast("start_game", this.state);
-        }
+        // Host will start manually
     }
 
     onLeave(client, consented) {
         console.log(client.sessionId, "left!");
-        const playerIndex = this.state.players.findIndex(p => p.id === client.sessionId);
-        if (playerIndex !== -1) {
-            this.state.players.splice(playerIndex, 1);
-        }
+        this.state.removePlayer(client.sessionId);
         // Handle additional cleanup if necessary
     }
 
     onDispose() {
         console.log("Dispose DraftRoom");
+    }
+
+    startDraftPhase() {
+        this.gameStarted = true;
+        this.lock();
+        console.log("start_game");
+        this.state.phase = "DRAFT";
+        this.state.dealItemsCardsDraft();
+        this.broadcast("start_game", this.state);
     }
 }
 

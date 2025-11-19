@@ -2,7 +2,6 @@ const colyseus = require("colyseus");
 const express = require("express");
 const http = require("http");
 const path = require("path");
-const DraftRoom = require("./rooms/DraftRoom");
 const RandomRoom = require("./rooms/RandomRoom");
 const { monitor } = require("@colyseus/monitor");
 const { loadData } = require('./dataReader');
@@ -23,8 +22,8 @@ const gameServer = new colyseus.Server({
 async function startServer() {
     const { dungeon, items } = await loadData();
     // Define the room with the loaded cards
-    // gameServer.define("room", DraftRoom, { dungeon: dungeon, itemsCards: items });
-    gameServer.define("room", RandomRoom, { dungeon: dungeon, itemsCards: items });
+    const sharedRoomOptions = { dungeon: dungeon, itemsCards: items };
+    gameServer.define("room", RandomRoom, sharedRoomOptions);
 
     // Register colyseus monitor (monitoring panel)
     app.use("/colyseus", monitor());

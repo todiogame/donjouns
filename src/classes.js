@@ -1,6 +1,6 @@
 export class Game {
     constructor() {
-        this.phase = "DRAFT";
+        this.phase = "WAITING";
         this.players = [];
         this.itemDeck = [];
         this.currentPlayerIndex = 0;

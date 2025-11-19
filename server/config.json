@@ -1,8 +1,10 @@
 {
     "nb_players" : 3,
+    "min_players_to_start": 3,
     "nb_items_deck" : 100,
     "nb_items_draft" : 7,
     "nb_items_starting" : 6,
+    "nb_items_random_mode": 9,
     "disabled_items": ["sceptre","printer"],
     "include_items": ["slayer_bike", "lich_skull"]
 }
