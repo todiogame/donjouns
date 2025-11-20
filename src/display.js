@@ -237,6 +237,11 @@ export class DisplayManager {
         this.lobbyContainer = null; // Lobby UI container
         this.nameInputText = null; // Lobby name text reference
         this.itemUsageTrackers = new Map(); // Track item usage for visual effects
+        this.endScreenButton = null; // CTA to move to the end screen
+        this.endScreenButtonLabel = null; // Label for the end screen CTA
+        this.endScreenCallback = null; // Callback when moving to the end screen
+        this.endScreenReady = false; // True once final scores are available
+        this.endScreenRequested = false; // True if player already asked to see the end screen
     }
 
     displayTitle(message, duration, onComplete) {
@@ -540,7 +545,9 @@ export class DisplayManager {
             child !== this.zoomedItemCard &&
             child !== this.blurryBackground &&
             child !== this.scoutPopup &&
-            child !== this.numberInputPopup
+            child !== this.numberInputPopup &&
+            child !== this.endScreenButton &&
+            child !== this.endScreenButtonLabel
         );
         while (childrenToRemove.length > 0) {
             const child = childrenToRemove.pop();
@@ -686,8 +693,75 @@ export class DisplayManager {
         this.scene.input.off('pointerdown', this.closeZoom, this);
     }
 
-    updateGameUI(game, localPlayerId) {
+    showEndScreenPrompt(onProceed, ready = false) {
+        this.endScreenCallback = onProceed;
+        this.endScreenReady = ready;
+
+        const width = this.scene.sys.game.config.width;
+        const height = this.scene.sys.game.config.height;
+        const buttonWidth = 360;
+        const buttonHeight = 64;
+        const x = width / 2;
+        const y = height - 50;
+
+        if (!this.endScreenButton) {
+            const button = this.scene.add.rectangle(x, y, buttonWidth, buttonHeight, 0x000000, 0.65)
+                .setStrokeStyle(2, 0xffffff)
+                .setDepth(4)
+                .setInteractive({ useHandCursor: ready });
+
+            const label = this.scene.add.text(x, y, ready ? 'Passer a l\'ecran de fin' : 'Calcul des scores...', {
+                fontSize: '24px',
+                fill: '#ffffff',
+                fontStyle: 'bold'
+            }).setOrigin(0.5).setDepth(4);
+
+            button.on('pointerdown', () => {
+                this.endScreenRequested = true;
+                if (this.endScreenReady && this.endScreenCallback) {
+                    const callback = this.endScreenCallback;
+                    this.clearEndScreenPrompt();
+                    callback();
+                } else if (this.endScreenButtonLabel) {
+                    this.endScreenButtonLabel.setText('Calcul des scores...');
+                }
+            });
+
+            this.endScreenButton = button;
+            this.endScreenButtonLabel = label;
+        }
+
+        this.endScreenButton.setPosition(x, y);
+        this.endScreenButton.setFillStyle(0x000000, 0.65);
+        this.endScreenButton.setStrokeStyle(2, ready ? 0x00ff88 : 0xffffff);
+        this.endScreenButton.setInteractive({ useHandCursor: ready });
+        this.endScreenButtonLabel.setPosition(x, y);
+        this.endScreenButtonLabel.setText(ready ? 'Passer a l\'ecran de fin' : 'Calcul des scores...');
+
+        if (this.endScreenReady && this.endScreenRequested && this.endScreenCallback) {
+            const callback = this.endScreenCallback;
+            this.clearEndScreenPrompt();
+            callback();
+        }
+    }
+
+    clearEndScreenPrompt() {
+        if (this.endScreenButton) {
+            this.endScreenButton.destroy();
+            this.endScreenButton = null;
+        }
+        if (this.endScreenButtonLabel) {
+            this.endScreenButtonLabel.destroy();
+            this.endScreenButtonLabel = null;
+        }
+        this.endScreenCallback = null;
+        this.endScreenReady = false;
+        this.endScreenRequested = false;
+    }
+
+    updateGameUI(game, localPlayerId, options = {}) {
         console.log("updateGameUI", game, localPlayerId);
+        const allowActions = options.allowActions !== false;
         this.clearPreviousDisplay();
         this.displayCurrentPhase(game);
         const players = game.players;
@@ -702,7 +776,7 @@ export class DisplayManager {
         this.displayCurrentCard(game, localPlayerId);
         this.displayDungeon(game, localPlayerId);
         this.displayDiscardPile(game);
-        if (game.isMyTurn(localPlayerId) && !game.isDiceRolling) {
+        if (allowActions && game.isMyTurn(localPlayerId) && !game.isDiceRolling) {
             if (game.currentCard?.dungeonCardType === "monster") {
                 this.addDamageButton(game);
                 if (game.canExecute) this.addExecuteButton(game);
@@ -2177,6 +2251,7 @@ export class DisplayManager {
 
     updateEndUI(winner, finalPlayers, localPlayerId) {
         console.log("updateEndUI", winner, finalPlayers);
+        this.clearEndScreenPrompt();
 
         // Clear previous display
         this.clearPreviousDisplay();

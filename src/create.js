@@ -85,6 +85,8 @@ export function create() {
     displayManager = new DisplayManager(this);
     displayManager.initializeBackground();
 
+    const openEndScreen = () => displayManager.updateEndUI(cardGame.winner, cardGame.finalPlayers, localPlayerId);
+
     const setupRoomListeners = (roomInstance) => {
         room = roomInstance;
         localPlayerId = room.sessionId;
@@ -126,7 +128,7 @@ export function create() {
             console.log("Received end scores data:", message);
             cardGame.winner = message.winner;
             cardGame.finalPlayers = message.finalPlayers;
-            displayManager.updateEndUI(cardGame.winner, cardGame.finalPlayers, localPlayerId);
+            displayManager.showEndScreenPrompt(openEndScreen, true);
         });
 
         // Consolidated game_action message handler
@@ -134,7 +136,7 @@ export function create() {
             switch (message.action) {
                 case "animate_roll":
                     cardGame.isDiceRolling = true;
-                    displayManager.updateGameUI(cardGame, localPlayerId, cardGame.phase);
+                    displayManager.updateGameUI(cardGame, localPlayerId);
                     this.rollDieSound.play();
                     displayManager.displayDice(displayManager.getPlayerPositionAroundTable(message.playerId, localPlayerId, cardGame.players));
                     break;
@@ -147,7 +149,7 @@ export function create() {
                     console.log("rolled a", message.result);
                     if (diceScene) diceScene.showDiceResult(message.result, message.modifier);
                     cardGame.isDiceRolling = false;
-                    if (cardGame.phase.includes("GAME")) displayManager.updateGameUI(cardGame, localPlayerId, cardGame.phase);
+                    if (cardGame.phase.includes("GAME")) displayManager.updateGameUI(cardGame, localPlayerId);
                     break;
                 case "scout":
                     displayManager.displayScoutInterface(message.cards);
@@ -326,6 +328,10 @@ export function create() {
         cardGame.discardPile = state.discardPile; // Direct assignment
         cardGame.turnNumber = state.turnNumber;
 
+        if (cardGame.phase !== "END") {
+            displayManager.clearEndScreenPrompt();
+        }
+
         if (cardGame.phase === "WAITING") {
             const minPlayersToStart = state.minPlayersToStart || state.maxPlayers || cardGame.players.length || 1;
             const maxPlayers = state.maxPlayers || minPlayersToStart;
@@ -374,10 +380,10 @@ export function create() {
         if (cardGame.phase === "DRAFT") {
             displayManager.updateDraftingUI(cardGame.players, localPlayerId);
         } else if (cardGame.phase.includes("GAME")) {
-            displayManager.updateGameUI(cardGame, localPlayerId, cardGame.phase);
-        }
-        else if (cardGame.phase === "END") {
-            displayManager.updateEndUI(cardGame.winner, cardGame.finalPlayers, localPlayerId);
+            displayManager.updateGameUI(cardGame, localPlayerId);
+        } else if (cardGame.phase === "END") {
+            displayManager.updateGameUI(cardGame, localPlayerId, { allowActions: false });
+            displayManager.showEndScreenPrompt(openEndScreen, !!cardGame.finalPlayers);
         }
     }
 }

@@ -433,12 +433,22 @@ const ieClick = {
             item.break(player, game);
         }
     },
-    hex: (item, player, game) => {
+    hex: (item, player, game, arg) => {
         if (!item.broken && game.inFight()) {
             const card = game.currentCard;
             game.discard(player, card);
             game.currentCard = null;
-            h.selectDungeonCard(game, player);
+
+            const hasTarget = arg && game.dungeon.some(c => c.id == arg);
+            if (hasTarget) {
+                game.canPickSpecificCard = true;
+                game.pickDungeonCard(player.id, arg);
+            } else if (player.isBot) {
+                // Bots skip the UI prompt and draw a new monster immediately
+                game.pickDungeonCard(player.id);
+            } else {
+                h.selectDungeonCard(game, player);
+            }
             item.break(player, game);
         }
     },

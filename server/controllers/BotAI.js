@@ -313,8 +313,13 @@ class BotAI {
         if (this.shouldStop(bot, gameState)) return;
         const itemToUse = this.selectBestItem(bot, gameState);
         if (itemToUse) {
+            let arg = null;
+            if (itemToUse.key === 'hex') {
+                arg = this.pickHexTarget(bot, gameState);
+                if (arg) console.log(`Bot ${bot.name} targets card ${arg} with Hex`);
+            }
             console.log(`Bot ${bot.name} using ${itemToUse.title} before damage`);
-            gameState.wantToUseItem(bot.id, itemToUse.id, null);
+            gameState.wantToUseItem(bot.id, itemToUse.id, arg);
             setTimeout(() => this.handleMonsterAfterItem(bot, gameState, room), this.afterActionDelay);
         } else {
             this.handleMonsterAfterItem(bot, gameState, room);
@@ -587,6 +592,51 @@ class BotAI {
     }
 
     // ===== Utilities =====
+    pickHexTarget(bot, gameState) {
+        const dungeonCards = Array.from(gameState.dungeon || []).filter(c => c?.dungeonCardType === "monster");
+        if (!dungeonCards.length) return null;
+
+        let best = null;
+        let bestScore = -Infinity;
+
+        dungeonCards.forEach(card => {
+            const isFairy = card.effect === "FAIRY";
+            const canExecute = this.canExecuteCard(bot, gameState, card);
+            const damage = typeof card.damage === "number"
+                ? card.damage
+                : (typeof card.calculateDamage === "function" ? card.calculateDamage() : (typeof card.power === "number" ? card.power : 0));
+
+            let score = -damage;
+            if (isFairy) score += 1000;
+            if (canExecute) score += 200;
+            if (this.dangerousEffects.has(card.effect)) score -= 50;
+
+            if (score > bestScore) {
+                bestScore = score;
+                best = card;
+            }
+        });
+
+        return best ? best.id : null;
+    }
+
+    canExecuteCard(bot, gameState, card) {
+        if (!card || card.dungeonCardType !== "monster") return false;
+        const fakeGame = {
+            ...gameState,
+            currentCard: card,
+            trap: false,
+            inFight: () => true,
+            noCurrentCard: () => false,
+        };
+
+        return bot.stuff.some(item =>
+            !item.broken &&
+            (this.passiveExecute.has(item.key) || this.activeExecute.has(item.key)) &&
+            ieCanUse[item.key]?.(item, bot, fakeGame)
+        );
+    }
+
     computePlayerScore(player) {
         if (!player) return 0;
         const defeated = player.defeatedMonstersPile?.length || 0;
