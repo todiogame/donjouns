@@ -250,6 +250,12 @@ export class DisplayManager {
             scaleX: 125 / 750,
             scaleY: 175 / 1050
         };
+        this.dungeonDisplayInfo = {
+            x: 500,
+            y: 100,
+            scaleX: 125 / 750,
+            scaleY: 175 / 1050
+        };
     }
 
     displayTitle(message, duration, onComplete) {
@@ -897,6 +903,12 @@ export class DisplayManager {
                 .setScale(scaleX, scaleY);
         }
         if (cardSprite) {
+            this.dungeonDisplayInfo = {
+                x: cardSprite.x,
+                y: cardSprite.y,
+                scaleX,
+                scaleY
+            };
             cardSprite.setData('type', 'dungeon');
             if (game.isMyTurn(localPlayerId) && game.noCurrentCard()) {
                 // Apply the "excited" animation
@@ -1203,9 +1215,16 @@ export class DisplayManager {
 
         const prevState = this.pileStates.get(player.id) || { length: 0, topTexture: null };
         const hasNewCard = pileLength && (pileLength > prevState.length || topMonster?.texture !== prevState.topTexture);
+        const hasRemovedCard = prevState.length > pileLength && prevState.topTexture;
         if (hasNewCard && topMonster?.texture) {
             this.animateMonsterToPile(
                 topMonster.texture,
+                { x: xPosition, y: yPosition },
+                { scaleX, scaleY }
+            );
+        } else if (hasRemovedCard) {
+            this.animatePileToDungeon(
+                prevState.topTexture,
                 { x: xPosition, y: yPosition },
                 { scaleX, scaleY }
             );
@@ -1232,6 +1251,26 @@ export class DisplayManager {
             y: targetPosition.y,
             scaleX: targetScale.scaleX,
             scaleY: targetScale.scaleY,
+            angle: Phaser.Math.Between(-10, 10),
+            duration: 450,
+            ease: 'Cubic.easeInOut',
+            onComplete: () => sprite.destroy()
+        });
+    }
+
+    animatePileToDungeon(texture, startPosition, startScale) {
+        const target = this.dungeonDisplayInfo || { x: 500, y: 100, scaleX: 125 / 750, scaleY: 175 / 1050 };
+        const sprite = this.scene.add.image(startPosition.x, startPosition.y, texture)
+            .setOrigin(0.5, 0.5)
+            .setScale(startScale.scaleX, startScale.scaleY)
+            .setDepth(5);
+
+        this.scene.tweens.add({
+            targets: sprite,
+            x: target.x,
+            y: target.y,
+            scaleX: target.scaleX,
+            scaleY: target.scaleY,
             angle: Phaser.Math.Between(-10, 10),
             duration: 450,
             ease: 'Cubic.easeInOut',
