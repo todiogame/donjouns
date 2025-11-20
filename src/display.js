@@ -237,6 +237,7 @@ export class DisplayManager {
         this.blurryBackground = null; // To keep track of the blurry background
         this.scoutPopup = null; // To keep track of the scout popup
         this.numberInputPopup = null; // To keep track of the number input popup
+        this.hoveredCardPreview = null; // Large preview shown on hover without changing the base hitbox
         this.lobbyContainer = null; // Lobby UI container
         this.nameInputText = null; // Lobby name text reference
         this.itemUsageTrackers = new Map(); // Track item usage for visual effects
@@ -558,6 +559,9 @@ export class DisplayManager {
     }
 
     clearPreviousDisplay() {
+        // Clean up transient hover preview so it doesn't leak between renders
+        this.hideHoveredCardPreview();
+
         let childrenToRemove = this.scene.children.list.filter(child =>
             child !== this.backgroundContainer &&
             child !== this.zoomedItemCard &&
@@ -830,26 +834,12 @@ export class DisplayManager {
             // Add hover effect with smooth transition
             cardSprite.on('pointerover', () => {
                 cardSprite.setDepth(1);
-                this.scene.tweens.add({
-                    targets: cardSprite,
-                    scaleX: scaleX * 3,
-                    scaleY: scaleY * 3,
-                    duration: 50,
-                    ease: 'Sine.easeInOut'
-                });
+                // Show a separate enlarged preview so pointerout triggers when leaving the original card hitbox
+                this.showHoveredCardPreview(cardSprite, 3);
             });
             cardSprite.on('pointerout', () => {
-                // cardSprite.setDepth(0);
-                this.scene.tweens.add({
-                    targets: cardSprite,
-                    scaleX: scaleX,
-                    scaleY: scaleY,
-                    duration: 50,
-                    ease: 'Sine.easeInOut',
-                    onComplete: () => {
-                        cardSprite.setDepth(0); // Reset the depth after the tween completes
-                    }
-                });
+                this.hideHoveredCardPreview();
+                cardSprite.setDepth(0);
             });
         }
     }
@@ -901,6 +891,32 @@ export class DisplayManager {
             ease: 'Sine.easeInOut',
             duration: 200 // Adjust the duration for quicker or slower wiggle
         });
+    }
+
+    showHoveredCardPreview(cardSprite, zoomFactor = 3) {
+        this.hideHoveredCardPreview();
+        const preview = this.scene.add.image(cardSprite.x, cardSprite.y, cardSprite.texture.key)
+            .setOrigin(cardSprite.originX, cardSprite.originY)
+            .setRotation(cardSprite.rotation)
+            .setDepth(5)
+            .setScale(cardSprite.scaleX, cardSprite.scaleY); // start at base size
+
+        this.scene.tweens.add({
+            targets: preview,
+            scaleX: cardSprite.scaleX * zoomFactor,
+            scaleY: cardSprite.scaleY * zoomFactor,
+            duration: 80,
+            ease: 'Sine.easeOut'
+        });
+
+        this.hoveredCardPreview = preview;
+    }
+
+    hideHoveredCardPreview() {
+        if (this.hoveredCardPreview) {
+            this.hoveredCardPreview.destroy();
+            this.hoveredCardPreview = null;
+        }
     }
     displayDiscardPile(game) {
         const desiredWidth = 125;

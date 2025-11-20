@@ -64,6 +64,11 @@ class ItemCard extends Schema {
         this.indication = (indication || indication == 0) ? "" + indication : null;
         if (game.phase === "GAME_SETUP" && game.allPlayersSetupReady()) {
             game.gameLoop()
+            // When the last setup action starts the game, ensure bots take their turn if they start
+            const controller = game.room?.gameController;
+            if (controller && typeof controller.triggerBotTurnIfNeeded === "function") {
+                controller.triggerBotTurnIfNeeded();
+            }
         }
     }
 }

@@ -533,11 +533,50 @@ class GameState extends Schema {
     }
 
     tryToEscape(playerId, escapeRoll) {
-        let player = this.findPlayerById(playerId)
-        // If no monster is currently faced, treat the escape as an immediate flee (do not draw a new card)
+        const player = this.findPlayerById(playerId);
+        if (!player) return;
+
+        // Attempting to flee before drawing still requires revealing a card to check success
+        if (this.noCurrentCard()) {
+            if (!this.dungeon.length) {
+                console.log("No dungeon card to draw while escaping - treating as successful escape");
+                player.flee(this);
+                this.updateItemsUsability();
+                return;
+            }
+
+            player.alreadyUsedItems = [];
+            this.canTryToEscape = false; // lock further escape attempts until this card is resolved
+
+            this.currentCard = this.dungeon.pop();
+            this.dungeonLength = this.dungeon.length;
+            this.canPickSpecificCard = false;
+
+            if (this.inFight()) this.currentCard.onMeetMonster(player, this);
+
+            // trigger "on pick" items
+            player.stuff.forEach(item => {
+                iePick[item.key]?.(item, player, this);
+            });
+
+            if (this.inFight()) {
+                this.currentCard.damage = this.currentCard.calculateDamage();
+                console.log(`${playerId} picked dungeon card ${this.currentCard.title} :  ${this.currentCard.damage} damage!`);
+                this.givePromptExecuteNextMonster();
+            } else if (this.inEvent()) {
+                console.log('picked event while attempting to escape');
+            }
+        }
+
+        // Drawing an event causes the escape attempt to fail
+        if (this.inEvent()) {
+            console.log("escape roll failed (event drawn)");
+            this.updateItemsUsability();
+            return;
+        }
+
         if (!this.inFight()) {
-            console.log("player escaped before drawing")
-            player.flee(this);
+            console.warn("Escape attempted with no monster to compare against");
             this.updateItemsUsability();
             return;
         }
