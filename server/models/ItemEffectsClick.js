@@ -170,6 +170,13 @@ const ieClick = {
             }
         }
     },
+    wind_ring: (item, player, game, arg) => {
+        if (!game.trap && !item.broken && game.inFight()) {
+            h.returnCurrentCardToPosition(game, arg);
+            item.break(player, game);
+            game.afterDoneWithMonster(player);
+        }
+    },
     vorpal_sword: (item, player, game, arg) => {
         if (!item.indication) { //fisrt time setup
             item.setIndication(arg, game);
@@ -627,6 +634,7 @@ const ieCanUse = {
     fire_ring: (item, player, game) => !game.trap && !item.broken && game.inFight() && h.currentCardHasType(game, "Vampire"),
     boomerang: (item, player, game) => !game.trap && !item.broken && game.inFight(),
     ice_ring: (item, player, game) => !item.broken && game.inFight(),
+    wind_ring: (item, player, game) => !game.trap && !item.broken && game.inFight(),
     magic_ring: (item, player, game) => !game.trap && !item.broken && game.inFight() && (game.currentCard.power === 1 || game.currentCard.power === 2),
     sorcerer_hat: (item, player, game) => !game.trap && !item.broken && game.inFight() && (h.currentCardHasType(game, "Goblin") || h.currentCardHasType(game, "Vampire")),
     pizza: (item, player, game) => !game.trap && !item.broken && game.inFight(),

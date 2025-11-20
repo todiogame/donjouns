@@ -41,6 +41,7 @@ class BotAI {
 
         this.hpHeavy = new Set(['slayer_belt', 'ball', 'bow', 'heart', 'golem_shield', 'bard', 'dragon_shield', 'dragon_mask']);
         this.scoring = new Set(['monkey', 'golden_statue', 'midas']);
+        this.delayTools = new Set(['wind_ring']);
 
         // Always-dangerous monsters (context-free)
         this.dangerousEffects = new Set([
@@ -160,6 +161,7 @@ class BotAI {
         if (this.passiveReduction.has(item.key)) score += 70;
         if (this.activeExecute.has(item.key)) score += 65;
         if (this.activeReduction.has(item.key)) score += 55;
+        if (this.delayTools.has(item.key)) score += 55;
         if (this.escapeBoost.has(item.key)) score += 35;
         if (this.hpHeavy.has(item.key)) score += 30;
         if (this.scoring.has(item.key)) score += 20;
@@ -307,7 +309,12 @@ class BotAI {
         if (gameState.canExecute && gameState.inFight() && gameState.isMyTurn(bot.id)) {
             console.log(`Bot ${bot.name} uses stored execute on ${gameState.currentCard.title}`);
             gameState.wantToExecuteNextMonster(bot.id);
-            // After executing, state may change; stop this turn handler and let the next tick continue if needed
+            // After executing, state may change; schedule the next decision so the bot keeps playing
+            setTimeout(() => {
+                if (!this.shouldStop(bot, gameState) && gameState.isMyTurn(bot.id)) {
+                    this.autoPlayDungeon(bot, gameState, room);
+                }
+            }, this.afterActionDelay);
             return;
         }
 
@@ -327,6 +334,9 @@ class BotAI {
             if (itemToUse.key === 'hex') {
                 arg = this.pickHexTarget(bot, gameState);
                 if (arg) console.log(`Bot ${bot.name} targets card ${arg} with Hex`);
+            } else if (itemToUse.key === 'wind_ring') {
+                arg = this.pickWindRingPosition(bot, gameState);
+                console.log(`Bot ${bot.name} sends monster to position ${arg} with Wind Ring`);
             }
             console.log(`Bot ${bot.name} using ${itemToUse.title} before damage`);
             gameState.wantToUseItem(bot.id, itemToUse.id, arg);
@@ -338,7 +348,7 @@ class BotAI {
     }
 
     computeItemScore(item, bot, context) {
-        const { damage, lethal, heavyHit, dangerousEffect } = context;
+        const { damage, lethal, heavyHit, dangerousEffect, remainingDungeon } = context;
         let score = 0;
         const key = item.key;
         const isPassiveExec = this.passiveExecute.has(key);
@@ -347,11 +357,22 @@ class BotAI {
         const isReduction = this.passiveReduction.has(key) || this.activeReduction.has(key);
         const breakCost = item.hp || 0;
         const breaksOnUse = this.breakingActiveExec.has(key) || this.breakingPassiveExec.has(key);
+        const isWindRing = key === 'wind_ring';
+        const remaining = typeof remainingDungeon === "number" ? remainingDungeon : null;
 
         if (isPassiveExec) score += 110;
         if (isActiveExec) score += 80;
         if (isReduction) score += 70;
         if (isSurvival) score += 140;
+
+        if (isWindRing) {
+            const depthPenalty = remaining !== null && remaining <= 1 ? -35 : 0;
+            score += depthPenalty;
+            if (lethal) score += 140;
+            else if (heavyHit || dangerousEffect) score += 95;
+            else score += 35;
+            if (!dangerousEffect && damage <= 1) score -= 100;
+        }
 
         if (lethal) score += 60;
         else if (heavyHit) score += 35;
@@ -410,6 +431,7 @@ class BotAI {
         const lethal = damage >= bot.hp;
         const heavyHit = damage >= Math.ceil(bot.hp * 0.6);
         const dangerousEffect = this.isDangerousEffect(monster, bot);
+        const remainingDungeon = gameState.dungeon.length;
 
         // Don't spend anything on harmless monsters
         if (damage <= 0 && !dangerousEffect) {
@@ -424,7 +446,7 @@ class BotAI {
         let bestScore = 0;
 
         usableItems.forEach(item => {
-            const score = this.computeItemScore(item, bot, { damage, lethal, heavyHit, dangerousEffect });
+            const score = this.computeItemScore(item, bot, { damage, lethal, heavyHit, dangerousEffect, remainingDungeon });
             if (score > bestScore) {
                 bestScore = score;
                 best = item;
@@ -501,6 +523,7 @@ class BotAI {
         const card = gameState.currentCard;
         const originalTypes = [...(card.types || [])];
         const candidateTypes = ["Dragon", "Demon", "Skeleton", "Golem", "Goblin", "Orc", "Rat", "Vampire", "Lich"];
+        const remainingDungeon = gameState.dungeon.length;
 
         let bestType = "Goblin";
         let bestScore = -Infinity;
@@ -516,7 +539,7 @@ class BotAI {
             bot.stuff
                 .filter(item => !item.broken && ieCanUse[item.key]?.(item, bot, gameState))
                 .forEach(item => {
-                    const score = this.computeItemScore(item, bot, { damage, lethal, heavyHit, dangerousEffect });
+                    const score = this.computeItemScore(item, bot, { damage, lethal, heavyHit, dangerousEffect, remainingDungeon });
                     if (score > localBest) localBest = score;
                 });
 
@@ -615,6 +638,12 @@ class BotAI {
     }
 
     // ===== Utilities =====
+    pickWindRingPosition(bot, gameState) {
+        const remaining = gameState?.dungeon?.length || 0;
+        // Put the monster at the bottom so someone else draws it later
+        return remaining + 1;
+    }
+
     pickHexTarget(bot, gameState) {
         const dungeonCards = Array.from(gameState.dungeon || []).filter(c => c?.dungeonCardType === "monster");
         if (!dungeonCards.length) return null;

@@ -65,6 +65,32 @@ function reduceDamage(game, item, player, value, minDamage = 0) {
     }
 }
 
+function returnCurrentCardToPosition(game, positionFromTop) {
+    if (!game.currentCard) return;
+
+    // Reset monster state before putting it back
+    game.currentCard.power = game.currentCard.basePower;
+    game.currentCard.bonusDamage = 0;
+    game.currentCard.timesDealDamage = 1;
+    game.currentCard.damage = game.currentCard.calculateDamage();
+
+    const dungeonCards = [];
+    game.dungeon.forEach(c => dungeonCards.push(c));
+    const maxPosition = dungeonCards.length + 1;
+    const requested = parseInt(positionFromTop, 10);
+    const target = Number.isInteger(requested) ? requested : maxPosition;
+    const safePosition = Math.max(1, Math.min(target, maxPosition));
+
+    // Position 1 = top of the dungeon (next draw), maxPosition = bottom
+    const insertIndex = dungeonCards.length - (safePosition - 1);
+    dungeonCards.splice(insertIndex, 0, game.currentCard);
+
+    game.dungeon.clear();
+    game.dungeon.push(...dungeonCards);
+    game.dungeonLength = game.dungeon.length;
+    game.currentCard = null;
+}
+
 function scout(game, player, nbCards, position = 0) {
     const targetClient = game.room.clients.find(c => c.id === player.id);
     if (targetClient) {
@@ -128,4 +154,5 @@ module.exports = {
     selectDungeonCard,
     discardFromPile,
     playerRollDice,
+    returnCurrentCardToPosition,
 };

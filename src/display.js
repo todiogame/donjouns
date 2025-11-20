@@ -201,6 +201,7 @@ export class AnimScene extends Phaser.Scene {
 
     preload() {
         this.load.audio('execute', 'assets/sounds/effects/execute.mp3');
+        this.load.audio('punch', 'assets/sounds/effects/punch.mp3');
         this.load.spritesheet('hit', 'assets/anims/hit.png', {
             frameWidth: 1024, // width of each frame
             frameHeight: 1024 // height of each frame
@@ -215,10 +216,12 @@ export class AnimScene extends Phaser.Scene {
             repeat: 0
         });
         this.executeSound = this.sound.add('execute', { volume: 0.5 });
+        this.punchSound = this.sound.add('punch', { volume: 0.6 });
     }
 
     executeAnimation() {
         this.executeSound.play();
+        this.punchSound?.play();
         const sprite = this.add.sprite(650, 100, 'hit');
         sprite.play('hitAnimation');
         sprite.on('animationcomplete', () => sprite.destroy());
@@ -256,6 +259,7 @@ export class DisplayManager {
             scaleX: 125 / 750,
             scaleY: 175 / 1050
         };
+        this.hpStates = new Map(); // Track previous HP per player for FX
     }
 
     displayTitle(message, duration, onComplete) {
@@ -777,7 +781,6 @@ export class DisplayManager {
         console.log("updateGameUI", game, localPlayerId);
         const allowActions = options.allowActions !== false;
         this.clearPreviousDisplay();
-        this.displayCurrentPhase(game);
         const players = game.players;
         players.forEach(player => {
             const position = this.getPlayerPositionAroundTable(player.id, localPlayerId, players);
@@ -804,42 +807,6 @@ export class DisplayManager {
             }
             if (game.noCurrentCard() && game.dungeon.length && game.getCurrentPlayer().canPass)
                 this.addPassTurnButton(game)
-        }
-    }
-    displayCurrentPhase(game) {
-        // Display phase
-        this.scene.add.text(
-            this.scene.sys.game.config.width / 2 - 50,
-            30,
-            game.phase,
-            { fontSize: '20px', fill: '#fff', fontStyle: 'bold' });
-
-        // Display current player
-        const currentPlayer = game.getCurrentPlayer();
-        if (currentPlayer) {
-            const playerText = `Tour: ${currentPlayer.name}`;
-            const textObj = this.scene.add.text(
-                this.scene.sys.game.config.width / 2 - 50,
-                60,
-                playerText,
-                {
-                    fontSize: '24px',
-                    fill: '#FFD700',  // Gold color
-                    fontStyle: 'bold',
-                    stroke: '#000000',
-                    strokeThickness: 3
-                });
-
-            // Add pulsing animation
-            this.scene.tweens.add({
-                targets: textObj,
-                scale: { from: 1, to: 1.1 },
-                alpha: { from: 1, to: 0.8 },
-                yoyo: true,
-                repeat: -1,
-                ease: 'Sine.easeInOut',
-                duration: 800
-            });
         }
     }
     displayCurrentCard(game) {
@@ -1175,11 +1142,92 @@ export class DisplayManager {
             .setOrigin(0.5, 0.5)
             .setScale(scaleX, scaleY);
 
-        this.scene.add.text(xPosition, yPosition, hp, {
+        const hpText = this.scene.add.text(xPosition, yPosition, hp, {
             fontSize: '40px',
             fill: '#fff',
             fontStyle: 'bold'
         }).setOrigin(0.5, 0.5);
+        const prevHp = this.hpStates.get(player.id);
+        if (prevHp !== undefined && hp < prevHp) {
+            const lost = prevHp - hp;
+            const dmgText = this.scene.add.text(xPosition, yPosition - 10, `-${lost}`, {
+                fontSize: '42px',
+                fill: '#ff4444',
+                fontStyle: 'bold'
+            }).setOrigin(0.5, 0.5)
+                .setDepth(3);
+
+            this.scene.tweens.add({
+                targets: dmgText,
+                y: yPosition - 60,
+                alpha: 0,
+                scaleX: 1.35,
+                scaleY: 1.35,
+                duration: 450,
+                ease: 'Back.easeOut',
+                onComplete: () => dmgText.destroy()
+            });
+
+            const burst = this.scene.add.circle(xPosition, yPosition, desiredWidth * 0.5, 0xff4444, 0.35).setDepth(0.5);
+            this.scene.tweens.add({
+                targets: burst,
+                scale: 1.8,
+                alpha: 0,
+                duration: 300,
+                ease: 'Cubic.easeOut',
+                onComplete: () => burst.destroy()
+            });
+
+            heartImage.setTint(0xff2222);
+            if (hpText?.active) hpText.setColor('#ffdddd');
+            this.scene.tweens.add({
+                targets: [heartImage, hpText],
+                scaleX: scaleX * 1.4,
+                scaleY: scaleY * 1.4,
+                duration: 160,
+                yoyo: true,
+                repeat: 0,
+                ease: 'Back.Out',
+                onComplete: () => {
+                    if (heartImage?.active) heartImage.clearTint();
+                    if (hpText?.active) hpText.setColor('#ffffff');
+                }
+            });
+
+            this.scene.sound?.play?.('punch', { volume: 0.7 });
+        } else if (prevHp !== undefined && hp > prevHp) {
+            const gained = hp - prevHp;
+            const healText = this.scene.add.text(xPosition, yPosition - 10, `+${gained}`, {
+                fontSize: '42px',
+                fill: '#66ff99',
+                fontStyle: 'bold'
+            }).setOrigin(0.5, 0.5)
+                .setDepth(3);
+
+            this.scene.tweens.add({
+                targets: healText,
+                y: yPosition - 70,
+                alpha: 0,
+                scaleX: 1.25,
+                scaleY: 1.25,
+                duration: 500,
+                ease: 'Cubic.easeOut',
+                onComplete: () => healText.destroy()
+            });
+
+            const glow = this.scene.add.circle(xPosition, yPosition, desiredWidth * 0.45, 0x66ff99, 0.25).setDepth(0.5);
+            this.scene.tweens.add({
+                targets: glow,
+                scale: 1.7,
+                alpha: 0,
+                duration: 400,
+                ease: 'Cubic.easeOut',
+                onComplete: () => glow.destroy()
+            });
+
+            this.scene.sound?.play?.('healing-magic', { volume: 0.8 });
+        }
+        this.hpStates.set(player.id, hp);
     }
 
     displayMonstersPiles(player, isPlayer, position) {

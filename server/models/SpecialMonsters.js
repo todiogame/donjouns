@@ -111,7 +111,7 @@ const onFaceBeforeDamage = {
         let item = player.stuff.find(i => !i.broken && i.id === itemToOoze)
         if (item) item.break(player, game)
         // try to cheat the ooze? destroy all the stuff
-        else player.stuff.filter(i => !item.broken).forEach(i => item.break(player, game))
+        else player.stuff.filter(i => !i.broken).forEach(i => i.break(player, game))
     },
 };
 

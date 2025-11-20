@@ -534,8 +534,15 @@ class GameState extends Schema {
 
     tryToEscape(playerId, escapeRoll) {
         let player = this.findPlayerById(playerId)
-        if (!this.inFight()) this.pickDungeonCard(playerId)
-        if (this.inFight() && this.currentCard.power <= escapeRoll) {
+        // If no monster is currently faced, treat the escape as an immediate flee (do not draw a new card)
+        if (!this.inFight()) {
+            console.log("player escaped before drawing")
+            player.flee(this);
+            this.updateItemsUsability();
+            return;
+        }
+
+        if (this.currentCard.power <= escapeRoll) {
             console.log("player escaped")
             player.flee(this)
             if (this.players.every(p => !p.inDungeon()))
