@@ -236,6 +236,7 @@ export class DisplayManager {
         this.numberInputPopup = null; // To keep track of the number input popup
         this.lobbyContainer = null; // Lobby UI container
         this.nameInputText = null; // Lobby name text reference
+        this.itemUsageTrackers = new Map(); // Track item usage for visual effects
     }
 
     displayTitle(message, duration, onComplete) {
@@ -326,19 +327,39 @@ export class DisplayManager {
                 ? `En attente de ${hostName}...`
                 : 'Patiente, la table se remplit.');
 
-        const statusText = this.scene.add.text(width / 2, listStartY + playerList.length * 32 + 30, statusMessage, {
+        let currentY = listStartY + playerList.length * 32 + 30;
+        const statusText = this.scene.add.text(width / 2, currentY, statusMessage, {
             fontSize: '22px',
             fill: '#ffd369'
         }).setOrigin(0.5);
         container.add(statusText);
 
-        let nextY = listStartY + playerList.length * 32 + 90;
+        currentY += 50;
+
+        if (isHost && !readyToStart && options.onAddBot) {
+            const addBotButton = this.scene.add.text(width / 2, currentY, "+ Ajouter un Bot", {
+                fontSize: '20px',
+                fill: '#00ff00',
+                backgroundColor: '#333333',
+                padding: { x: 10, y: 5 }
+            }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+            addBotButton.on('pointerdown', () => {
+                console.log("Add bot button clicked");
+                options.onAddBot();
+            });
+            container.add(addBotButton);
+            currentY += 60;
+        } else {
+            currentY += 20;
+        }
+
         if (startModes && startModes.length) {
             const buttonWidth = width * 0.45;
             const buttonHeight = 56;
 
             startModes.forEach((mode, index) => {
-                const buttonY = nextY + index * 90;
+                const buttonY = currentY + index * 90;
                 const isSelected = selectedMode === mode.key;
                 const backgroundColor = isSelected ? 0x2f855a : 0x1f1f1f;
                 const rect = this.scene.add.rectangle(width / 2, buttonY, buttonWidth, buttonHeight, backgroundColor, readyToStart && isHost ? 0.9 : 0.6);
@@ -381,7 +402,7 @@ export class DisplayManager {
                 }
             });
 
-            nextY += startModes.length * 90;
+            currentY += startModes.length * 90;
         }
 
         if (nameInput) {
@@ -698,11 +719,40 @@ export class DisplayManager {
         }
     }
     displayCurrentPhase(game) {
+        // Display phase
         this.scene.add.text(
             this.scene.sys.game.config.width / 2 - 50,
             30,
             game.phase,
             { fontSize: '20px', fill: '#fff', fontStyle: 'bold' });
+
+        // Display current player
+        const currentPlayer = game.getCurrentPlayer();
+        if (currentPlayer) {
+            const playerText = `Tour: ${currentPlayer.name}`;
+            const textObj = this.scene.add.text(
+                this.scene.sys.game.config.width / 2 - 50,
+                60,
+                playerText,
+                {
+                    fontSize: '24px',
+                    fill: '#FFD700',  // Gold color
+                    fontStyle: 'bold',
+                    stroke: '#000000',
+                    strokeThickness: 3
+                });
+
+            // Add pulsing animation
+            this.scene.tweens.add({
+                targets: textObj,
+                scale: { from: 1, to: 1.1 },
+                alpha: { from: 1, to: 0.8 },
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut',
+                duration: 800
+            });
+        }
     }
     displayCurrentCard(game) {
         if (game.currentCard) {
@@ -859,6 +909,25 @@ export class DisplayManager {
                         .setScale(scaleX, scaleY)
                         .setInteractive({ useHandCursor: true, pixelPerfect: true, alphaTolerance: 1 });
                     itemCardImage.setData("type", "opponent_item");
+
+                    // Handle usage visual effect
+                    if (!this.itemUsageTrackers.has(itemCard.id)) {
+                        this.itemUsageTrackers.set(itemCard.id, { count: itemCard.usageCounter, endTime: 0 });
+                    }
+                    const tracker = this.itemUsageTrackers.get(itemCard.id);
+                    if (itemCard.usageCounter > tracker.count) {
+                        tracker.count = itemCard.usageCounter;
+                        tracker.endTime = Date.now() + 1000;
+                    }
+
+                    if (Date.now() < tracker.endTime) {
+                        const glow = itemCardImage.preFX.addGlow(0xff0000);
+                        this.scene.time.delayedCall(tracker.endTime - Date.now(), () => {
+                            if (itemCardImage.active) {
+                                itemCardImage.preFX.remove(glow);
+                            }
+                        });
+                    }
 
                     if (itemCard.broken) {
                         itemCardImage.setRotation(Math.PI / 2);

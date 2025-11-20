@@ -27,9 +27,10 @@ export class Game {
 }
 
 export class Player {
-    constructor(id, name) {
+    constructor(id, name, isBot = false) {
         this.id = id;
         this.name = name;
+        this.isBot = isBot;
         this.hand = [];
         this.stuff = [];
         this.selectedItemCardIndex = -1;
@@ -44,8 +45,6 @@ export class Player {
         this.turnNumber = 0;
         this.monstersBeatenThisTurn = 0;
     }
-
-
 }
 
 export class ItemCard {

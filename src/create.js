@@ -297,7 +297,7 @@ export function create() {
     }
 
     function copyPlayerState(playerState) {
-        const player = new Player(playerState.id, playerState.name);
+        const player = new Player(playerState.id, playerState.name, playerState.isBot);
         player.hand = playerState.hand; // Direct assignment
         player.stuff = playerState.stuff; // Direct assignment
         player.selectedCardIndex = playerState.selectedCardIndex;
@@ -315,6 +315,7 @@ export function create() {
     function updateGameState(state) {
         cardGame.phase = state.phase;
         cardGame.players = state.players.map(copyPlayerState);
+        console.log(`updateGameState: ${cardGame.players.length} players`);
         cardGame.itemDeck = state.itemDeck; // Direct assignment
         cardGame.currentPlayerIndex = state.currentPlayerIndex;
         cardGame.dungeon = state.dungeon; // Direct assignment
@@ -343,6 +344,11 @@ export function create() {
                 onStartMode: (modeKey) => {
                     if (room) {
                         room.send("start_game_request", { mode: modeKey });
+                    }
+                },
+                onAddBot: () => {
+                    if (room) {
+                        room.send("add_bot");
                     }
                 },
                 nameInput: {

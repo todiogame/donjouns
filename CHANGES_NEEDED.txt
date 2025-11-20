@@ -1,0 +1,46 @@
+// Add this method after setPlayerName() method (around line 129):
+
+    onlyBotsRemain() {
+        // Check if game is in active phase
+        const isGamePhase = typeof this.phase === "string" && this.phase.includes("GAME");
+        if (!isGamePhase) {
+            return false;
+        }
+        // Check if all active players (in dungeon) are bots
+        const playersInDungeon = this.players.filter(p => p.inDungeon());
+        if (playersInDungeon.length === 0) {
+            return false;
+        }
+        return playersInDungeon.every(p => p.isBot);
+    }
+
+// ====================================
+
+// In removePlayer() method, replace lines 108-112 with:
+
+            player.dead = true;
+            player.hp = 0;
+            
+            // Check if only bots remain after this player leaves
+            if (this.onlyBotsRemain()) {
+                console.log("Only bots remain - ending game");
+                this.endGame();
+                return;
+            }
+            
+            if (wasCurrentPlayer && typeof this.passTurn === "function") {
+                this.passTurn();
+            }
+
+// ====================================
+
+// In passTurn() method, add these lines after `this.updateItemsUsability();` (line 494):
+
+        this.updateItemsUsability();
+        
+        // Check if only bots remain
+        if (foundPlayerInDungeon && this.onlyBotsRemain()) {
+            console.log("Only bots remain - ending game");
+            this.endGame();
+        }
+    }

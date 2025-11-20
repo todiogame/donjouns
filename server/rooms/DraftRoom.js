@@ -33,7 +33,7 @@ class DraftRoom extends colyseus.Room {
         this.allItemsCards = options.itemsCards || [];
 
         this.state.initializeItemsDeck(this.allItemsCards);
-        
+
         // Listen to messages from clients
         this.onMessage("select_card", (client, message) => {
             console.log(`Received select_card message from ${client.sessionId}:`, message);
@@ -62,6 +62,16 @@ class DraftRoom extends colyseus.Room {
         this.onMessage("set_name", (client, message) => {
             const desiredName = typeof message === "string" ? message : message?.name;
             this.state.setPlayerName(client.sessionId, desiredName);
+        });
+
+        this.onMessage("add_bot", (client) => {
+            console.log(`Received add_bot from ${client.sessionId}. Host: ${this.state.hostId}, Players: ${this.state.players.length}/${this.maxClients}`);
+            if (this.state.hostId === client.sessionId && this.state.players.length < this.maxClients) {
+                console.log("Adding bot...");
+                this.state.addBot();
+            } else {
+                console.log("Cannot add bot: Not host or room full");
+            }
         });
 
         this.onMessage("start_game_request", (client) => {

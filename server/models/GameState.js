@@ -56,17 +56,23 @@ class GameState extends Schema {
         // debug LA SOLUTION : IL FAUT REFAIRE DES NOUVEAUX ITEMCARD DANS CHAQUE NOUVELLE INSTANCE DE GAME
         // DEBUG ON NE VAS PLUS CREER DIRECT D'ITEMCARD DEPUIS LE DATA FEED
         this.itemDeck.clear();
-        this.itemDeck.push(...itemsCards.filter(item => item.id > 0 && item.id <= nb_items_deck)
-            .map(i => new ItemCard(i.id, i.title, i.active, i.color, i.key, i.description)));
+        const freshItems = itemsCards
+            .filter(item => item.id > 0 && item.id <= nb_items_deck)
+            .map(i => new ItemCard(i.id, i.title, i.active, i.color, i.key, i.description));
+        this.itemDeck.push(...freshItems);
 
-        //remove disabled items
-        this.itemDeck = this.itemDeck.filter(item => !disabled_items.includes(item.key));
+        // Remove disabled items without losing the ArraySchema instance
+        const enabledItems = this.itemDeck.filter(item => !disabled_items.includes(item.key));
+        this.itemDeck.clear();
+        this.itemDeck.push(...enabledItems);
 
         this.shuffleItemsDeck();
-        // Step 2: Move specified items to the end
-        const endItems = this.itemDeck.filter(item => include_items.includes(item.key));
-        this.itemDeck = this.itemDeck.filter(item => !include_items.includes(item.key));
-        this.itemDeck.push(...endItems);
+
+        // Move specified items to the end while keeping ArraySchema intact
+        const remaining = this.itemDeck.filter(item => !include_items.includes(item.key));
+        const forcedEndItems = this.itemDeck.filter(item => include_items.includes(item.key));
+        this.itemDeck.clear();
+        this.itemDeck.push(...remaining, ...forcedEndItems);
     }
 
 
@@ -82,6 +88,15 @@ class GameState extends Schema {
         if (!this.hostId) {
             this.hostId = player.id;
         }
+    }
+
+    addBot() {
+        console.log("GameState.addBot called");
+        const botId = `bot-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        const botName = `Bot ${Math.floor(Math.random() * 1000)}`;
+        const bot = new Player(botId, botName, true);
+        this.addPlayer(bot);
+        console.log("Bot added:", bot.id, bot.name);
     }
 
     removePlayer(playerId) {
@@ -107,12 +122,22 @@ class GameState extends Schema {
             }
             player.dead = true;
             player.hp = 0;
+            player.disconnected = true;
+
+            // Check if only bots remain after this player leaves
+            if (this.onlyBotsRemain()) {
+                console.log("Only bots remain - ending game");
+                this.endGame();
+                return;
+            }
+
             if (wasCurrentPlayer && typeof this.passTurn === "function") {
                 this.passTurn();
             }
         } else {
             player.dead = true;
             player.hp = 0;
+            player.disconnected = true;
         }
     }
 
@@ -126,6 +151,18 @@ class GameState extends Schema {
             return;
         }
         player.name = sanitized.substring(0, 24);
+    }
+
+    onlyBotsRemain() {
+        // Check if game is in active phase
+        const isGamePhase = typeof this.phase === "string" && this.phase.includes("GAME");
+        if (!isGamePhase) {
+            return false;
+        }
+        // Check if all connected players are bots
+        // If a player is NOT a bot and NOT disconnected, then humans are still present
+        const humansConnected = this.players.some(p => !p.isBot && !p.disconnected);
+        return !humansConnected;
     }
 
     dealItemsCardsDraft() {
@@ -406,7 +443,7 @@ class GameState extends Schema {
     wantToPassTurn(playerId) {
         let player = this.findPlayerById(playerId)
         if (player.canPass) {
-            this.passTurn()
+            return this.passTurn()
         }
     }
     async passTurn(reversed = false) {
@@ -469,6 +506,20 @@ class GameState extends Schema {
             this.endGame();
         }
         this.updateItemsUsability();
+
+        // Check if only bots remain
+        if (foundPlayerInDungeon && this.onlyBotsRemain()) {
+            console.log("Only bots remain - ending game");
+            this.endGame();
+        }
+
+        // Automatically trigger bots when the next player is a bot
+        if (foundPlayerInDungeon && this.phase === "GAME_LOOP") {
+            const controller = this.room?.gameController;
+            if (controller && typeof controller.triggerBotTurnIfNeeded === "function") {
+                controller.triggerBotTurnIfNeeded();
+            }
+        }
     }
 
     wantToEscape(playerId) {

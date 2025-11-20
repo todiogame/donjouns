@@ -21,6 +21,7 @@ class ItemCard extends Schema {
         this.indication = null;
         this.uiCondition = null;
         this.canBeUsed = false;
+        this.usageCounter = 0;
 
     }
     break(player, game) {
@@ -38,6 +39,7 @@ class ItemCard extends Schema {
     }
     tryToUse(player, game, arg = -1) {
         console.log(player.name, "tryToUse", this.title, arg)
+        this.usageCounter++;
         ieClick[this.key]?.(this, player, game, arg);
     }
 
@@ -80,6 +82,7 @@ schema.defineTypes(ItemCard, {
     ui: "string",
     indication: "string",
     canBeUsed: "boolean",
+    usageCounter: "number",
 });
 
 module.exports = { ItemCard };

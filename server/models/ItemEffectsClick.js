@@ -71,7 +71,13 @@ const ieClick = {
             h.execute(player, game)
             player.gainHP(6)
         }
-    }, anvil: (item, player, game, arg) => {
+    },
+    lich_skull: (item, player, game) => {
+        if (!game.trap && !item.broken && game.inFight() && h.currentCardHasType(game, "Lich")) {
+            h.execute(player, game);
+        }
+    },
+    anvil: (item, player, game, arg) => {
         if (!item.broken && arg != null) {
             // Find the owner of the item with the given ID
             const owner = game.players.find(p => p.stuff.some(i => i.id == arg));
@@ -152,6 +158,16 @@ const ieClick = {
             game.currentCard.power = 0;
             game.currentCard.damage = game.currentCard.calculateDamage()
             item.break(player, game)
+        }
+    },
+    ice_ring: (item, player, game) => {
+        if (!item.broken && game.inFight()) {
+            // Executes skeletons, otherwise shaves off a point of damage
+            if (!game.trap && h.currentCardHasType(game, "Skeleton")) {
+                h.execute(player, game);
+            } else {
+                h.reduceDamage(game, item, player, 1);
+            }
         }
     },
     vorpal_sword: (item, player, game, arg) => {
@@ -297,204 +313,10 @@ const ieClick = {
             h.execute(player, game)
         }
     },
-    scuba: (item, player, game) => {
-        if (!item.broken && game.inFight()) {
-            h.reduceDamage(game, item, player, 2)
-        }
-    },
-    chainsaw: (item, player, game) => {
-        if (!game.trap && !item.broken && game.inFight()) {
-            player.loseHP(game, 3)
-            h.execute(player, game)
-        }
-    },
-    laser: (item, player, game) => {
-        if (!game.trap && !item.broken && game.inFight() && game.currentCard.odd()) {
-            const currentPower = game.currentCard.power;
-            h.execute(player, game)
-            game.nextMonsterCondition = (state) => (state.inFight() && state.currentCard.power < currentPower);
-            game.nextMonsterAction = (state) => h.execute(player, state);
-            item.break(player, game)
-        }
-    },
-    monkey_grenade: (item, player, game) => {
-        if (!item.broken && game.inFight()) {
-            game.returnCurrentCardToDungeon()
-            game.shuffleDungeon()
-            item.break(player, game)
-            game.afterDoneWithMonster(player)
-        }
-    },
-    hex: (item, player, game, arg) => {
-        if (!item.broken && game.inFight()) {
-            game.discard(player, game.currentCard)
-            game.currentCard = null;
-            h.selectDungeonCard(game, player, game.dungeon.filter(d => d.dungeonCardType === "monster"))
-            item.break();
-        }
-    },
-    heal: (item, player, game) => {
-        if (!item.broken && player.lastDamageTaken > 0) {
-            player.gainHP(player.lastDamageTaken)
-            item.break(player, game);
-        }
-    },
-    mage_armor: (item, player, game) => {
-        if (!item.broken && game.inFight() && (h.currentCardHasType(game, "Lich") || h.currentCardHasType(game, "Demon"))) {
-            h.reduceDamage(game, item, player, 5)
-        }
-    },
-    divination: (item, player, game) => {
-        if (!item.broken && game.noCurrentCard()) {
-            h.selectDungeonCard(game, player)
-            item.break();
-        }
-    },
-    adrenaline: (item, player, game) => {
-        if (player.hp === 1) {
-            player.gainHP(10)
-        } else {
-            player.gainHP(2)
-        }
-        item.break(player, game)
-    },
-    pirate_bomb: (item, player, game, arg) => {
-        if (!item.broken && game.inFight() && arg != null) {
-            const itemToBreak = player.stuff.find(i => i.id != item.id && i.id == arg)
-            if (itemToBreak) {
-                itemToBreak.break(player, game);
-                h.execute(player, game)
-            }
-        }
-    },
-    ocean_ring: (item, player, game) => {
-        if (!game.trap && !item.broken && game.inFight() && game.currentCard.power >= 8) {
-            h.execute(player, game)
-        }
-    },
-    fire_ring: (item, player, game) => {
-        if (!game.trap && !item.broken && game.inFight() && h.currentCardHasType(game, "Vampire")) {
-            h.execute(player, game)
-            player.gainHP(2)
-        }
-    },
-    boomerang: (item, player, game) => {
-        if (!game.trap && !item.broken && game.inFight()) {
-            h.executeAndDiscard(player, game)
-            game.nextMonsterCondition = (state) => state.inFight();
-            game.nextMonsterAction = (state) => h.execute(player, state);
-            item.break(player, game)
-        }
-    },
-    ice_ring: (item, player, game) => {
-        if (!game.trap && !item.broken && game.inFight() && h.currentCardHasType(game, "Skeleton")) {
-            h.execute(player, game)
-        } else if (!item.broken && game.inFight()) {
-            h.reduceDamage(game, item, player, 1)
-        }
-    },
-    magic_ring: (item, player, game) => {
-        if (!game.trap && !item.broken && game.inFight() && (game.currentCard.power === 1 || game.currentCard.power === 2)) {
-            h.executeAndLeech(player, game)
-        }
-    },
-    wind_ring: (item, player, game, arg) => {
-
-    },
-    sorcerer_hat: (item, player, game) => {
-        if (!game.trap && !item.broken && game.inFight() &&
-            (h.currentCardHasType(game, "Goblin") || h.currentCardHasType(game, "Vampire"))) {
-            h.execute(player, game)
-        }
-    },
-    pizza: (item, player, game) => {
-        if (!game.trap && !item.broken && game.inFight()) {
-            h.executeAndDiscard(player, game)
-            player.setHP(6)
-            item.break(player, game)
-        }
-    },
-    lich_skull: (item, player, game) => {
-        if (!game.trap && !item.broken && game.inFight() && h.currentCardHasType(game, "Lich")) {
-            h.execute(player, game)
-        } //todo steal opponents lichs
-    },
-    lich_armor: (item, player, game) => {
-        if (!game.trap && !item.broken && game.inFight() && h.currentCardHasType(game, "Lich")) {
-            h.execute(player, game)
-        }
-    },
-    red_torch: (item, player, game) => {
-        if (!game.trap && !item.broken && game.inFight() &&
-            (h.currentCardHasType(game, "Goblin") || h.currentCardHasType(game, "Skeleton") || h.currentCardHasType(game, "Orc"))) {
-            h.execute(player, game)
-        }
-    },
-    blue_torch: (item, player, game) => {
-        if (!game.trap && !item.broken && game.inFight() && game.currentCard.power <= 2) {
-            h.execute(player, game)
-        }
-    },
-    future: (item, player, game) => { //todo start of turn
-        if (!item.broken && !player.lastDamageTaken && game.noCurrentCard())
-            h.scout(game, player, 1, 2)
-    },
-    rat_ring: (item, player, game) => {
-        if (!game.trap && !item.broken && game.inFight() && h.currentCardHasType(game, "Rat")) {
-            h.execute(player, game)
-            player.gainHP(3)
-        }
-    },
-    crystal: (item, player, game, arg) => {
-        if (!game.trap && !item.broken && !player.alreadyUsedItems.includes(item.key)) {
-            const originalNextMonsterCondition = game.nextMonsterCondition;
-            game.nextMonsterCondition = (state) =>
-                (originalNextMonsterCondition ? originalNextMonsterCondition(state) : false) ||
-                (state.inFight() && state.currentCard.power === arg);
-
-            game.nextMonsterAction = (state) => h.execute(player, state);
-            player.alreadyUsedItems.push(item.key)
-            item.setIndication(arg, game);
-        }
-    },
-    whip: (item, player, game) => {
-        if (!game.trap && !item.broken && game.inFight()) {
-            h.executeAndDiscard(player, game)
-            item.break(player, game)
-        } //todo discard opponents
-    },
-    seashell: (item, player, game) => {
-        if (!item.broken) {
-            player.pickItem(game)
-            item.break(player, game)
-        }
-    },
-    purple_skull: (item, player, game, arg) => {
-        if (!item.broken && game.inFight() && arg != null) {
-            const card = player.defeatedMonstersPile.find(c => c.id === arg)
-            if (card.basePower > game.currentCard.power) {
-                h.discardFromPile(arg, player, game)
-                h.execute(player, game)
-            }
-        }
-    },
-    eternity_leaf: (item, player, game) => {
-        if (!game.trap && !item.broken && game.inFight() &&
-            (h.currentCardHasType(game, "Demon") || h.currentCardHasType(game, "Dragon"))) {
-            player.loseHP(game, 1)
-            h.execute(player, game)
-        }
-    },
-    luck_potion: (item, player, game) => {
-        if (!item.brokem) {
-            player.gainHP(3)
-            //todo modify dice
-            item.break();
-        }
-    },
     genius_glasses: (item, player, game) => {
-        if (!item.broken && player.lastDamageTaken && game.noCurrentCard())
+        if (!item.broken && player.lastDamageTaken && game.noCurrentCard()) {
             h.scout(game, player, 1)
+        }
     },
     katana: (item, player, game) => {
         if (!game.trap && !item.broken && game.inFight() && game.currentCard.power >= 7) {
@@ -504,11 +326,12 @@ const ieClick = {
     silence: (item, player, game) => {
         if (!item.broken) {
             player.gainHP(2)
-            card = game.currentCard;
+            const card = game.currentCard;
             if (game.inFight()) {
                 if (["MIMIC", "SLEEPING_DRAGON", "EVIL_MIRROR", "MEDAL_GRINDER", "SCAVENGER_RAT", "SPECTRE",]
-                    .includes(card.baseEffect))
+                    .includes(card.baseEffect)) {
                     card.power = 0
+                }
                 card.effect = ""
                 card.bonusDamage = 0
                 card.timesDealDamage = 1
@@ -516,7 +339,7 @@ const ieClick = {
             } else if (game.inEvent()) {
                 card.effect = ""
             }
-            item.break();
+            item.break(player, game);
         }
     },
     golem_heart: (item, player, game) => {
@@ -539,6 +362,201 @@ const ieClick = {
             game.nextMonsterCondition = (state) => state.inFight() && state.currentCard.even();
             game.nextMonsterAction = (state) => h.execute(player, state);
             item.break(player, game)
+        }
+    },
+    adrenaline: (item, player, game) => {
+        if (!item.broken) {
+            player.gainHP(player.hp === 1 ? 10 : 2);
+            item.break(player, game);
+        }
+    },
+    blue_torch: (item, player, game) => {
+        if (!game.trap && !item.broken && game.inFight() && game.currentCard.power <= 2) {
+            h.execute(player, game);
+        }
+    },
+    boomerang: (item, player, game) => {
+        if (!game.trap && !item.broken && game.inFight()) {
+            const basePower = game.currentCard.power;
+            h.executeAndDiscard(player, game);
+            game.nextMonsterCondition = (state) => state.inFight() && state.currentCard.power < basePower;
+            game.nextMonsterAction = (state) => h.execute(player, state);
+            item.break(player, game);
+        }
+    },
+    chainsaw: (item, player, game) => {
+        if (!game.trap && !item.broken && game.inFight()) {
+            player.loseHP(game, 3);
+            if (player.inDungeon()) {
+                h.execute(player, game);
+            }
+            item.break(player, game);
+        }
+    },
+    crystal: (item, player, game, arg) => {
+        if (!game.trap && !item.broken && game.noCurrentCard() && arg != null) {
+            const guess = parseInt(arg, 10);
+            item.setIndication(guess, game);
+            game.nextMonsterCondition = (state) => state.inFight() && state.currentCard.power === guess;
+            game.nextMonsterAction = (state) => h.execute(player, state);
+            player.alreadyUsedItems.push(item.key);
+        }
+    },
+    divination: (item, player, game) => {
+        if (!item.broken && game.noCurrentCard()) {
+            h.selectDungeonCard(game, player);
+            item.break(player, game);
+        }
+    },
+    eternity_leaf: (item, player, game) => {
+        if (!item.broken && game.inFight() && (h.currentCardHasType(game, "Demon") || h.currentCardHasType(game, "Dragon"))) {
+            h.execute(player, game);
+        }
+        if (!item.broken) {
+            player.loseHP(game, 1);
+        }
+    },
+    fire_ring: (item, player, game) => {
+        if (!game.trap && !item.broken && game.inFight() && h.currentCardHasType(game, "Vampire")) {
+            h.execute(player, game);
+            player.gainHP(2);
+        }
+    },
+    future: (item, player, game) => {
+        if (!item.broken && game.noCurrentCard()) {
+            h.scout(game, player, 1, 2);
+        }
+    },
+    heal: (item, player, game) => {
+        if (!item.broken && player.lastDamageTaken > 0) {
+            player.gainHP(player.lastDamageTaken);
+            item.break(player, game);
+        }
+    },
+    hex: (item, player, game) => {
+        if (!item.broken && game.inFight()) {
+            const card = game.currentCard;
+            game.discard(player, card);
+            game.currentCard = null;
+            h.selectDungeonCard(game, player);
+            item.break(player, game);
+        }
+    },
+    laser: (item, player, game) => {
+        if (!game.trap && !item.broken && game.inFight() && game.currentCard.odd()) {
+            const power = game.currentCard.power;
+            h.execute(player, game);
+            game.nextMonsterCondition = (state) => state.inFight() && state.currentCard.power < power;
+            game.nextMonsterAction = (state) => h.execute(player, state);
+            item.break(player, game);
+        }
+    },
+    lich_armor: (item, player, game) => {
+        if (!game.trap && !item.broken && game.inFight() && h.currentCardHasType(game, "Lich")) {
+            h.execute(player, game);
+        }
+    },
+    luck_potion: (item, player, game) => {
+        if (!item.broken) {
+            player.gainHP(3);
+            item.break(player, game);
+        }
+    },
+    mage_armor: (item, player, game) => {
+        if (!item.broken && game.inFight() && (h.currentCardHasType(game, "Lich") || h.currentCardHasType(game, "Demon"))) {
+            h.reduceDamage(game, item, player, 5);
+        }
+    },
+    magic_ring: (item, player, game) => {
+        if (!game.trap && !item.broken && game.inFight() && (game.currentCard.power === 1 || game.currentCard.power === 2)) {
+            player.gainHP(game.currentCard.power);
+            h.execute(player, game);
+        }
+    },
+    monkey_grenade: (item, player, game) => {
+        if (!item.broken && game.inFight()) {
+            game.returnCurrentCardToDungeon();
+            game.shuffleDungeon();
+            game.afterDoneWithMonster(player);
+            item.break(player, game);
+        }
+    },
+    ocean_ring: (item, player, game) => {
+        if (!game.trap && !item.broken && game.inFight() && game.currentCard.power >= 8) {
+            h.execute(player, game);
+        }
+    },
+    pirate_bomb: (item, player, game, arg) => {
+        if (!item.broken && game.inFight() && arg != null) {
+            const target = player.stuff.find(i => i.id == arg && i.id !== item.id);
+            if (target && !target.broken) {
+                target.break(player, game);
+                h.execute(player, game);
+            }
+        }
+    },
+    pizza: (item, player, game) => {
+        if (!game.trap && !item.broken && game.inFight()) {
+            h.executeAndDiscard(player, game);
+            player.setHP(6);
+            item.break(player, game);
+        }
+    },
+    purple_skull: (item, player, game, arg) => {
+        if (!item.broken && game.inFight() && arg != null) {
+            const idx = player.defeatedMonstersPile.findIndex(c => c.id == arg);
+            const card = player.defeatedMonstersPile[idx];
+            if (card && card.power > game.currentCard.power) {
+                player.defeatedMonstersPile.splice(idx, 1);
+                game.discard(player, card);
+                h.execute(player, game);
+                item.break(player, game);
+            }
+        }
+    },
+    rat_ring: (item, player, game) => {
+        if (!game.trap && !item.broken && game.inFight() && h.currentCardHasType(game, "Rat")) {
+            h.execute(player, game);
+            player.gainHP(3);
+        }
+    },
+    red_torch: (item, player, game) => {
+        if (!game.trap && !item.broken && game.inFight() &&
+            (h.currentCardHasType(game, "Goblin") || h.currentCardHasType(game, "Skeleton") || h.currentCardHasType(game, "Orc"))) {
+            h.execute(player, game);
+        }
+    },
+    scuba: (item, player, game) => {
+        if (!item.broken && game.inFight()) {
+            h.reduceDamage(game, item, player, 2);
+        }
+    },
+    seashell: (item, player, game) => {
+        if (!item.broken) {
+            player.pickItem(game);
+            item.break(player, game);
+        }
+    },
+    sorcerer_hat: (item, player, game) => {
+        if (!game.trap && !item.broken && game.inFight() &&
+            (h.currentCardHasType(game, "Goblin") || h.currentCardHasType(game, "Vampire"))) {
+            h.execute(player, game);
+        }
+    },
+    whip: (item, player, game) => {
+        if (!game.trap && !item.broken && game.inFight()) {
+            const types = game.currentCard.types || [];
+            h.executeAndDiscard(player, game);
+            game.players
+                .filter(p => p.id !== player.id && p.inDungeon())
+                .forEach(p => {
+                    const idx = p.defeatedMonstersPile.findIndex(m => types.some(t => m.types.includes(t)));
+                    if (idx >= 0) {
+                        const stolen = p.defeatedMonstersPile.splice(idx, 1)[0];
+                        game.discard(p, stolen);
+                    }
+                });
+            item.break(player, game);
         }
     },
 };

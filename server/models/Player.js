@@ -8,10 +8,11 @@ const ieEscapeRoll = require("./ItemEffectsEscapeRoll");
 const ieAddMonsterToPile = require("./ItemEffectsAddMonsterToPile");
 
 class Player extends Schema {
-    constructor(id, name) {
+    constructor(id, name, isBot = false) {
         super();
         this.id = id;
         this.name = name;
+        this.isBot = isBot;
         this.hand = new ArraySchema(); // for drafting only
         this.stuff = new ArraySchema();
         this.selectedItemCardIndex = -1;
@@ -28,7 +29,9 @@ class Player extends Schema {
         this.monstersBeatenThisTurn = 0;
 
         this.lastDamageTaken = 0;
+        this.lastDamageTaken = 0;
         this.alreadyUsedItems = [];
+        this.disconnected = false;
     }
     // DRAFT PHASE
     addItemCardDraft(itemCard) {
@@ -96,7 +99,10 @@ class Player extends Schema {
         let res = 0
         this.stuff.forEach(item => {
             res = ieEscapeRoll[item.key]?.(item, this, game, escapeModifier);
-            if (res) escapeModifier += res
+            if (res) {
+                escapeModifier += res
+                item.usageCounter++;
+            }
         });
         console.log("getEscapeModifier return", escapeModifier)
         return escapeModifier
@@ -125,8 +131,10 @@ class Player extends Schema {
         this.defeatedMonstersPile.push(card);
         this.monstersBeatenThisTurn += 1;
         // trigger items on-beaten monster effects
-        game.players.filter(p => p.inDungeon()).forEach(owner => owner.stuff.forEach(item =>
-            ieAddMonsterToPile[item.key]?.(item, this, owner, game)))
+        game.players.filter(p => p.inDungeon()).forEach(owner => owner.stuff.forEach(item => {
+            const res = ieAddMonsterToPile[item.key]?.(item, this, owner, game);
+            if (res) item.usageCounter++;
+        }))
 
     }
 
@@ -166,6 +174,7 @@ class Player extends Schema {
 schema.defineTypes(Player, {
     id: "string",
     name: "string",
+    isBot: "boolean",
     hand: [ItemCard],
     stuff: [ItemCard],
     selectedItemCardIndex: "number",
@@ -178,7 +187,8 @@ schema.defineTypes(Player, {
     dead: "boolean",
     fled: "boolean",
     turnNumber: "number",
-    monstersBeatenThisTurn: "number"
+    monstersBeatenThisTurn: "number",
+    disconnected: "boolean"
 });
 
 module.exports = { Player };

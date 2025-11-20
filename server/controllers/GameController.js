@@ -1,5 +1,6 @@
 const { GameState } = require('../models/GameState');
 const { Player } = require('../models/Player');
+const BotAI = require('./BotAI');
 const fs = require('fs');
 const path = require('path');
 
@@ -18,11 +19,13 @@ class GameController {
         this.minPlayersToStart = minPlayersToStart ?? room.maxClients;
         this.gameStarted = false;
         this.currentMode = null;
+        this.botAI = new BotAI();
     }
 
     initialize(options) {
         this.room.allDungeonCards = options.dungeon || [];
         this.room.allItemsCards = options.itemsCards || [];
+        this.room.gameController = this; // Store reference for bot AI
 
         this.state.initializeItemsDeck(this.room.allItemsCards);
     }
@@ -55,8 +58,21 @@ class GameController {
     startRandomPhase() {
         this.state.dealItemsCardsRandom(nbItemsRandomMode);
         this.state.setUpDungeonGame(this.room.allDungeonCards);
+
+        // Auto-setup items for bots
+        this.state.players.filter(p => p.isBot).forEach(bot => {
+            bot.stuff.forEach(item => {
+                if (item.requireSetup && !item.indication) {
+                    // Set a random indication for bot setup items (must be string)
+                    item.indication = (Math.floor(Math.random() * 6) + 1).toString();
+                    console.log(`Bot ${bot.name} auto-setup item ${item.title} with value ${item.indication}`);
+                }
+            });
+        });
+
         if (this.state.allPlayersSetupReady()) {
             this.state.gameLoop();
+            this.triggerBotTurnIfNeeded();
         }
         this.room.broadcast("start_game_random", this.state);
     }
@@ -65,6 +81,11 @@ class GameController {
         this.state.phase = "DRAFT";
         this.state.dealItemsCardsDraft();
         this.room.broadcast("start_game", this.state);
+
+        // Trigger bots to make selections
+        setTimeout(() => {
+            this.botAI.processBotDraftTurns(this);
+        }, 1000);
     }
 
     finishDraftPhase() {
@@ -73,6 +94,7 @@ class GameController {
         setTimeout(() => {
             this.state.setUpAndPlayDungeon(this.room.allDungeonCards);
             this.room.broadcast("start_game_random", this.state);
+            this.triggerBotTurnIfNeeded();
         }, 1000);
     }
 
@@ -96,9 +118,18 @@ class GameController {
             const allPlayersReady = this.state.players.every(p => p.stuff.length >= nbItemsStarting);
             if (!allPlayersReady) {
                 this.state.rotateHands();
+                // Trigger bots for next selection round
+                setTimeout(() => {
+                    this.botAI.processBotDraftTurns(this);
+                }, 500);
             } else {
                 this.finishDraftPhase();
             }
+        } else {
+            // Trigger remaining bots to select
+            setTimeout(() => {
+                this.botAI.processBotDraftTurns(this);
+            }, 300);
         }
     }
 
@@ -119,13 +150,18 @@ class GameController {
                 break;
             case "take_damage":
                 this.state.faceMonster(client.sessionId, message?.arg);
+                this.triggerBotTurnIfNeeded();
                 break;
             case "special_effect":
                 this.state.specialEffect(client.sessionId, message?.arg);
                 break;
-            case "pass_turn":
-                this.state.wantToPassTurn(client.sessionId);
+            case "pass_turn": {
+                const result = this.state.wantToPassTurn(client.sessionId);
+                if (result instanceof Promise) {
+                    result.catch(err => console.error("Error while passing turn:", err));
+                }
                 break;
+            }
             case "execute":
                 this.state.wantToExecuteNextMonster(client.sessionId);
                 break;
@@ -140,9 +176,14 @@ class GameController {
                 break;
             case "accept_event":
                 this.state.dealWithEvent(client.sessionId, true, message?.arg);
+                this.triggerBotTurnIfNeeded();
                 break;
             case "decline_event":
                 this.state.dealWithEvent(client.sessionId, false, message?.arg);
+                this.triggerBotTurnIfNeeded();
+                break;
+            case "add_bot":
+                this.addBot(client.sessionId);
                 break;
         }
     }
@@ -164,8 +205,33 @@ class GameController {
         this.startGame(requestedMode);
     }
 
+    addBot(requesterId) {
+        const hostId = this.state.hostId;
+        if (!hostId || hostId !== requesterId) {
+            console.log(`addBot failed: ${requesterId} is not host (${hostId})`);
+            return;
+        }
+        if (this.state.players.length >= this.room.maxClients) {
+            console.log(`addBot failed: Room full (${this.state.players.length}/${this.room.maxClients})`);
+            return;
+        }
+        console.log("Adding bot via GameController...");
+        this.state.addBot();
+    }
+
     normalizeMode(mode) {
         return mode === "draft" ? "draft" : "random";
+    }
+
+    triggerBotTurnIfNeeded() {
+        if (this.state.phase !== "GAME_LOOP") {
+            return;
+        }
+        const currentPlayer = this.state.getCurrentPlayer();
+        if (currentPlayer && currentPlayer.isBot) {
+            console.log(`Triggering bot turn for ${currentPlayer.name}`);
+            this.botAI.autoPlayDungeon(currentPlayer, this.state, this.room);
+        }
     }
 
     handleEscapeRoll(client) {
@@ -177,6 +243,9 @@ class GameController {
                 console.log(`Broadcast escape_roll result for ${client.sessionId}:`, { escapeRoll, escapeModifier });
                 this.state.tryToEscape(client.sessionId, escapeRoll + escapeModifier);
                 this.room.broadcast('game_action', { action: 'roll_result', result: escapeRoll, modifier: escapeModifier });
+
+                // Check if next player is bot (e.g. if escape failed or succeeded and turn passed)
+                this.triggerBotTurnIfNeeded();
             }, 1000); // 1000 milliseconds delay
         }
     }

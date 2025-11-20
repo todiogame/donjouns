@@ -61,6 +61,7 @@ function reduceDamage(game, item, player, value, minDamage = 0) {
         let damage = game.currentCard.damage - value
         game.currentCard.damage = (damage > minDamage) ? damage : minDamage;
         player.alreadyUsedItems.push(item.key)
+        item.usageCounter++;
     }
 }
 
