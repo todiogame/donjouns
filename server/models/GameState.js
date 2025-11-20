@@ -17,6 +17,7 @@ const ieEndTurn = require("./ItemEffectsEndTurn");
 const { EventCard } = require("./EventCard");
 const ieTakeDamage = require("./ItemEffectsTakeDamage.js");
 const ieDiscard = require("./ItemEffectsDiscard.js");
+const { ieItemActivated, ieItemBroken } = require("./ItemEffectsItemAction");
 const ieCanUse = require('./ItemEffectsClick').ieCanUse;
 
 
@@ -44,11 +45,71 @@ class GameState extends Schema {
         this.nextMonsterCondition = null;
         this.nextMonsterAction = null;
 
+        this.currentItemAction = null;
         this.canPickSpecificCard = false; // allow to choose the card id to pick in the dungeon
     }
 
     findPlayerById(id) {
         return this.players.find(p => p.id === id);
+    }
+
+    setCurrentItemAction(player, item) {
+        if (player && item) {
+            this.currentItemAction = { playerId: player.id, itemId: item.id };
+        } else {
+            this.currentItemAction = null;
+        }
+    }
+
+    clearCurrentItemAction() {
+        this.currentItemAction = null;
+    }
+
+    isCurrentItemAction(player, item) {
+        return !!(this.currentItemAction
+            && player
+            && item
+            && this.currentItemAction.playerId === player.id
+            && this.currentItemAction.itemId === item.id);
+    }
+
+    stealItemFromPlayer(item, fromPlayer, toPlayer) {
+        if (!item || !fromPlayer || !toPlayer) return false;
+        const idx = fromPlayer.stuff.findIndex(i => i.id === item.id);
+        if (idx === -1) return false;
+
+        const [stolen] = fromPlayer.stuff.splice(idx, 1);
+        if (!stolen.broken && stolen.hp) {
+            fromPlayer.loseHP(this, stolen.hp);
+        }
+        toPlayer.stuff.push(stolen);
+        stolen.fix(toPlayer, this);
+        return true;
+    }
+
+    handleItemActivated(actor, targetItem) {
+        if (this.phase !== "GAME_LOOP") return;
+        if (!actor || !targetItem) return;
+        if (typeof actor.inDungeon === "function" && !actor.inDungeon()) return;
+
+        this.players
+            .filter(p => p.inDungeon())
+            .forEach(owner => owner.stuff.forEach(ownerItem =>
+                ieItemActivated[ownerItem.key]?.(ownerItem, actor, owner, this, targetItem)));
+    }
+
+    handleItemBroken(owner, targetItem, options = {}) {
+        if (this.phase !== "GAME_LOOP") return;
+        if (!owner || !targetItem) return;
+        const { ignoreIfCurrentActivation = false } = options;
+        if (ignoreIfCurrentActivation && this.isCurrentItemAction(owner, targetItem)) {
+            return;
+        }
+
+        this.players
+            .filter(p => p.inDungeon())
+            .forEach(playerOwner => playerOwner.stuff.forEach(ownerItem =>
+                ieItemBroken[ownerItem.key]?.(ownerItem, owner, playerOwner, this, targetItem)));
     }
 
     // DRAFT PHASE
@@ -250,9 +311,6 @@ class GameState extends Schema {
                 if (count >= 3) player.hp += 1;
             });
         });
-
-        // preparation phase
-
     }
 
     shuffleDungeon() {
@@ -260,10 +318,15 @@ class GameState extends Schema {
             const j = Math.floor(Math.random() * (i + 1));
             [this.dungeon[i], this.dungeon[j]] = [this.dungeon[j], this.dungeon[i]];
         }
+        this.players.forEach(p => {
+            if (p.knownCards) p.knownCards = [];
+        });
     }
+
     noCurrentCard() {
         return !this.currentCard || this.currentCard._id === undefined
     }
+
     inFight() {
         return this.currentCard?.dungeonCardType == "monster";
     }
@@ -599,7 +662,13 @@ class GameState extends Schema {
         let item = player.stuff.find(i => i.id === itemId)
         if (((this.phase == "GAME_SETUP") || (this.phase == "GAME_LOOP" && this.isMyTurn(playerId)))
             && item) { // it's his turn (or we're setting up the game) and he got the item
-            item.tryToUse(player, this, arg);
+            this.setCurrentItemAction(player, item);
+            try {
+                item.tryToUse(player, this, arg);
+            } finally {
+                this.clearCurrentItemAction();
+            }
+            this.handleItemActivated(player, item);
             this.updateItemsUsability();
         }
     }

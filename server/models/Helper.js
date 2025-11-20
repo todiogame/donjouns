@@ -1,3 +1,4 @@
+const DICE_ROLL_ANIMATION_DELAY_MS = 1400;
 
 function execute(player, game) {
     if (game.currentCard?.dungeonCardType == "monster") {
@@ -90,13 +91,19 @@ function returnCurrentCardToPosition(game, positionFromTop) {
     game.dungeonLength = game.dungeon.length;
     game.currentCard = null;
 }
-
 function scout(game, player, nbCards, position = 0) {
     const targetClient = game.room.clients.find(c => c.id === player.id);
+    const cards = game.dungeon.slice(-position - nbCards, -position || undefined).reverse();
+
     if (targetClient) {
-        const cards = game.dungeon.slice(-position - nbCards, -position || undefined).reverse();
         targetClient.send("game_action", { action: "scout", cards });
     }
+
+    // Track known cards for bots (and players)
+    if (!player.knownCards) player.knownCards = [];
+    cards.forEach(c => {
+        if (!player.knownCards.includes(c.id)) player.knownCards.push(c.id);
+    });
 }
 
 function selectDungeonCard(game, player, cards = game.dungeon) {
@@ -137,7 +144,7 @@ function playerRollDice(game, player, callback) {
         console.log(`broadcast dice_roll result for ${player.id}:`, diceRoll);
         game.room.broadcast('game_action', { action: 'roll_result', result: diceRoll });
         callback(diceRoll);
-    }, 1000); // 1000 milliseconds delay
+    }, DICE_ROLL_ANIMATION_DELAY_MS); // allow the dice animation to play before showing the result
 }
 
 module.exports = {

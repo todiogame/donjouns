@@ -11,6 +11,8 @@ const nbItemsRandomMode = typeof config.nb_items_random_mode === "number"
     ? config.nb_items_random_mode
     : nbItemsStarting;
 
+const ESCAPE_ROLL_ANIMATION_DELAY_MS = 1800;
+
 class GameController {
     constructor(room, minPlayersToStart) {
         this.room = room;
@@ -236,17 +238,17 @@ class GameController {
 
     handleEscapeRoll(client) {
         console.log(`Received escape_roll message from ${client.sessionId}`);
-        this.room.broadcast('game_action', { action: 'animate_roll', playerId: client.sessionId });
+        this.room.broadcast('game_action', { action: 'animate_roll', playerId: client.sessionId, rollType: 'escape' });
         const { escapeRoll, escapeModifier } = this.state.wantToEscape(client.sessionId);
         if (escapeRoll) { // if allowed to escape roll
             setTimeout(() => {
                 console.log(`Broadcast escape_roll result for ${client.sessionId}:`, { escapeRoll, escapeModifier });
                 this.state.tryToEscape(client.sessionId, escapeRoll + escapeModifier);
-                this.room.broadcast('game_action', { action: 'roll_result', result: escapeRoll, modifier: escapeModifier });
+                this.room.broadcast('game_action', { action: 'roll_result', result: escapeRoll, modifier: escapeModifier, rollType: 'escape' });
 
                 // Check if next player is bot (e.g. if escape failed or succeeded and turn passed)
                 this.triggerBotTurnIfNeeded();
-            }, 1000); // 1000 milliseconds delay
+            }, ESCAPE_ROLL_ANIMATION_DELAY_MS);
         }
     }
 }

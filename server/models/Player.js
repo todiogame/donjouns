@@ -32,6 +32,7 @@ class Player extends Schema {
         this.lastDamageTaken = 0;
         this.alreadyUsedItems = [];
         this.disconnected = false;
+        this.knownCards = [];
     }
     // DRAFT PHASE
     addItemCardDraft(itemCard) {

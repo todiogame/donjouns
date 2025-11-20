@@ -31,7 +31,7 @@ class BotAI {
         this.activeExecute = new Set([
             'bard', 'glass_axe', 'bahn', 'totem', 'whip', 'boomerang',
             'midas', 'dragon_mask', 'shells', 'pirate_pistol', 'mage_robe',
-            'laser', 'pizza', 'eternity_leaf', 'axe'
+            'laser', 'pizza', 'eternity_leaf', 'axe', 'pirate_bomb'
         ]);
 
         this.survival = new Set(['fairy_potion', 'dragon_potion', 'noob_ring', 'aegis', 'mana_potion']);
@@ -210,6 +210,10 @@ class BotAI {
                 if (escaped) return;
             }
 
+            if (this.maybeUseVisionItems(bot, gameState, room)) {
+                return;
+            }
+
             if (gameState.dungeon.length > 0) {
                 console.log(`Bot ${bot.name} drawing a dungeon card`);
                 gameState.pickDungeonCard(bot.id);
@@ -277,7 +281,19 @@ class BotAI {
         const total = escapeRoll + escapeModifier;
         console.log(`Bot ${bot.name} attempting escape with roll ${escapeRoll} (+${escapeModifier})`);
 
+        // Broadcast start of animation
+        if (room) {
+            room.broadcast('game_action', { action: 'animate_roll', playerId: bot.id, rollType: 'escape' });
+        }
+
+        const ESCAPE_ROLL_ANIMATION_DELAY_MS = 1800;
+
         setTimeout(() => {
+            // Broadcast result
+            if (room) {
+                room.broadcast('game_action', { action: 'roll_result', result: escapeRoll, modifier: escapeModifier, rollType: 'escape' });
+            }
+
             gameState.tryToEscape(bot.id, total);
             // If still alive and still the bot's turn, continue
             setTimeout(() => {
@@ -285,7 +301,7 @@ class BotAI {
                     this.handleCurrentCard(bot, gameState, room);
                 }
             }, this.afterActionDelay);
-        }, 400);
+        }, ESCAPE_ROLL_ANIMATION_DELAY_MS);
 
         return true;
     }
@@ -328,15 +344,18 @@ class BotAI {
     // ===== Combat =====
     handleMonster(bot, gameState, room) {
         if (this.shouldStop(bot, gameState)) return;
-        const itemToUse = this.selectBestItem(bot, gameState);
-        if (itemToUse) {
-            let arg = null;
-            if (itemToUse.key === 'hex') {
+        const decision = this.selectBestItem(bot, gameState);
+        if (decision) {
+            const { item: itemToUse, arg: presetArg } = decision;
+            let arg = presetArg ?? null;
+            if (arg === null && itemToUse.key === 'hex') {
                 arg = this.pickHexTarget(bot, gameState);
                 if (arg) console.log(`Bot ${bot.name} targets card ${arg} with Hex`);
-            } else if (itemToUse.key === 'wind_ring') {
+            } else if (arg === null && itemToUse.key === 'wind_ring') {
                 arg = this.pickWindRingPosition(bot, gameState);
                 console.log(`Bot ${bot.name} sends monster to position ${arg} with Wind Ring`);
+            } else if (itemToUse.key === 'pirate_bomb' && arg !== null) {
+                console.log(`Bot ${bot.name} uses Pirate Bomb and sacrifices item ${arg}`);
             }
             console.log(`Bot ${bot.name} using ${itemToUse.title} before damage`);
             gameState.wantToUseItem(bot.id, itemToUse.id, arg);
@@ -348,7 +367,7 @@ class BotAI {
     }
 
     computeItemScore(item, bot, context) {
-        const { damage, lethal, heavyHit, dangerousEffect, remainingDungeon } = context;
+        const { damage, lethal, heavyHit, dangerousEffect, remainingDungeon, sacrificeValue = 0 } = context;
         let score = 0;
         const key = item.key;
         const isPassiveExec = this.passiveExecute.has(key);
@@ -406,6 +425,14 @@ class BotAI {
         // Passive executes cost nothing
         if (isPassiveExec) score += 20;
 
+        if (key === 'pirate_bomb') {
+            // Account for the cost of losing the sacrificed item
+            const lossPenalty = Math.max(0, sacrificeValue * 0.85);
+            score -= lossPenalty;
+            if (lethal) score += 90;
+            else if (heavyHit || dangerousEffect) score += 45;
+        }
+
         // Don't waste passive executes on tiny hits when we're healthy
         if (isPassiveExec && !lethal && !dangerousEffect && damage <= 2) {
             const veryHealthy = bot.hp >= Math.max(5, Math.ceil(bot.baseHP * 1.4));
@@ -419,9 +446,137 @@ class BotAI {
     }
 
     getResolveDelay(itemKey) {
-        // Extend delay for items that wait on a dice roll animation (playerRollDice waits 1000ms)
-        const extra = this.diceRollItems.has(itemKey) ? 1100 : 0;
+        // Extend delay for items that wait on a dice roll animation (playerRollDice waits ~1400ms)
+        const extra = this.diceRollItems.has(itemKey) ? 1400 : 0;
         return this.afterActionDelay + extra;
+    }
+
+    maybeUseVisionItems(bot, gameState, room) {
+        if (!gameState || !gameState.noCurrentCard() || !gameState.isMyTurn(bot.id)) return false;
+        const usable = bot.stuff.filter(item => !item.broken && ieCanUse[item.key]?.(item, bot, gameState));
+        if (!usable.length) return false;
+
+        const crystal = usable.find(i => i.key === 'crystal');
+        const divination = usable.find(i => i.key === 'divination');
+
+        // Combo: Crystal + Divination
+        // If we have both, we can guarantee an execute on a specific card.
+        if (crystal && divination) {
+            const dungeon = gameState.dungeon || [];
+            // Priority: Guardian Angel, then whatever pickPreferredDungeonCard likes
+            const guardianAngel = dungeon.find(c => c.effect === "GUARDIAN_ANGEL");
+            const preferredId = this.pickPreferredDungeonCard(bot, gameState);
+            const target = guardianAngel || dungeon.find(c => c.id === preferredId);
+
+            if (target) {
+                const power = typeof target.power === 'number' ? target.power : (target.damage || 0);
+                console.log(`Bot ${bot.name} executes Crystal + Divination combo on ${target.title}`);
+
+                // 1. Use Crystal to predict the target
+                gameState.wantToUseItem(bot.id, crystal.id, power);
+
+                setTimeout(() => {
+                    // 2. Use Divination to pick the target
+                    if (gameState.isMyTurn(bot.id)) {
+                        gameState.wantToUseItem(bot.id, divination.id, null);
+                        setTimeout(() => {
+                            // 3. Pick the specific card
+                            if (gameState.canPickSpecificCard && gameState.isMyTurn(bot.id)) {
+                                gameState.pickDungeonCard(bot.id, target.id);
+                                setTimeout(() => this.handleCurrentCard(bot, gameState, room), this.postPickDelay);
+                            }
+                        }, this.afterActionDelay);
+                    }
+                }, this.afterActionDelay);
+                return true;
+            }
+        }
+
+        // Crystal alone (if we know the next card via scouting)
+        // We prioritize this over Divination alone because it's "free" execute if we know the card.
+        const nextCard = this.peekNextDungeonCard(bot, gameState);
+        if (crystal && nextCard?.power != null) {
+            const guess = parseInt(nextCard.power, 10);
+            console.log(`Bot ${bot.name} arms Crystal with guess ${guess} (next card ${nextCard.title})`);
+            gameState.wantToUseItem(bot.id, crystal.id, guess);
+            // After crystal, we loop back to takeTurn to decide what to do next (draw or use other items)
+            setTimeout(() => {
+                if (gameState.isMyTurn(bot.id)) {
+                    this.takeTurn(bot, gameState, room);
+                }
+            }, this.afterActionDelay);
+            return true;
+        }
+
+        // Divination alone
+        if (divination) {
+            const preferredId = this.pickPreferredDungeonCard(bot, gameState);
+            if (preferredId) {
+                console.log(`Bot ${bot.name} uses ${divination.title} to pick dungeon card ${preferredId}`);
+                gameState.wantToUseItem(bot.id, divination.id, null);
+                setTimeout(() => {
+                    if (gameState.canPickSpecificCard && gameState.isMyTurn(bot.id)) {
+                        gameState.pickDungeonCard(bot.id, preferredId);
+                        setTimeout(() => this.handleCurrentCard(bot, gameState, room), this.postPickDelay);
+                    }
+                }, this.afterActionDelay);
+                return true;
+            }
+        }
+
+        // Other scouting items
+        const peekItem = usable.find(i => ['adam', 'future', 'genius_glasses'].includes(i.key));
+        if (peekItem) {
+            console.log(`Bot ${bot.name} scouts dungeon with ${peekItem.title}`);
+            gameState.wantToUseItem(bot.id, peekItem.id, null);
+            setTimeout(() => this.takeTurn(bot, gameState, room), this.afterActionDelay);
+            return true;
+        }
+
+        return false;
+    }
+
+    peekNextDungeonCard(bot, gameState) {
+        if (!gameState?.dungeon?.length) return null;
+        const nextCard = gameState.dungeon[gameState.dungeon.length - 1];
+        if (bot.knownCards && bot.knownCards.includes(nextCard.id)) {
+            return nextCard;
+        }
+        return null;
+    }
+
+    pickPreferredDungeonCard(bot, gameState) {
+        if (!gameState?.dungeon?.length) return null;
+        let bestCard = null;
+        let bestScore = -Infinity;
+        gameState.dungeon.forEach(card => {
+            const score = this.scoreDungeonCard(card, bot, gameState);
+            if (score > bestScore) {
+                bestScore = score;
+                bestCard = card;
+            }
+        });
+        return bestCard ? bestCard.id : null;
+    }
+
+    scoreDungeonCard(card, bot, gameState) {
+        if (!card) return -Infinity;
+        if (card.dungeonCardType === "event") return 1000;
+        const damage = typeof card.calculateDamage === "function"
+            ? card.calculateDamage()
+            : (card.damage ?? card.power ?? 0);
+        let score = -damage;
+
+        // Prefer monsters that match cheap executes the bot already has
+        const potentialExecute = bot.stuff.some(item =>
+            !item.broken &&
+            (this.passiveExecute.has(item.key) || this.activeExecute.has(item.key)) &&
+            ieCanUse[item.key]?.(item, bot, { ...gameState, currentCard: card, inFight: () => true })
+        );
+        if (potentialExecute) score += 35;
+
+        if (this.isDangerousEffect(card, bot)) score -= 25;
+        return score;
     }
 
     selectBestItem(bot, gameState) {
@@ -443,24 +598,52 @@ class BotAI {
         if (!usableItems.length) return null;
 
         let best = null;
-        let bestScore = 0;
+        let bestScore = -Infinity;
 
         usableItems.forEach(item => {
-            const score = this.computeItemScore(item, bot, { damage, lethal, heavyHit, dangerousEffect, remainingDungeon });
+            let arg = null;
+            let sacrificeValue = 0;
+
+            if (item.key === 'anvil') {
+                const target = this.pickBestAnvilTarget(bot, gameState, damage, lethal, heavyHit);
+                if (!target) return;
+                arg = target.item.id;
+                const score = target.score;
+                if (score > bestScore) {
+                    bestScore = score;
+                    best = { item, arg };
+                }
+                return;
+            }
+
+            if (item.key === 'pirate_bomb') {
+                const sacrifice = this.choosePirateBombTarget(bot, item);
+                if (!sacrifice) return;
+                arg = sacrifice.id;
+                sacrificeValue = this.evaluateItemValue(sacrifice);
+            }
+
+            const score = this.computeItemScore(item, bot, { damage, lethal, heavyHit, dangerousEffect, remainingDungeon, sacrificeValue });
             if (score > bestScore) {
                 bestScore = score;
-                best = item;
+                best = { item, arg };
             }
         });
+
+        if (!best || !isFinite(bestScore)) {
+            return null;
+        }
 
         // If the best option is not meaningfully better than taking the hit, bail out
         // Avoid burning executes on harmless hits when very healthy
         const veryHealthy = bot.hp >= Math.max(5, Math.ceil(bot.baseHP * 1.6));
-        const bestIsPassive = this.passiveExecute.has(best?.key);
-        const bestIsActive = this.activeExecute.has(best?.key);
-        const bestBreaks = this.breakingActiveExec.has(best?.key);
-        const bestCostsHP = (best?.hp || 0) > 0;
-        const bestHasCostlyUse = bestBreaks || bestCostsHP;
+        const bestKey = best?.item?.key;
+        const bestIsPassive = this.passiveExecute.has(bestKey);
+        const bestIsActive = this.activeExecute.has(bestKey);
+        const bestBreaks = this.breakingActiveExec.has(bestKey);
+        const bestCostsHP = (best?.item?.hp || 0) > 0;
+        const bestIsBomb = bestKey === 'pirate_bomb';
+        const bestHasCostlyUse = bestBreaks || bestCostsHP || bestIsBomb;
         if (veryHealthy && damage <= 2 && (bestIsPassive || bestIsActive) && bestHasCostlyUse) {
             bestScore -= 90; // only penalize when using up a costly execute
         }
@@ -729,6 +912,62 @@ class BotAI {
             }
         });
         return worst;
+    }
+
+    choosePirateBombTarget(bot, bomb) {
+        const candidates = bot.stuff.filter(i => i.id !== bomb.id && !i.broken);
+        if (!candidates.length) return null;
+
+        let worst = candidates[0];
+        let worstScore = this.evaluateItemValue(candidates[0]);
+        candidates.forEach(item => {
+            const value = this.evaluateItemValue(item);
+            if (value < worstScore) {
+                worstScore = value;
+                worst = item;
+            }
+        });
+        return worst;
+    }
+
+    pickBestAnvilTarget(bot, gameState, damage, lethal, heavyHit) {
+        if (!gameState?.players?.length) return null;
+        let best = null;
+        let bestScore = -Infinity;
+
+        const candidates = gameState.players
+            .filter(p => p.id !== bot.id)
+            .flatMap(p => p.stuff.filter(i => i.broken));
+
+        candidates.forEach(item => {
+            const hpGain = item.hp || 0;
+            const surviveAfterGain = bot.hp + hpGain > damage;
+            const margin = bot.hp + hpGain - damage;
+
+            let score = this.evaluateItemValue(item) * 0.6 + hpGain * 12;
+            if (this.survival.has(item.key)) score += 70;
+            if (this.passiveExecute.has(item.key) || this.activeExecute.has(item.key)) score += 35;
+
+            if (lethal) {
+                if (surviveAfterGain) {
+                    score += 220 + Math.min(40, margin * 10);
+                } else {
+                    score -= 50;
+                }
+            } else if (heavyHit) {
+                score += Math.min(120, hpGain * 15);
+            } else {
+                // Avoid spending Anvil when we're not under pressure
+                score -= 90;
+            }
+
+            if (score > bestScore) {
+                bestScore = score;
+                best = item;
+            }
+        });
+
+        return best ? { item: best, score: bestScore } : null;
     }
 
     evaluateItemValue(item) {

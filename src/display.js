@@ -280,7 +280,40 @@ export class DisplayManager {
         background.displayWidth = this.scene.sys.game.config.width;
         background.displayHeight = this.scene.sys.game.config.height;
         this.backgroundContainer.add(background);
-        this.backgroundContainer.setDepth(-100)
+        this.backgroundContainer.setDepth(-100);
+        this.createVolumeControl();
+    }
+
+    createVolumeControl() {
+        const inputId = 'donjouns-volume-control';
+        const existing = document.getElementById(inputId);
+        if (existing) {
+            existing.remove();
+        }
+
+        const input = document.createElement('input');
+        input.type = 'range';
+        input.id = inputId;
+        input.min = '0';
+        input.max = this.scene.sound.volume.toString();
+        input.step = '0.01';
+        input.value = this.scene.sound.volume.toString();
+
+        Object.assign(input.style, {
+            position: 'absolute',
+            bottom: '10px',
+            left: '10px',
+            zIndex: '1000',
+            width: '100px',
+            cursor: 'pointer'
+        });
+
+        input.addEventListener('input', (e) => {
+            this.scene.sound.volume = parseFloat(e.target.value);
+        });
+
+        document.body.appendChild(input);
+        this.volumeControl = input;
     }
 
     updateLobby(players, localPlayerId, options = {}) {

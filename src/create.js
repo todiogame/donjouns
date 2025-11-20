@@ -77,6 +77,7 @@ export function create() {
     this.drawSound = this.sound.add('draw');
     this.shuffleSound = this.sound.add('shuffle');
     this.rollDieSound = this.sound.add('rolldie');
+    this.runningSound = this.sound.add('running');
 
     this.shuffleSound.play();
 
@@ -137,6 +138,9 @@ export function create() {
                 case "animate_roll":
                     cardGame.isDiceRolling = true;
                     displayManager.updateGameUI(cardGame, localPlayerId);
+                    if (message.rollType === "escape") {
+                        this.runningSound?.play();
+                    }
                     this.rollDieSound.play();
                     displayManager.displayDice(displayManager.getPlayerPositionAroundTable(message.playerId, localPlayerId, cardGame.players));
                     break;
@@ -298,16 +302,68 @@ export function create() {
         }
     }
 
+    function cloneItemCard(cardState) {
+        if (!cardState) return null;
+        return {
+            id: cardState.id,
+            _id: cardState._id,
+            texture: cardState.texture,
+            title: cardState.title,
+            active: cardState.active,
+            color: cardState.color,
+            key: cardState.key,
+            description: cardState.description,
+            hp: cardState.hp,
+            broken: cardState.broken,
+            requireSetup: cardState.requireSetup,
+            ui: cardState.ui,
+            indication: cardState.indication,
+            canBeUsed: cardState.canBeUsed,
+            usageCounter: cardState.usageCounter
+        };
+    }
+
+    function cloneDungeonCard(cardState) {
+        if (!cardState) return null;
+        const base = {
+            id: cardState.id,
+            _id: cardState._id,
+            texture: cardState.texture,
+            title: cardState.title,
+            dungeonCardType: cardState.dungeonCardType,
+            description: cardState.description,
+            effect: cardState.effect
+        };
+        if (cardState.dungeonCardType === "monster") {
+            return {
+                ...base,
+                power: cardState.power,
+                types: Array.from(cardState.types || []),
+                damage: cardState.damage,
+                timesDealDamage: cardState.timesDealDamage,
+                specialUI: cardState.specialUI
+            };
+        }
+        if (cardState.dungeonCardType === "event") {
+            return {
+                ...base,
+                event: !!cardState.event,
+                optional: !!cardState.optional
+            };
+        }
+        return base;
+    }
+
     function copyPlayerState(playerState) {
         const player = new Player(playerState.id, playerState.name, playerState.isBot);
-        player.hand = playerState.hand; // Direct assignment
-        player.stuff = playerState.stuff; // Direct assignment
-        player.selectedCardIndex = playerState.selectedCardIndex;
+        player.hand = Array.from(playerState.hand || []).map(cloneItemCard);
+        player.stuff = Array.from(playerState.stuff || []).map(cloneItemCard);
+        player.selectedItemCardIndex = playerState.selectedItemCardIndex ?? -1;
         player.medals = playerState.medals;
         player.hp = playerState.hp;
         player.baseHP = playerState.baseHP;
         player.canPass = playerState.canPass;
-        player.defeatedMonstersPile = playerState.defeatedMonstersPile; // Direct assignment
+        player.defeatedMonstersPile = Array.from(playerState.defeatedMonstersPile || []).map(cloneDungeonCard);
         player.score = playerState.score;
         player.dead = playerState.dead;
         player.fled = playerState.fled;
@@ -316,17 +372,18 @@ export function create() {
     }
     function updateGameState(state) {
         cardGame.phase = state.phase;
-        cardGame.players = state.players.map(copyPlayerState);
+        cardGame.players = Array.from(state.players || []).map(copyPlayerState);
         console.log(`updateGameState: ${cardGame.players.length} players`);
-        cardGame.itemDeck = state.itemDeck; // Direct assignment
+        cardGame.itemDeck = Array.from(state.itemDeck || []).map(cloneItemCard);
         cardGame.currentPlayerIndex = state.currentPlayerIndex;
-        cardGame.dungeon = state.dungeon; // Direct assignment
+        cardGame.dungeon = Array.from(state.dungeon || []).map(cloneDungeonCard);
         cardGame.dungeonLength = state.dungeonLength;
-        cardGame.currentCard = state.currentCard;
+        cardGame.currentCard = cloneDungeonCard(state.currentCard);
         cardGame.canTryToEscape = state.canTryToEscape;
         cardGame.canExecute = state.canExecute;
-        cardGame.discardPile = state.discardPile; // Direct assignment
+        cardGame.discardPile = Array.from(state.discardPile || []).map(cloneDungeonCard);
         cardGame.turnNumber = state.turnNumber;
+        cardGame.trap = state.trap;
 
         if (cardGame.phase !== "END") {
             displayManager.clearEndScreenPrompt();

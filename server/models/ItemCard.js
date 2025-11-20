@@ -27,6 +27,9 @@ class ItemCard extends Schema {
     break(player, game) {
         this.broken = true
         if (this.hp) player.loseHP(game, this.hp)
+        if (game && typeof game.handleItemBroken === "function") {
+            game.handleItemBroken(player, this, { ignoreIfCurrentActivation: true });
+        }
     }
     fix(player, game) {
         this.broken = false

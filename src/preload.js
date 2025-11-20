@@ -66,6 +66,7 @@ export function preload() {
         this.load.audio('draw', 'assets/sounds/effects/draw.wav');
         this.load.audio('shuffle', 'assets/sounds/effects/shuffle.wav');
         this.load.audio('rolldie', 'assets/sounds/effects/rolldie.wav');
+        this.load.audio('running', 'assets/sounds/effects/running.mp3');
         this.load.audio('healing-magic', 'assets/sounds/effects/healing-magic.mp3');
 
 
