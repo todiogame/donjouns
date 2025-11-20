@@ -11,7 +11,7 @@ class BotAI {
         this.passiveExecute = new Set([
             'hammer', 'pickaxe', 'sacred_book', 'rat_lich', 'pest', 'slayer_shield',
             'lich_bane', 'golem_shield', 'lich_skull', 'lich_armor', 'red_torch',
-            'blue_torch', 'rat_ring', 'fire_ring', 'ocean_ring', 'sorcerer_hat',
+            'blue_torch', 'rat_ring', 'fire_ring', 'ocean_ring', 'sorcerer_hat', 'chainsaw',
             'magic_ring', 'katana', '13_16', 'noob_cape', 'noob_hat', 'noob_amu'
         ]);
 
@@ -23,7 +23,7 @@ class BotAI {
         // Active executes that break on use (prefer to save when damage is low)
         this.breakingActiveExec = new Set([
             'bard', 'glass_axe', 'bahn', 'totem', 'whip', 'boomerang',
-            'midas', 'dragon_mask', 'shells', 'chainsaw', 'laser', 'pizza', 'axe'
+            'midas', 'dragon_mask', 'shells', 'laser', 'pizza', 'axe'
         ]);
         // Passive executes that still break on use
         this.breakingPassiveExec = new Set(['noob_cape']);
@@ -31,7 +31,7 @@ class BotAI {
         this.activeExecute = new Set([
             'bard', 'glass_axe', 'bahn', 'totem', 'whip', 'boomerang',
             'midas', 'dragon_mask', 'shells', 'pirate_pistol', 'mage_robe',
-            'chainsaw', 'laser', 'pizza', 'eternity_leaf', 'axe'
+            'laser', 'pizza', 'eternity_leaf', 'axe'
         ]);
 
         this.survival = new Set(['fairy_potion', 'dragon_potion', 'noob_ring', 'aegis', 'mana_potion']);
@@ -46,6 +46,9 @@ class BotAI {
         this.dangerousEffects = new Set([
             'SLEEPING_DRAGON', 'GLUTTONOUS_OOZE', 'RAT_RIDER', 'BIG_DISGUSTING_RAT'
         ]);
+
+        // Items whose effects resolve after a dice animation (needs a longer wait)
+        this.diceRollItems = new Set(['cake', 'box', 'dragon_shield', 'shells']);
     }
 
     shouldStop(bot, gameState) {
@@ -224,6 +227,7 @@ class BotAI {
 
         const scoreLead = this.computeScoreLead(bot, gameState);
         const remainingDeck = gameState.dungeon.length;
+        const otherLiving = gameState.players.filter(p => p.id !== bot.id && !p.dead);
         const opponents = gameState.players.filter(p =>
             p.id !== bot.id &&
             typeof p.inDungeon === "function" &&
@@ -249,6 +253,12 @@ class BotAI {
         const scoreSafe = scoreLead > 0 && (scoreLead >= remainingDeck || (shortDeck && scoreLead >= opponents.length));
         const opponentsExhausted = opponents.length === 0 || weakestOpponentHP <= 2;
         const winningEscape = scoreSafe && (shortDeck || opponentsExhausted);
+
+        // If every other player is dead, fleeing guarantees the win – stop risking extra draws.
+        if (otherLiving.length === 0) {
+            console.log(`Bot ${bot.name} escapes as sole survivor.`);
+            return true;
+        }
 
         if (aheadOfEscapedPlayers && opponents.length === 0) {
             console.log(`Bot ${bot.name} escapes to beat escaped leaderboard (${myScore} vs ${bestFledScore}).`);
@@ -320,7 +330,8 @@ class BotAI {
             }
             console.log(`Bot ${bot.name} using ${itemToUse.title} before damage`);
             gameState.wantToUseItem(bot.id, itemToUse.id, arg);
-            setTimeout(() => this.handleMonsterAfterItem(bot, gameState, room), this.afterActionDelay);
+            const resolveDelay = this.getResolveDelay(itemToUse.key);
+            setTimeout(() => this.handleMonsterAfterItem(bot, gameState, room), resolveDelay);
         } else {
             this.handleMonsterAfterItem(bot, gameState, room);
         }
@@ -374,10 +385,22 @@ class BotAI {
         // Passive executes cost nothing
         if (isPassiveExec) score += 20;
 
+        // Don't waste passive executes on tiny hits when we're healthy
+        if (isPassiveExec && !lethal && !dangerousEffect && damage <= 2) {
+            const veryHealthy = bot.hp >= Math.max(5, Math.ceil(bot.baseHP * 1.4));
+            score -= veryHealthy ? 160 : 110;
+        }
+
         // Cheap executes on low power monsters: slightly prefer saving unless dangerous
         if ((isPassiveExec || isActiveExec) && damage <= 2 && !dangerousEffect) score -= 10;
 
         return score;
+    }
+
+    getResolveDelay(itemKey) {
+        // Extend delay for items that wait on a dice roll animation (playerRollDice waits 1000ms)
+        const extra = this.diceRollItems.has(itemKey) ? 1100 : 0;
+        return this.afterActionDelay + extra;
     }
 
     selectBestItem(bot, gameState) {

@@ -1138,6 +1138,8 @@ export class DisplayManager {
 
     displayMonstersPiles(player, isPlayer, position) {
         const pileLength = player.defeatedMonstersPile.length;
+        const topMonster = pileLength ? player.defeatedMonstersPile[pileLength - 1] : null;
+        const pileTexture = topMonster?.texture || 'back_dungeon';
         const desiredWidth = 60;
         const desiredHeight = 84;
         const scaleX = desiredWidth / 750;
@@ -1155,7 +1157,7 @@ export class DisplayManager {
             yPosition = 130; // Moved closer to the middle
         }
 
-        const monsterPileImage = this.scene.add.image(xPosition, yPosition, 'back_dungeon')
+        const monsterPileImage = this.scene.add.image(xPosition, yPosition, pileTexture)
             .setOrigin(0.5, 0.5)
             .setScale(scaleX, scaleY);
 

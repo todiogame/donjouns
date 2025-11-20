@@ -390,7 +390,6 @@ const ieClick = {
             if (player.inDungeon()) {
                 h.execute(player, game);
             }
-            item.break(player, game);
         }
     },
     crystal: (item, player, game, arg) => {
