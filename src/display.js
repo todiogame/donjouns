@@ -242,6 +242,14 @@ export class DisplayManager {
         this.endScreenCallback = null; // Callback when moving to the end screen
         this.endScreenReady = false; // True once final scores are available
         this.endScreenRequested = false; // True if player already asked to see the end screen
+        this.pileStates = new Map(); // Track pile sizes/textures to trigger animations
+        this.discardState = { length: 0, topTexture: null }; // Track discard pile for animation
+        this.currentCardDisplayInfo = {
+            x: 650,
+            y: 100,
+            scaleX: 125 / 750,
+            scaleY: 175 / 1050
+        };
     }
 
     displayTitle(message, duration, onComplete) {
@@ -839,6 +847,12 @@ export class DisplayManager {
                 .setRotation(((game.currentCard.id * 7 % 12) - 6) * 0.002 * Math.PI)
                 .setScale(scaleX, scaleY)
                 .setInteractive({ useHandCursor: true, pixelPerfect: true, alphaTolerance: 1 });
+            this.currentCardDisplayInfo = {
+                x: cardSprite.x,
+                y: cardSprite.y + desiredHeight / 2,
+                scaleX,
+                scaleY
+            };
 
             // Add hover effect with smooth transition
             cardSprite.on('pointerover', () => {
@@ -915,24 +929,44 @@ export class DisplayManager {
         const scaleX = desiredWidth / 750;
         const scaleY = desiredHeight / 1050;
         const numCards = game.discardPile.length;
+        const topCard = numCards ? game.discardPile[numCards - 1] : null;
+        const pileTexture = topCard?.texture || "back_dungeon";
         let cardSprite;
 
-        if (numCards > 0) {
-            for (let i = 0; i < numCards; i++) {
-                cardSprite = this.scene.add.image(800 + 0.2 * i, 100 - 0.1 * i, "back_dungeon") // moved to top
-                    .setOrigin(0.5, 0.5)
-                    .setRotation(((i * 7 % 12) - 6) * 0.002 * Math.PI)
-                    .setScale(scaleX, scaleY);
-            }
+        // Base stack (light stagger)
+        for (let i = 0; i < Math.min(numCards, 3); i++) {
+            cardSprite = this.scene.add.image(800 + 0.5 * i, 100 - 0.5 * i, pileTexture)
+                .setOrigin(0.5, 0.5)
+                .setRotation(((i * 7 % 12) - 6) * 0.002 * Math.PI)
+                .setScale(scaleX, scaleY)
+                .setTint(0x777777);
         }
-        const discardPileRect = this.scene.add.rectangle(800, 100, desiredWidth, desiredHeight, 0x808080, 0.5) // moved to top
-            .setOrigin(0.5, 0.5)
-            .setInteractive({ useHandCursor: true });
+        if (!cardSprite) {
+            cardSprite = this.scene.add.image(800, 100, pileTexture)
+                .setOrigin(0.5, 0.5)
+                .setScale(scaleX, scaleY)
+                .setTint(0x777777);
+        }
 
+        // Overlay to keep greyed look
+        this.scene.add.rectangle(800, 100, desiredWidth, desiredHeight, 0x808080, 0.35).setOrigin(0.5, 0.5);
         this.scene.add.text(800, 100, 'DISCARD', { fontSize: '16px', color: '#FFFFFF' })
             .setOrigin(0.5, 0.5);
 
-        discardPileRect.on('pointerdown', () => {
+        // Animate arrival on new discard
+        const prevState = this.discardState || { length: 0, topTexture: null };
+        const hasNewCard = numCards && (numCards > prevState.length || topCard?.texture !== prevState.topTexture);
+        if (hasNewCard && topCard?.texture) {
+            this.animateCardToDiscard(
+                topCard.texture,
+                { x: 800, y: 100 },
+                { scaleX, scaleY }
+            );
+        }
+        this.discardState = { length: numCards, topTexture: topCard?.texture || null };
+
+        cardSprite.setInteractive({ useHandCursor: true });
+        cardSprite.on('pointerdown', () => {
             this.displayScoutInterface(game.discardPile);
         });
     }
@@ -1167,10 +1201,62 @@ export class DisplayManager {
             fontStyle: 'bold'
         }).setOrigin(0.5, 0.5);
 
+        const prevState = this.pileStates.get(player.id) || { length: 0, topTexture: null };
+        const hasNewCard = pileLength && (pileLength > prevState.length || topMonster?.texture !== prevState.topTexture);
+        if (hasNewCard && topMonster?.texture) {
+            this.animateMonsterToPile(
+                topMonster.texture,
+                { x: xPosition, y: yPosition },
+                { scaleX, scaleY }
+            );
+        }
+        this.pileStates.set(player.id, { length: pileLength, topTexture: topMonster?.texture || null });
+
 
         monsterPileImage.setInteractive({ useHandCursor: true });
         monsterPileImage.on('pointerdown', () => {
             this.displayScoutInterface(player.defeatedMonstersPile);
+        });
+    }
+
+    animateMonsterToPile(texture, targetPosition, targetScale) {
+        const startInfo = this.currentCardDisplayInfo || { x: 650, y: 100, scaleX: 125 / 750, scaleY: 175 / 1050 };
+        const sprite = this.scene.add.image(startInfo.x, startInfo.y, texture)
+            .setOrigin(0.5, 0.5)
+            .setScale(startInfo.scaleX, startInfo.scaleY)
+            .setDepth(5);
+
+        this.scene.tweens.add({
+            targets: sprite,
+            x: targetPosition.x,
+            y: targetPosition.y,
+            scaleX: targetScale.scaleX,
+            scaleY: targetScale.scaleY,
+            angle: Phaser.Math.Between(-10, 10),
+            duration: 450,
+            ease: 'Cubic.easeInOut',
+            onComplete: () => sprite.destroy()
+        });
+    }
+
+    animateCardToDiscard(texture, targetPosition, targetScale) {
+        const startInfo = this.currentCardDisplayInfo || { x: 650, y: 100, scaleX: 125 / 750, scaleY: 175 / 1050 };
+        const sprite = this.scene.add.image(startInfo.x, startInfo.y, texture)
+            .setOrigin(0.5, 0.5)
+            .setScale(startInfo.scaleX, startInfo.scaleY)
+            .setTint(0x777777)
+            .setDepth(5);
+
+        this.scene.tweens.add({
+            targets: sprite,
+            x: targetPosition.x,
+            y: targetPosition.y,
+            scaleX: targetScale.scaleX,
+            scaleY: targetScale.scaleY,
+            angle: Phaser.Math.Between(-10, 10),
+            duration: 450,
+            ease: 'Cubic.easeInOut',
+            onComplete: () => sprite.destroy()
         });
     }
 
