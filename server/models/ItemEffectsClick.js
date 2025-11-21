@@ -429,8 +429,15 @@ const ieClick = {
         }
     },
     future: (item, player, game) => {
-        if (!item.broken && game.noCurrentCard()) {
+        if (!item.broken && game.noCurrentCard() && !player.hasDrawnThisTurn) {
             h.scout(game, player, 1, 2);
+            if (!Array.isArray(player.usedItemsThisTurn)) player.usedItemsThisTurn = [];
+            if (!player.usedItemsThisTurn.includes(item.key)) {
+                player.usedItemsThisTurn.push(item.key);
+            }
+            if (!player.alreadyUsedItems.includes(item.key)) {
+                player.alreadyUsedItems.push(item.key);
+            }
         }
     },
     heal: (item, player, game) => {
@@ -642,7 +649,15 @@ const ieCanUse = {
     lich_armor: (item, player, game) => !game.trap && !item.broken && game.inFight() && h.currentCardHasType(game, "Lich"),
     red_torch: (item, player, game) => !game.trap && !item.broken && game.inFight() && (h.currentCardHasType(game, "Goblin") || h.currentCardHasType(game, "Skeleton") || h.currentCardHasType(game, "Orc")),
     blue_torch: (item, player, game) => !game.trap && !item.broken && game.inFight() && game.currentCard.power <= 2,
-    future: (item, player, game) => !item.broken && !player.lastDamageTaken && game.noCurrentCard(),
+    future: (item, player, game) => {
+        const usedThisTurn = Array.isArray(player.usedItemsThisTurn) && player.usedItemsThisTurn.includes(item.key);
+        return !item.broken
+            && !player.lastDamageTaken
+            && game.noCurrentCard()
+            && !player.hasDrawnThisTurn
+            && !usedThisTurn
+            && !player.alreadyUsedItems.includes(item.key);
+    },
     rat_ring: (item, player, game) => !game.trap && !item.broken && game.inFight() && h.currentCardHasType(game, "Rat"),
     crystal: (item, player, game) => !game.trap && !item.broken && !player.alreadyUsedItems.includes(item.key),
     whip: (item, player, game) => !game.trap && !item.broken && game.inFight(),

@@ -107,9 +107,10 @@ function scout(game, player, nbCards, position = 0) {
 }
 
 function selectDungeonCard(game, player, cards = game.dungeon) {
+    // Allow specific card selection for both players and bots
+    game.canPickSpecificCard = true;
     const targetClient = game.room.clients.find(c => c.id === player.id);
     if (targetClient) {
-        game.canPickSpecificCard = true
         targetClient.send("game_action", { action: "scout_pick", cards });
     }
 }

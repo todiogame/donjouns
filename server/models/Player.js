@@ -27,6 +27,9 @@ class Player extends Schema {
         this.fled = false;
         this.turnNumber = 0;
         this.monstersBeatenThisTurn = 0;
+        this.score_blocked = false;
+        this.usedItemsThisTurn = [];
+        this.hasDrawnThisTurn = false;
 
         this.lastDamageTaken = 0;
         this.lastDamageTaken = 0;
@@ -81,6 +84,13 @@ class Player extends Schema {
         this.hp += heal
     }
 
+    applyMedalLossOnDeath(game) {
+        if (!this.medals) return;
+        const hasMedalImmunity = this.stuff.some(item => item.key === "totem" && !item.broken);
+        if (hasMedalImmunity) return;
+        this.medals = Math.max(0, this.medals - 1);
+    }
+
     setHP(value) {
         this.hp = value
     }
@@ -122,6 +132,8 @@ class Player extends Schema {
     }
 
     die(game) {
+        if (this.dead) return;
+        this.applyMedalLossOnDeath(game);
         this.calculateScore(game)
         console.log(this.name + "died! Score was " + this.score)
         this.dead = true;

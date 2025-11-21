@@ -177,15 +177,37 @@ class GameController {
                 this.handleEscapeRoll(client);
                 break;
             case "accept_event":
-                this.state.dealWithEvent(client.sessionId, true, message?.arg);
-                this.triggerBotTurnIfNeeded();
+            {
+                const result = this.state.dealWithEvent(client.sessionId, true, message?.arg);
+                if (result instanceof Promise) {
+                    result
+                        .then(() => this.triggerBotTurnIfNeeded())
+                        .catch(err => console.error("Error while accepting event:", err));
+                } else {
+                    this.triggerBotTurnIfNeeded();
+                }
                 break;
+            }
             case "decline_event":
-                this.state.dealWithEvent(client.sessionId, false, message?.arg);
-                this.triggerBotTurnIfNeeded();
+            {
+                const result = this.state.dealWithEvent(client.sessionId, false, message?.arg);
+                if (result instanceof Promise) {
+                    result
+                        .then(() => this.triggerBotTurnIfNeeded())
+                        .catch(err => console.error("Error while declining event:", err));
+                } else {
+                    this.triggerBotTurnIfNeeded();
+                }
+                break;
+            }
+            case "soulstorm_pick":
+                this.state.submitSoulstormChoice(client.sessionId, message?.cardId ?? message?.arg);
                 break;
             case "add_bot":
                 this.addBot(client.sessionId);
+                break;
+            case "replay":
+                this.handleReplayRequest(client.sessionId);
                 break;
         }
     }
@@ -250,6 +272,19 @@ class GameController {
                 this.triggerBotTurnIfNeeded();
             }, ESCAPE_ROLL_ANIMATION_DELAY_MS);
         }
+    }
+
+    handleReplayRequest(clientId) {
+        if (this.state.phase !== "END") {
+            return;
+        }
+        const requester = this.state.findPlayerById(clientId);
+        if (!requester) {
+            return;
+        }
+        this.state.resetForNextGame(this.room.allItemsCards || []);
+        this.gameStarted = false;
+        this.currentMode = null;
     }
 }
 

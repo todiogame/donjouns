@@ -86,7 +86,15 @@ export function create() {
     displayManager = new DisplayManager(this);
     displayManager.initializeBackground();
 
-    const openEndScreen = () => displayManager.updateEndUI(cardGame.winner, cardGame.finalPlayers, localPlayerId);
+    const openEndScreen = () => displayManager.updateEndUI(cardGame.winner, cardGame.finalPlayers, localPlayerId, {
+        onReplay: () => {
+            if (room) {
+                room.send("replay");
+            } else {
+                this.scene.restart();
+            }
+        }
+    });
 
     const setupRoomListeners = (roomInstance) => {
         room = roomInstance;
@@ -163,6 +171,16 @@ export function create() {
                     const callback = (id) => room.send("scout_pick", { arg: id });
                     displayManager.displayScoutInterface(message.cards, callback);
                     break;
+                case "soulstorm_pick": {
+                    const cards = message.cards || [];
+                    if (cards.length === 1) {
+                        room.send("soulstorm_pick", { cardId: cards[0].id });
+                        break;
+                    }
+                    const pickCard = (id) => room.send("soulstorm_pick", { cardId: id });
+                    displayManager.displayScoutInterface(cards, pickCard);
+                    break;
+                }
                 default:
                     console.error("Unknown game action:", message.action);
                     break;

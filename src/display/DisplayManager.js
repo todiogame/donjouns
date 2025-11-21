@@ -29,6 +29,17 @@ export class DisplayManager {
         });
     }
 
+    formatPlayerName(player, options = {}) {
+        if (!player) return '';
+        const { includeMedalCount = false } = options;
+        const medalCount = Math.max(0, player.medals || 0);
+        const medalEmojis = medalCount ? ` ${'🏅'.repeat(medalCount)}` : '';
+        const medalCountLabel = includeMedalCount
+            ? ` (${medalCount} Médaille${medalCount > 1 ? 's' : ''})`
+            : '';
+        return `${player.name || 'Joueur'}${medalEmojis}${medalCountLabel}`;
+    }
+
     displayTitle(message, duration, onComplete) {
         const titleScene = this.scene.scene?.get('TitleScene');
         titleScene?.displayTitle(message, duration, onComplete);
@@ -409,7 +420,7 @@ export class DisplayManager {
         this.gameInterface.showFledOverlay(player, playerPosition);
     }
 
-    updateEndUI(winner, finalPlayers, localPlayerId) {
+    updateEndUI(winner, finalPlayers, localPlayerId, options = {}) {
         this.clearEndScreenPrompt();
         this.clearPreviousDisplay();
 
@@ -431,7 +442,8 @@ export class DisplayManager {
         let yPos = 200;
         finalPlayers.forEach((player, index) => {
             const isLocalPlayer = player.id === localPlayerId;
-            const playerText = `#${index + 1} - ${player.name} : ${player.score} points, ${player.defeatedMonstersPile.length} monstres tues ${player.id === winner?.id ? '??' : ''}`;
+            const playerLabel = this.formatPlayerName(player, { includeMedalCount: true });
+            const playerText = `#${index + 1} - ${playerLabel} : ${player.score} points, ${player.defeatedMonstersPile.length} monstres tues${player.id === winner?.id ? ' 🏆' : ''}`;
             const playerDisplay = this.scene.add.text(this.scene.cameras.main.centerX, yPos, playerText, {
                 fontSize: '32px',
                 fill: isLocalPlayer ? '#00ff00' : '#ffffff',
@@ -448,7 +460,7 @@ export class DisplayManager {
         });
 
         if (winner) {
-            const winnerText = `${winner.name} remporte la partie !`;
+            const winnerText = `${this.formatPlayerName(winner, { includeMedalCount: true })} remporte la partie !`;
             const winnerDisplay = this.scene.add.text(this.scene.cameras.main.centerX, yPos + 50, winnerText, {
                 fontSize: '36px',
                 fill: '#ffdd00',
@@ -470,7 +482,11 @@ export class DisplayManager {
         }).setOrigin(0.5).setInteractive().setAlpha(0);
 
         replayButton.on('pointerdown', () => {
-            this.scene.scene.restart();
+            if (typeof options.onReplay === 'function') {
+                options.onReplay();
+            } else {
+                this.scene.scene.restart();
+            }
         });
 
         this.scene.tweens.add({

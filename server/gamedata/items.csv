@@ -81,7 +81,7 @@ Duplication,Code,id,Title,Commentaire,Active,Color,Image,Key,Description,Title_e
 1,1,76,Armure du Roi Liche,,0,5,donjon\v1\items\lich_armor.png,lich_armor,<b>PV + 3</b>\n<b>Exécutez</b> les <b>Liches</b>,,
 1,1,77,Torche rouge,torche,0,1,donjon\v1\items\red_torch.png,red_torch,"<b>Exécutez</b> les <b>Gobelins</b>, les <b>Squelettes</b> et les <b>Orcs</b>.",,
 1,1,78,Torche bleue,,0,3,donjon\v1\items\blue_torch.png,blue_torch,<b>Exécutez</b> les monstres de <b>puissance 2 et moins</b>.,,
-1,,79,Journal du futur,,0,5,donjon\v1\items\future.png,future,"Au début de votre tour, vous pouvez regarder secrètement la troisième carte du Donjon.",,
+1,,79,Journal du futur,,0,5,donjon\v1\items\future.png,future,"Avant de piocher, vous pouvez regarder secrètement la troisième carte du Donjon. Une fois par tour.",,
 1,1,80,Anneau des surmulots,,0,5,donjon\v1\items\rat_ring.png,rat_ring,<b>Exécutez</b> les <b>Rats</b>.\nGagnez <b>3 PV</b> à chaque fois.,,
 1,,81,Boule de cristal,,0,4,donjon\v1\items\crystal.png,crystal,"Avant de piocher, annoncez un <b>nombre</b>. Si c'est un monstre de la puissance annoncée, <b>éxecutez-le</b>.",,
 1,1,82,Armure Damnée,,0,1,donjon\v1\items\damned_plate.png,damned_plate,<b>PV + 7\nPoints de Victoire -1</b>,,

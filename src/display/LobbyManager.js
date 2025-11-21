@@ -22,7 +22,8 @@ export class LobbyManager {
         const width = this.scene.sys.game.config.width;
         const height = this.scene.sys.game.config.height;
         const isHost = hostId === localPlayerId;
-        const hostName = playerList.find(p => p.id === hostId)?.name || 'l\'hôte';
+        const hostPlayer = playerList.find(p => p.id === hostId);
+        const hostName = hostPlayer ? this.displayManager.formatPlayerName(hostPlayer) : "l'hôte";
         const missingPlayers = Math.max(0, minPlayersToStart - playerList.length);
         const readyToStart = missingPlayers === 0;
 
@@ -60,7 +61,8 @@ export class LobbyManager {
             if (isPlayerHost) suffix += ' (Host)';
             if (isLocal) suffix += suffix ? ' / Toi' : ' (Toi)';
 
-            const playerText = this.scene.add.text(width / 2, listStartY + index * 32, `${player.name || `Joueur ${index + 1}`}${suffix}`, {
+            const displayName = this.displayManager.formatPlayerName(player);
+            const playerText = this.scene.add.text(width / 2, listStartY + index * 32, `${displayName}${suffix}`, {
                 fontSize: '24px',
                 fill: isLocal ? '#00ffcc' : '#ffffff'
             }).setOrigin(0.5);

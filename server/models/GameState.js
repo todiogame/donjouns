@@ -44,9 +44,13 @@ class GameState extends Schema {
 
         this.nextMonsterCondition = null;
         this.nextMonsterAction = null;
+        this.nextMonsterTargetId = null;
 
         this.currentItemAction = null;
         this.canPickSpecificCard = false; // allow to choose the card id to pick in the dungeon
+
+        // Runtime-only helpers (not synced through schema)
+        this.pendingSoulstormChoices = new Map();
     }
 
     findPlayerById(id) {
@@ -63,6 +67,23 @@ class GameState extends Schema {
 
     clearCurrentItemAction() {
         this.currentItemAction = null;
+    }
+
+    submitSoulstormChoice(playerId, cardId) {
+        if (!this.pendingSoulstormChoices || !this.pendingSoulstormChoices.size) return null;
+        const pending = this.pendingSoulstormChoices.get(playerId);
+        if (!pending) return null;
+        this.pendingSoulstormChoices.delete(playerId);
+
+        if (pending.timeout) {
+            clearTimeout(pending.timeout);
+        }
+
+        const player = this.findPlayerById(playerId);
+        const card = player?.defeatedMonstersPile?.find(c => c.id == cardId);
+        const resolved = card || (typeof pending.fallback === "function" ? pending.fallback(player) : null);
+        pending.resolve(resolved);
+        return resolved;
     }
 
     isCurrentItemAction(player, item) {
@@ -158,6 +179,63 @@ class GameState extends Schema {
         const bot = new Player(botId, botName, true);
         this.addPlayer(bot);
         console.log("Bot added:", bot.id, bot.name);
+    }
+
+    resetPlayersForNextGame() {
+        this.players.forEach(player => {
+            player.hand.clear();
+            player.stuff.clear();
+            player.selectedItemCardIndex = -1;
+            player.hp = 0;
+            player.baseHP = 3;
+            player.canPass = false;
+            player.defeatedMonstersPile.clear();
+            player.score = 0;
+            player.always_count = false;
+            player.dead = false;
+            player.fled = false;
+            player.turnNumber = 0;
+            player.monstersBeatenThisTurn = 0;
+            player.lastDamageTaken = 0;
+            player.alreadyUsedItems = [];
+            player.usedItemsThisTurn = [];
+            player.hasDrawnThisTurn = false;
+            player.startGame = false;
+            player.score_blocked = false;
+            player.knownCards = [];
+        });
+    }
+
+    resetForNextGame(allItemsCards = []) {
+        if (this.pendingSoulstormChoices?.size) {
+            this.pendingSoulstormChoices.forEach(entry => {
+                if (entry.timeout) clearTimeout(entry.timeout);
+            });
+        }
+        this.phase = "WAITING";
+        this.currentPlayerIndex = null;
+        this.dungeon.clear();
+        this.dungeonLength = 0;
+        this.currentCard = null;
+        this.canTryToEscape = true;
+        this.canExecute = false;
+        this.trap = false;
+        this.discardPile.clear();
+        this.nextMonsterCondition = null;
+        this.nextMonsterAction = null;
+        this.nextMonsterTargetId = null;
+        this.currentItemAction = null;
+        this.canPickSpecificCard = false;
+        this.pendingSoulstormChoices = new Map();
+
+        const itemsSource = allItemsCards.length ? allItemsCards : (this.room?.allItemsCards || []);
+        if (itemsSource.length) {
+            this.initializeItemsDeck(itemsSource);
+        } else {
+            this.itemDeck.clear();
+        }
+
+        this.resetPlayersForNextGame();
     }
 
     removePlayer(playerId) {
@@ -379,6 +457,7 @@ class GameState extends Schema {
         // Logic to handle picking a dungeon card
         if (this.dungeon.length && this.noCurrentCard() && this.isMyTurn(playerId)) {
             player.alreadyUsedItems = [];
+            player.hasDrawnThisTurn = true;
             this.canTryToEscape = false;
             if (cardId && this.canPickSpecificCard)
                 this.currentCard = h.pickSpecificCard(this, cardId);
@@ -396,6 +475,11 @@ class GameState extends Schema {
                 iePick[item.key]?.(item, player, this);
             });
             if (this.inFight()) {
+                if (this.nextMonsterCondition && this.nextMonsterAction) {
+                    this.nextMonsterTargetId = this.currentCard.id;
+                } else {
+                    this.nextMonsterTargetId = null;
+                }
                 this.currentCard.damage = this.currentCard.calculateDamage()
                 console.log(`${playerId} picked dungeon card ${this.currentCard.title} :  ${this.currentCard.damage} damage!`);
                 this.givePromptExecuteNextMonster()
@@ -443,12 +527,16 @@ class GameState extends Schema {
         if (this.dungeon.length <= 0) {
             this.endGame()
         }
+        const resolvedCardId = this.currentCard?.id || null;
         this.currentCard = null;
         player.canPass = true;
         this.canTryToEscape = true;
         this.canExecute = false;
-        this.nextMonsterCondition = null;
-        this.nextMonsterAction = null;
+        if (this.nextMonsterTargetId && this.nextMonsterTargetId === resolvedCardId) {
+            this.nextMonsterCondition = null;
+            this.nextMonsterAction = null;
+            this.nextMonsterTargetId = null;
+        }
         this.trap = false;
         this.updateItemsUsability();
     }
@@ -457,8 +545,6 @@ class GameState extends Schema {
         if (this.currentCard.dungeonCardType === "event") {
             let player = this.findPlayerById(playerId)
             this.canExecute = false;
-            this.nextMonsterCondition = null;
-            this.nextMonsterAction = null;
             this.trap = false;
 
             if (isAccepted)
@@ -493,6 +579,7 @@ class GameState extends Schema {
             this.canExecute = false;
             this.nextMonsterCondition = null;
             this.nextMonsterAction = null;
+            this.nextMonsterTargetId = null;
             this.updateItemsUsability();
         }
     }
@@ -528,6 +615,7 @@ class GameState extends Schema {
 
         this.nextMonsterCondition = null;
         this.nextMonsterAction = null;
+        this.nextMonsterTargetId = null;
         this.canExecute = false;
         this.trap = false;
 
@@ -552,6 +640,9 @@ class GameState extends Schema {
         if (foundPlayerInDungeon) {
             newPlayer.turnNumber++
             newPlayer.canPass = false;
+            newPlayer.alreadyUsedItems = [];
+            newPlayer.usedItemsThisTurn = [];
+            newPlayer.hasDrawnThisTurn = false;
             this.canTryToEscape = true;
 
 
@@ -609,6 +700,7 @@ class GameState extends Schema {
             }
 
             player.alreadyUsedItems = [];
+            player.hasDrawnThisTurn = true;
             this.canTryToEscape = false; // lock further escape attempts until this card is resolved
 
             this.currentCard = this.dungeon.pop();
@@ -700,6 +792,9 @@ class GameState extends Schema {
         this.currentPlayerIndex = preferredIndex >= 0 ? preferredIndex : randomIndex;
         const currentPlayer = this.players[this.currentPlayerIndex];
         currentPlayer.turnNumber++;
+        currentPlayer.alreadyUsedItems = [];
+        currentPlayer.usedItemsThisTurn = [];
+        currentPlayer.hasDrawnThisTurn = false;
 
         console.log("donjon set up ok")
     }
@@ -778,10 +873,13 @@ class GameState extends Schema {
                 winner = tiedPlayers[0];
             }
 
+            if (winner) {
+                winner.medals += 1;
+            }
 
             finalPlayers.forEach((player, index) => {
                 const medal = player === winner ? "MEDAILLE" : "";
-                console.log(`${player.name} : ${player.score} points, PV restant ${player.hp}. ${medal}`);
+                console.log(`${player.name} : ${player.score} points, PV restant ${player.hp}. ${medal} (Total medals: ${player.medals})`);
             });
 
             console.log("\n");

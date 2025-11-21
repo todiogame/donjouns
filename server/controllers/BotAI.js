@@ -770,13 +770,19 @@ class BotAI {
         if (this.shouldStop(bot, gameState)) return;
         const decision = this.decideEvent(bot, gameState);
         console.log(`Bot ${bot.name} ${decision.accept ? 'accepts' : 'declines'} event ${gameState.currentCard.title}`);
-        gameState.dealWithEvent(bot.id, decision.accept, decision.arg ?? null);
-
-        setTimeout(() => {
-            if (gameState.isMyTurn(bot.id)) {
-                this.autoPlayDungeon(bot, gameState, room);
-            }
-        }, this.afterActionDelay + 200);
+        const resume = () => {
+            setTimeout(() => {
+                if (gameState.isMyTurn(bot.id)) {
+                    this.autoPlayDungeon(bot, gameState, room);
+                }
+            }, this.afterActionDelay + 200);
+        };
+        const result = gameState.dealWithEvent(bot.id, decision.accept, decision.arg ?? null);
+        if (result instanceof Promise) {
+            result.then(resume).catch(err => console.error(`Bot ${bot.name} failed to resolve event:`, err));
+        } else {
+            resume();
+        }
     }
 
     decideEvent(bot, gameState) {

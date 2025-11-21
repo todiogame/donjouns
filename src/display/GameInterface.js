@@ -104,7 +104,7 @@ export class GameInterface {
     }
 
     displayStuff(stuff, isPlayer, position, player, game) {
-        const playerName = player.name;
+        const playerName = this.displayManager.formatPlayerName(player);
         this.scene.playcardSound.play();
 
         const maxItemsPerRow = 6;
