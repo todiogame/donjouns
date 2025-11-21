@@ -485,6 +485,10 @@ class GameState extends Schema {
                 this.givePromptExecuteNextMonster()
             } else if (this.inEvent()) {
                 console.log('picked event')
+                this.nextMonsterCondition = null;
+                this.nextMonsterAction = null;
+                this.nextMonsterTargetId = null;
+                this.canExecute = false;
             }
             this.updateItemsUsability();
         }
@@ -720,12 +724,22 @@ class GameState extends Schema {
                 this.givePromptExecuteNextMonster();
             } else if (this.inEvent()) {
                 console.log('picked event while attempting to escape');
+                // Clear next monster execution state as the draw was not a monster
+                this.nextMonsterCondition = null;
+                this.nextMonsterAction = null;
+                this.nextMonsterTargetId = null;
+                this.canExecute = false;
             }
         }
 
         // Drawing an event causes the escape attempt to fail
         if (this.inEvent()) {
             console.log("escape roll failed (event drawn)");
+            // Clear next monster execution state as the draw was not a monster
+            this.nextMonsterCondition = null;
+            this.nextMonsterAction = null;
+            this.nextMonsterTargetId = null;
+            this.canExecute = false;
             this.updateItemsUsability();
             return;
         }

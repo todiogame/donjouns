@@ -429,8 +429,8 @@ class BotAI {
             // Account for the cost of losing the sacrificed item
             const lossPenalty = Math.max(0, sacrificeValue * 0.85);
             score -= lossPenalty;
-            if (lethal) score += 90;
-            else if (heavyHit || dangerousEffect) score += 45;
+            if (lethal) score += 50;
+            else if (heavyHit || dangerousEffect) score += 25;
         }
 
         // Don't waste passive executes on tiny hits when we're healthy
@@ -455,6 +455,16 @@ class BotAI {
         if (!gameState || !gameState.noCurrentCard() || !gameState.isMyTurn(bot.id)) return false;
         const usable = bot.stuff.filter(item => !item.broken && ieCanUse[item.key]?.(item, bot, gameState));
         if (!usable.length) return false;
+
+        // Priority: Magic Shell (Seashell) - Free item!
+        const seashell = usable.find(i => i.key === 'seashell');
+        if (seashell) {
+            console.log(`Bot ${bot.name} uses Seashell to get a free item`);
+            gameState.wantToUseItem(bot.id, seashell.id, null);
+            // Seashell gives an item, so we should wait a bit then continue the turn
+            setTimeout(() => this.takeTurn(bot, gameState, room), this.afterActionDelay);
+            return true;
+        }
 
         const crystal = usable.find(i => i.key === 'crystal');
         const divination = usable.find(i => i.key === 'divination');
@@ -594,7 +604,7 @@ class BotAI {
             return null;
         }
 
-        const usableItems = bot.stuff.filter(item => item.canBeUsed && !item.broken);
+        const usableItems = bot.stuff.filter(item => !item.broken);
         if (!usableItems.length) return null;
 
         let best = null;
@@ -603,6 +613,10 @@ class BotAI {
         usableItems.forEach(item => {
             let arg = null;
             let sacrificeValue = 0;
+
+            // Use ieCanUse directly to ensure we check against current state, not potentially stale item.canBeUsed
+            const canUse = ieCanUse[item.key] ? ieCanUse[item.key](item, bot, gameState) : false;
+            if (!canUse) return;
 
             if (item.key === 'anvil') {
                 const target = this.pickBestAnvilTarget(bot, gameState, damage, lethal, heavyHit);
@@ -617,10 +631,25 @@ class BotAI {
             }
 
             if (item.key === 'pirate_bomb') {
-                const sacrifice = this.choosePirateBombTarget(bot, item);
+                const sacrifice = this.choosePirateBombTarget(bot, item, gameState);
                 if (!sacrifice) return;
                 arg = sacrifice.id;
                 sacrificeValue = this.evaluateItemValue(sacrifice);
+            }
+
+            if (item.key === 'mana_potion') {
+                // Needs a card to discard from defeatedMonstersPile
+                if (!bot.defeatedMonstersPile || bot.defeatedMonstersPile.length === 0) return;
+                // Pick the first one (or ideally the least valuable, but for now just any to make it work)
+                arg = bot.defeatedMonstersPile[0].id;
+            }
+
+            if (item.key === 'purple_skull') {
+                // Needs a card to discard from defeatedMonstersPile that is stronger than current monster
+                if (!bot.defeatedMonstersPile || bot.defeatedMonstersPile.length === 0) return;
+                const targetCard = bot.defeatedMonstersPile.find(c => c.power > damage);
+                if (!targetCard) return;
+                arg = targetCard.id;
             }
 
             const score = this.computeItemScore(item, bot, { damage, lethal, heavyHit, dangerousEffect, remainingDungeon, sacrificeValue });
@@ -677,6 +706,18 @@ class BotAI {
         }
 
         const monster = gameState.currentCard;
+
+        // Check if we can use another item now (e.g. after repairing something with Anvil)
+        // We only do this if we are still in a fight with the same monster
+        if (gameState.inFight() && gameState.currentCard === monster) {
+            const nextDecision = this.selectBestItem(bot, gameState);
+            if (nextDecision) {
+                console.log(`Bot ${bot.name} found another usable item after previous action`);
+                this.handleMonster(bot, gameState, room);
+                return;
+            }
+        }
+
         let itemToDestroy = null;
         if (monster.effect === "GLUTTONOUS_OOZE") {
             const sacrifice = this.chooseSacrifice(bot);
@@ -920,13 +961,28 @@ class BotAI {
         return worst;
     }
 
-    choosePirateBombTarget(bot, bomb) {
+    choosePirateBombTarget(bot, bomb, gameState) {
         const candidates = bot.stuff.filter(i => i.id !== bomb.id && !i.broken);
         if (!candidates.length) return null;
 
-        let worst = candidates[0];
-        let worstScore = this.evaluateItemValue(candidates[0]);
-        candidates.forEach(item => {
+        // Filter out items that are currently usable against the monster (don't sacrifice the solution!)
+        const safeCandidates = candidates.filter(item => {
+            const canUse = ieCanUse[item.key] ? ieCanUse[item.key](item, bot, gameState) : false;
+            return !canUse;
+        });
+
+        // If all items are usable, we might be forced to pick one, but prefer the "safe" ones first
+        // If safeCandidates is empty, it means ALL candidates are usable against the current monster.
+        // In that case, we should probably NOT use the bomb at all, because we have better options (the candidates themselves).
+        if (safeCandidates.length === 0 && candidates.length > 0) {
+            return null;
+        }
+
+        const pool = safeCandidates;
+
+        let worst = pool[0];
+        let worstScore = this.evaluateItemValue(pool[0]);
+        pool.forEach(item => {
             const value = this.evaluateItemValue(item);
             if (value < worstScore) {
                 worstScore = value;
