@@ -28,12 +28,12 @@ export class PopupManager {
 
             const container = this.scene.add.container(0, 0).setDepth(12);
 
-            let cardWidth = 240;
-            let cardHeight = 336;
-            const maxCardWidth = 240;
-            const maxCardHeight = 336;
-            const minCardWidth = 100;
-            const minCardHeight = 140;
+            let cardWidth = 360;
+            let cardHeight = 504;
+            const maxCardWidth = 360;
+            const maxCardHeight = 504;
+            const minCardWidth = 150;
+            const minCardHeight = 210;
             const spacing = 10;
             let columns;
 
@@ -41,12 +41,12 @@ export class PopupManager {
                 columns = cards.length;
             } else if (cards.length <= 12) {
                 columns = 6;
-                cardWidth = 150;
-                cardHeight = 210;
+                cardWidth = 225;
+                cardHeight = 315;
             } else {
                 columns = 10;
-                cardWidth = 100;
-                cardHeight = 140;
+                cardWidth = 150;
+                cardHeight = 210;
             }
 
             const scaleX = cardWidth / 750;
@@ -259,8 +259,8 @@ export class PopupManager {
 
         // Create a container for the popup
         const container = this.scene.add.container(0, 0).setDepth(12);
-        const desiredWidth = 375;
-        const desiredHeight = 525;
+        const desiredWidth = 562;
+        const desiredHeight = 787;
         const scaleX = desiredWidth / 750;
         const scaleY = desiredHeight / 1050;
         const xPosition = (this.scene.sys.game.config.width) / 4;
@@ -387,8 +387,8 @@ export class PopupManager {
         const { bg, interactionBlocker } = this.createPopupBackgroundMonsterTypePopup(10);
         const container = this.scene.add.container(0, 0).setDepth(12);
 
-        const desiredWidth = 375;
-        const desiredHeight = 525;
+        const desiredWidth = 562;
+        const desiredHeight = 787;
         const scaleX = desiredWidth / 750;
         const scaleY = desiredHeight / 1050;
         const xPosition = (this.scene.sys.game.config.width) / 4;
@@ -483,20 +483,20 @@ export class PopupManager {
             }
         });
 
-        let desiredWidth = 240;
-        let desiredHeight = 336;
+        let desiredWidth = 360;
+        let desiredHeight = 504;
         let columns;
 
         if (items.length <= 4) {
             columns = items.length;
         } else if (items.length <= 12) {
             columns = 6;
-            desiredWidth = 150;
-            desiredHeight = 210;
+            desiredWidth = 225;
+            desiredHeight = 315;
         } else {
             columns = 10;
-            desiredWidth = 100;
-            desiredHeight = 140;
+            desiredWidth = 150;
+            desiredHeight = 210;
         }
 
         const scaleX = desiredWidth / 750;

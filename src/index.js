@@ -7,8 +7,8 @@ const deviceResolution = window.devicePixelRatio || 1;
 
 const config = {
     type: Phaser.AUTO,
-    width: 1300,
-    height: 600,
+    width: 1920,
+    height: 1080,
     // Boost clarity on high-DPI screens to avoid blur when scaled
     resolution: Math.min(deviceResolution, 3),
     render: {

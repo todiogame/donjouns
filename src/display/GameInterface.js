@@ -11,24 +11,24 @@ export class GameInterface {
         this.pileStates = new Map();
         this.discardState = { length: 0, topTexture: null };
         this.currentCardDisplayInfo = {
-            x: 650,
-            y: 100,
-            scaleX: 125 / 750,
-            scaleY: 175 / 1050
+            x: 960,
+            y: 180,
+            scaleX: 200 / 750,
+            scaleY: 280 / 1050
         };
         this.dungeonDisplayInfo = {
-            x: 500,
-            y: 100,
-            scaleX: 125 / 750,
-            scaleY: 175 / 1050
+            x: 710,
+            y: 180,
+            scaleX: 200 / 750,
+            scaleY: 280 / 1050
         };
         this.hpStates = new Map();
     }
 
     displayHand(hand) {
-        const yPosition = this.scene.sys.game.config.height - 430; // Bottom of the screen for human player
-        const desiredWidth = 200; // Adjust as needed
-        const desiredHeight = 280; // Adjust as needed
+        const yPosition = this.scene.sys.game.config.height - 710; // Bottom of the screen for human player
+        const desiredWidth = 250; // Adjust as needed
+        const desiredHeight = 350; // Adjust as needed
 
         const scaleX = desiredWidth / 750; // 750 is the original width of the images
         const scaleY = desiredHeight / 1050; // 1050 is the original height of the images
@@ -108,13 +108,13 @@ export class GameInterface {
         this.scene.playcardSound.play();
 
         const maxItemsPerRow = 6;
-        const defaultWidth = isPlayer ? 200 : 90; // increased size for player cards
-        const defaultHeight = isPlayer ? 280 : 126; // increased size for player cards
+        const defaultWidth = isPlayer ? 250 : 140; // increased size for player cards
+        const defaultHeight = isPlayer ? 350 : 196; // increased size for player cards
         const scaleX = defaultWidth / 750;
         const scaleY = defaultHeight / 1050;
 
-        const hoverWidth = 240;
-        const hoverHeight = 336;
+        const hoverWidth = 360;
+        const hoverHeight = 504;
         const hoverScaleX = hoverWidth / 750;
         const hoverScaleY = hoverHeight / 1050;
 
@@ -122,7 +122,7 @@ export class GameInterface {
 
         if (isPlayer) {
             this.displayMyStuff(stuff, playerName, maxItemsPerRow, defaultWidth, defaultHeight, hoverScaleX, hoverScaleY, game, player);
-            playerNameText = this.scene.add.text(this.scene.sys.game.config.width / 10, this.scene.sys.game.config.height - defaultHeight - 30, playerName, { fontSize: '20px', fill: '#fff', fontStyle: 'bold' });
+            playerNameText = this.scene.add.text(this.scene.sys.game.config.width / 10, this.scene.sys.game.config.height - defaultHeight - 50, playerName, { fontSize: '20px', fill: '#fff', fontStyle: 'bold' });
         } else {
             let stuffYOffset = 15;
             const maxItemsPerColumn = 2;
@@ -274,21 +274,21 @@ export class GameInterface {
 
     displayHP(player, isPlayer, position) {
         const hp = player.hp;
-        const desiredWidth = isPlayer ? 100 : 80;
-        const desiredHeight = isPlayer ? 100 : 80;
+        const desiredWidth = isPlayer ? 150 : 120;
+        const desiredHeight = isPlayer ? 150 : 120;
         const scaleX = desiredWidth / 500;
         const scaleY = desiredHeight / 500;
         let xPosition, yPosition;
 
         if (position === 'bottom') {
-            xPosition = this.scene.sys.game.config.width / 2 - 200;
-            yPosition = this.scene.sys.game.config.height - 330;
+            xPosition = this.scene.sys.game.config.width / 2 - 300;
+            yPosition = this.scene.sys.game.config.height - 500;
         } else if (position === 'top-left') {
-            xPosition = this.scene.sys.game.config.width / 2 - 300
-            yPosition = 50; // Moved closer to the middle
+            xPosition = this.scene.sys.game.config.width / 2 - 450
+            yPosition = 80; // Moved closer to the middle
         } else if (position === 'top-right') {
-            xPosition = this.scene.sys.game.config.width / 2 + 300; // Moved closer to the middle
-            yPosition = 50; // Moved closer to the middle
+            xPosition = this.scene.sys.game.config.width / 2 + 450; // Moved closer to the middle
+            yPosition = 80; // Moved closer to the middle
         }
 
         const heartImage = this.scene.add.image(xPosition, yPosition, 'heart')
@@ -387,21 +387,21 @@ export class GameInterface {
         const pileLength = player.defeatedMonstersPile.length;
         const topMonster = pileLength ? player.defeatedMonstersPile[pileLength - 1] : null;
         const pileTexture = topMonster?.texture || 'back_dungeon';
-        const desiredWidth = 60;
-        const desiredHeight = 84;
+        const desiredWidth = 90;
+        const desiredHeight = 126;
         const scaleX = desiredWidth / 750;
         const scaleY = desiredHeight / 1050;
         let xPosition, yPosition;
 
         if (position === 'bottom') {
-            xPosition = this.scene.sys.game.config.width / 2 - 300;
-            yPosition = this.scene.sys.game.config.height - 330;
+            xPosition = this.scene.sys.game.config.width / 2 - 450;
+            yPosition = this.scene.sys.game.config.height - 500;
         } else if (position === 'top-left') {
-            xPosition = this.scene.sys.game.config.width / 2 - 300
-            yPosition = 130; // Moved closer to the middle
+            xPosition = this.scene.sys.game.config.width / 2 - 450
+            yPosition = 200; // Moved closer to the middle
         } else if (position === 'top-right') {
-            xPosition = this.scene.sys.game.config.width / 2 + 300; // Moved closer to the middle
-            yPosition = 130; // Moved closer to the middle
+            xPosition = this.scene.sys.game.config.width / 2 + 450; // Moved closer to the middle
+            yPosition = 200; // Moved closer to the middle
         }
 
         const monsterPileImage = this.scene.add.image(xPosition, yPosition, pileTexture)
@@ -441,11 +441,11 @@ export class GameInterface {
 
     displayCurrentCard(game) {
         if (game.currentCard) {
-            const desiredWidth = 125;
-            const desiredHeight = 175;
+            const desiredWidth = 200;
+            const desiredHeight = 280;
             const scaleX = desiredWidth / 750;
             const scaleY = desiredHeight / 1050;
-            const cardSprite = this.scene.add.image(650, 100 - 175 / 2, game.currentCard.texture) // moved to top
+            const cardSprite = this.scene.add.image(960, 180 - 280 / 2, game.currentCard.texture) // moved to top
                 .setOrigin(0.5, 0)
                 .setRotation(((game.currentCard.id * 7 % 12) - 6) * 0.002 * Math.PI)
                 .setScale(scaleX, scaleY)
@@ -471,8 +471,8 @@ export class GameInterface {
     }
 
     displayDungeon(game, localPlayerId) {
-        const desiredWidth = 125;
-        const desiredHeight = 175;
+        const desiredWidth = 200;
+        const desiredHeight = 280;
         const scaleX = desiredWidth / 750;
         const scaleY = desiredHeight / 1050;
         // const numCards = game.dungeonLength;
@@ -480,7 +480,7 @@ export class GameInterface {
         let cardSprite;
 
         for (let i = 0; i < numCards; i++) {
-            cardSprite = this.scene.add.image(500 + 0.2 * i, 100 - 0.1 * i, "back_dungeon") // moved to top
+            cardSprite = this.scene.add.image(710 + 0.3 * i, 180 - 0.15 * i, "back_dungeon") // moved to top
                 .setOrigin(0.5, 0.5)
                 .setRotation(((i * 7 % 12) - 6) * 0.002 * Math.PI)
                 .setScale(scaleX, scaleY);
@@ -546,8 +546,8 @@ export class GameInterface {
     }
 
     displayDiscardPile(game) {
-        const desiredWidth = 125;
-        const desiredHeight = 175;
+        const desiredWidth = 200;
+        const desiredHeight = 280;
         const scaleX = desiredWidth / 750;
         const scaleY = desiredHeight / 1050;
         const numCards = game.discardPile.length;
@@ -557,22 +557,22 @@ export class GameInterface {
 
         // Base stack (light stagger)
         for (let i = 0; i < Math.min(numCards, 3); i++) {
-            cardSprite = this.scene.add.image(800 + 0.5 * i, 100 - 0.5 * i, pileTexture)
+            cardSprite = this.scene.add.image(1210 + 0.5 * i, 180 - 0.5 * i, pileTexture)
                 .setOrigin(0.5, 0.5)
                 .setRotation(((i * 7 % 12) - 6) * 0.002 * Math.PI)
                 .setScale(scaleX, scaleY)
                 .setTint(0x777777);
         }
         if (!cardSprite) {
-            cardSprite = this.scene.add.image(800, 100, pileTexture)
+            cardSprite = this.scene.add.image(1210, 180, pileTexture)
                 .setOrigin(0.5, 0.5)
                 .setScale(scaleX, scaleY)
                 .setTint(0x777777);
         }
 
         // Overlay to keep greyed look
-        this.scene.add.rectangle(800, 100, desiredWidth, desiredHeight, 0x808080, 0.35).setOrigin(0.5, 0.5);
-        this.scene.add.text(800, 100, 'DISCARD', { fontSize: '16px', color: '#FFFFFF' })
+        this.scene.add.rectangle(1210, 180, desiredWidth, desiredHeight, 0x808080, 0.35).setOrigin(0.5, 0.5);
+        this.scene.add.text(1210, 180, 'DISCARD', { fontSize: '24px', color: '#FFFFFF' })
             .setOrigin(0.5, 0.5);
 
         // Animate arrival on new discard
@@ -581,7 +581,7 @@ export class GameInterface {
         if (hasNewCard && topCard?.texture) {
             this.animateCardToDiscard(
                 topCard.texture,
-                { x: 800, y: 100 },
+                { x: 1210, y: 180 },
                 { scaleX, scaleY }
             );
         }
@@ -594,7 +594,7 @@ export class GameInterface {
     }
 
     animateMonsterToPile(texture, targetPosition, targetScale) {
-        const startInfo = this.currentCardDisplayInfo || { x: 650, y: 100, scaleX: 125 / 750, scaleY: 175 / 1050 };
+        const startInfo = this.currentCardDisplayInfo || { x: 960, y: 180, scaleX: 200 / 750, scaleY: 280 / 1050 };
         const sprite = this.scene.add.image(startInfo.x, startInfo.y, texture)
             .setOrigin(0.5, 0.5)
             .setScale(startInfo.scaleX, startInfo.scaleY)
@@ -614,7 +614,7 @@ export class GameInterface {
     }
 
     animatePileToDungeon(texture, startPosition, startScale) {
-        const target = this.dungeonDisplayInfo || { x: 500, y: 100, scaleX: 125 / 750, scaleY: 175 / 1050 };
+        const target = this.dungeonDisplayInfo || { x: 710, y: 180, scaleX: 200 / 750, scaleY: 280 / 1050 };
         const sprite = this.scene.add.image(startPosition.x, startPosition.y, texture)
             .setOrigin(0.5, 0.5)
             .setScale(startScale.scaleX, startScale.scaleY)
@@ -634,7 +634,7 @@ export class GameInterface {
     }
 
     animateCardToDiscard(texture, targetPosition, targetScale) {
-        const startInfo = this.currentCardDisplayInfo || { x: 650, y: 100, scaleX: 125 / 750, scaleY: 175 / 1050 };
+        const startInfo = this.currentCardDisplayInfo || { x: 960, y: 180, scaleX: 200 / 750, scaleY: 280 / 1050 };
         const sprite = this.scene.add.image(startInfo.x, startInfo.y, texture)
             .setOrigin(0.5, 0.5)
             .setScale(startInfo.scaleX, startInfo.scaleY)
@@ -666,8 +666,8 @@ export class GameInterface {
         this.blurryBackground.fillRect(0, 0, this.scene.sys.game.config.width, this.scene.sys.game.config.height);
         this.blurryBackground.setDepth(3)
         const { texture } = cardImage;
-        const fixedWidth = 350;
-        const fixedHeight = 490;
+        const fixedWidth = 525;
+        const fixedHeight = 735;
 
         this.zoomedItemCard = this.scene.add.image(this.scene.sys.game.config.width / 2, this.scene.sys.game.config.height / 2, texture)
             .setOrigin(0.5, 0.5)

@@ -9,10 +9,10 @@ export class ActionButtons {
     addDamageButton(game) {
         const t = game.currentCard.timesDealDamage;
         const buttonText = `Take ${(t > 1 ? t + "x" : "") + game.currentCard.damage} Damage`;
-        const buttonWidth = 200;
-        const buttonHeight = 30;
+        const buttonWidth = 300;
+        const buttonHeight = 50;
         const buttonX = this.scene.sys.game.config.width / 2;
-        const buttonY = this.scene.sys.game.config.height - 365;
+        const buttonY = 550;
         // const buttonY = this.scene.sys.game.config.height / 2 - 50;
         const buttonRadius = 10; // For rounded corners
 
@@ -25,7 +25,7 @@ export class ActionButtons {
 
         // Add the text on top of the button
         const text = this.scene.add.text(buttonX, buttonY, buttonText, {
-            fontSize: '20px',
+            fontSize: '30px',
             fill: '#000',
             fontStyle: 'bold'
         }).setOrigin(0.5, 0.5);
@@ -68,10 +68,10 @@ export class ActionButtons {
 
     addExecuteButton(game) {
         const buttonText = `Execute`;
-        const buttonWidth = 120;
-        const buttonHeight = 30;
+        const buttonWidth = 200;
+        const buttonHeight = 50;
         const buttonX = this.scene.sys.game.config.width / 2;
-        const buttonY = this.scene.sys.game.config.height - 400;
+        const buttonY = 620;
         // const buttonY = this.scene.sys.game.config.height / 2 - 50;
         const buttonRadius = 10; // For rounded corners
 
@@ -84,7 +84,7 @@ export class ActionButtons {
 
         // Add the text on top of the button
         const text = this.scene.add.text(buttonX, buttonY, buttonText, {
-            fontSize: '20px',
+            fontSize: '30px',
             fill: '#000',
             fontStyle: 'bold'
         }).setOrigin(0.5, 0.5);
@@ -127,10 +127,10 @@ export class ActionButtons {
 
     addPassTurnButton(game) {
         const buttonText = `Pass turn`;
-        const buttonWidth = 130;
-        const buttonHeight = 50;
+        const buttonWidth = 200;
+        const buttonHeight = 60;
         const buttonX = this.scene.sys.game.config.width / 2;
-        const buttonY = 100;
+        const buttonY = 150;
         // const buttonY = this.scene.sys.game.config.height / 2 - 50;
         const buttonRadius = 10; // For rounded corners
 
@@ -143,7 +143,7 @@ export class ActionButtons {
 
         // Add the text on top of the button
         const text = this.scene.add.text(buttonX, buttonY, buttonText, {
-            fontSize: '20px',
+            fontSize: '30px',
             fill: '#000',
             fontStyle: 'bold'
         }).setOrigin(0.5, 0.5);
@@ -186,10 +186,10 @@ export class ActionButtons {
 
     addEscapeButton(game) {
         const buttonText = `Try to escape`;
-        const buttonWidth = 200;
-        const buttonHeight = 30;
+        const buttonWidth = 300;
+        const buttonHeight = 50;
         const buttonX = this.scene.sys.game.config.width / 2;
-        const buttonY = this.scene.sys.game.config.height - 320;
+        const buttonY = 690;
         // const buttonY = this.scene.sys.game.config.height / 2 - 50;
         const buttonRadius = 10; // For rounded corners
 
@@ -202,7 +202,7 @@ export class ActionButtons {
 
         // Add the text on top of the button
         const text = this.scene.add.text(buttonX, buttonY, buttonText, {
-            fontSize: '20px',
+            fontSize: '30px',
             fill: '#000',
             fontStyle: 'bold'
         }).setOrigin(0.5, 0.5);
@@ -246,10 +246,10 @@ export class ActionButtons {
     addAcceptEventButton(game) {
         const t = game.currentCard.timesDealDamage;
         const buttonText = `Accept`;
-        const buttonWidth = 200;
-        const buttonHeight = 30;
+        const buttonWidth = 300;
+        const buttonHeight = 50;
         const buttonX = this.scene.sys.game.config.width / 2;
-        const buttonY = this.scene.sys.game.config.height - 365;
+        const buttonY = 550;
         // const buttonY = this.scene.sys.game.config.height / 2 - 50;
         const buttonRadius = 10; // For rounded corners
 
@@ -262,7 +262,7 @@ export class ActionButtons {
 
         // Add the text on top of the button
         const text = this.scene.add.text(buttonX, buttonY, buttonText, {
-            fontSize: '20px',
+            fontSize: '30px',
             fill: '#000',
             fontStyle: 'bold'
         }).setOrigin(0.5, 0.5);
@@ -304,10 +304,10 @@ export class ActionButtons {
 
     addDeclineEventButton(game) {
         const buttonText = `Decline`;
-        const buttonWidth = 200;
-        const buttonHeight = 30;
+        const buttonWidth = 300;
+        const buttonHeight = 50;
         const buttonX = this.scene.sys.game.config.width / 2;
-        const buttonY = this.scene.sys.game.config.height - 320;
+        const buttonY = 620;
         // const buttonY = this.scene.sys.game.config.height / 2 - 50;
         const buttonRadius = 10; // For rounded corners
 
@@ -320,7 +320,7 @@ export class ActionButtons {
 
         // Add the text on top of the button
         const text = this.scene.add.text(buttonX, buttonY, buttonText, {
-            fontSize: '20px',
+            fontSize: '30px',
             fill: '#000',
             fontStyle: 'bold'
         }).setOrigin(0.5, 0.5);
@@ -367,10 +367,10 @@ export class ActionButtons {
             'SHAPESHIFTER': 'Select type'
         }[card.effect] || 'Effect';
 
-        const buttonWidth = 130;
-        const buttonHeight = 50;
+        const buttonWidth = 200;
+        const buttonHeight = 60;
         const buttonX = this.scene.sys.game.config.width / 2;
-        const buttonY = 100;
+        const buttonY = 150;
         const buttonRadius = 10; // For rounded corners
 
         // Create a graphics object to draw the button
@@ -382,7 +382,7 @@ export class ActionButtons {
 
         // Add the text on top of the button
         const text = this.scene.add.text(buttonX, buttonY, buttonText, {
-            fontSize: '20px',
+            fontSize: '30px',
             fill: '#000',
             fontStyle: 'bold'
         }).setOrigin(0.5, 0.5);
