@@ -427,4 +427,49 @@ export class ActionButtons {
             duration: 500
         });
     }
+
+    addLogButton(game) {
+        const buttonWidth = 130;
+        const buttonHeight = 44;
+        const buttonX = this.scene.sys.game.config.width - 92;
+        const buttonY = 48;
+        const buttonRadius = 8;
+
+        const graphics = this.scene.add.graphics().setDepth(2);
+        graphics.fillStyle(0x111111, 0.82);
+        graphics.lineStyle(2, 0xffd24a, 0.95);
+        graphics.fillRoundedRect(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight, buttonRadius);
+        graphics.strokeRoundedRect(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight, buttonRadius);
+
+        const text = this.scene.add.text(buttonX, buttonY, 'Log', {
+            fontSize: '24px',
+            fill: '#fff4a8',
+            fontStyle: 'bold'
+        }).setOrigin(0.5).setDepth(2.1);
+
+        const button = this.scene.add.zone(buttonX, buttonY, buttonWidth, buttonHeight)
+            .setOrigin(0.5)
+            .setInteractive({ useHandCursor: true })
+            .setDepth(2.2);
+
+        button.on('pointerdown', () => {
+            this.displayManager.displayLogModal(game.logs || []);
+        });
+
+        button.on('pointerover', () => {
+            graphics.clear();
+            graphics.fillStyle(0x2a2410, 0.92);
+            graphics.lineStyle(2, 0xffe680, 1);
+            graphics.fillRoundedRect(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight, buttonRadius);
+            graphics.strokeRoundedRect(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight, buttonRadius);
+        });
+
+        button.on('pointerout', () => {
+            graphics.clear();
+            graphics.fillStyle(0x111111, 0.82);
+            graphics.lineStyle(2, 0xffd24a, 0.95);
+            graphics.fillRoundedRect(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight, buttonRadius);
+            graphics.strokeRoundedRect(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight, buttonRadius);
+        });
+    }
 }

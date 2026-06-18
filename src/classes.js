@@ -11,6 +11,7 @@ export class Game {
         this.canExecute = false;
         this.trap = false;
         this.discardPile = [];
+        this.logs = [];
     }
     noCurrentCard() {
         return !this.currentCard || this.currentCard._id === undefined

@@ -387,6 +387,7 @@ class LiveGameEngine:
             "trap": bool(getattr(self.jeu, "traquenard_actif", False)),
             "discardPile": [self.catalog.serialize_card(card) for card in getattr(self.jeu, "defausse", [])],
             "turnNumber": int(getattr(self.current_seat().joueur, "tour", 0) if self.current_seat() and self.current_seat().joueur else 0),
+            "logs": [str(entry) for entry in self.logs[-250:]],
         }
 
     def serialize_player(self, seat: LiveSeat | None) -> dict | None:

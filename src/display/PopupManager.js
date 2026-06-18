@@ -8,6 +8,8 @@ export class PopupManager {
         this.numberInputPopup = null;
         this.creatureSelectionPopup = null;
         this.pickItemPopup = null;
+        this.logPopup = null;
+        this.logWheelHandler = null;
         this.blurryBackground = null;
     }
 
@@ -181,6 +183,130 @@ export class PopupManager {
         interactionBlocker.setInteractive();
 
         return { bg, interactionBlocker };
+    }
+
+    displayLogModal(logs = []) {
+        if (this.logWheelHandler) {
+            this.scene.input.off('wheel', this.logWheelHandler);
+            this.logWheelHandler = null;
+        }
+        if (this.logPopup) {
+            this.logPopup.destroy();
+            this.logPopup = null;
+        }
+        if (!this.blurryBackground) {
+            this.blurryBackground = this.scene.add.graphics({ fillStyle: { color: 0x000000, alpha: 0.7 } });
+            this.blurryBackground.fillRect(0, 0, this.scene.sys.game.config.width, this.scene.sys.game.config.height);
+            this.blurryBackground.setDepth(10);
+            this.blurryBackground.setInteractive(new Phaser.Geom.Rectangle(0, 0, this.scene.sys.game.config.width, this.scene.sys.game.config.height), Phaser.Geom.Rectangle.Contains);
+            this.blurryBackground.on('pointerdown', () => { });
+        }
+
+        const width = this.scene.sys.game.config.width;
+        const height = this.scene.sys.game.config.height;
+        const panelWidth = Math.min(1320, width - 240);
+        const panelHeight = Math.min(760, height - 180);
+        const panelX = width / 2;
+        const panelY = height / 2;
+        const visibleCount = 24;
+        const entries = logs.length ? logs.map(entry => String(entry)) : ['No log yet.'];
+        let startIndex = Math.max(0, entries.length - visibleCount);
+
+        const container = this.scene.add.container(0, 0).setDepth(12);
+
+        const panel = this.scene.add.graphics();
+        panel.fillStyle(0x111111, 0.94);
+        panel.lineStyle(2, 0xffd24a, 1);
+        panel.fillRoundedRect(panelX - panelWidth / 2, panelY - panelHeight / 2, panelWidth, panelHeight, 8);
+        panel.strokeRoundedRect(panelX - panelWidth / 2, panelY - panelHeight / 2, panelWidth, panelHeight, 8);
+        container.add(panel);
+
+        const title = this.scene.add.text(panelX, panelY - panelHeight / 2 + 34, 'Game log', {
+            fontSize: '34px',
+            fill: '#fff4a8',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        container.add(title);
+
+        const metaText = this.scene.add.text(panelX - panelWidth / 2 + 36, panelY - panelHeight / 2 + 72, '', {
+            fontSize: '18px',
+            fill: '#d8d0bd'
+        });
+        container.add(metaText);
+
+        const logText = this.scene.add.text(panelX - panelWidth / 2 + 36, panelY - panelHeight / 2 + 106, '', {
+            fontSize: '20px',
+            fill: '#ffffff',
+            lineSpacing: 7,
+            wordWrap: { width: panelWidth - 72 }
+        });
+        container.add(logText);
+
+        const render = () => {
+            const endIndex = Math.min(entries.length, startIndex + visibleCount);
+            const visible = entries.slice(startIndex, endIndex)
+                .map((entry, index) => `${String(startIndex + index + 1).padStart(3, '0')}  ${entry}`);
+            logText.setText(visible.join('\n'));
+            metaText.setText(`${entries.length} entries - showing ${startIndex + 1}-${endIndex}`);
+        };
+
+        const move = (delta) => {
+            startIndex = Phaser.Math.Clamp(startIndex + delta, 0, Math.max(0, entries.length - visibleCount));
+            render();
+        };
+
+        const makeButton = (x, y, label, onClick, bgColor = 0x333333) => {
+            const buttonWidth = 130;
+            const buttonHeight = 42;
+            const button = this.scene.add.container(x, y);
+            const bg = this.scene.add.graphics();
+            bg.fillStyle(bgColor, 1);
+            bg.fillRoundedRect(-buttonWidth / 2, -buttonHeight / 2, buttonWidth, buttonHeight, 7);
+            button.add(bg);
+            const text = this.scene.add.text(0, 0, label, {
+                fontSize: '22px',
+                fill: '#ffffff',
+                fontStyle: 'bold'
+            }).setOrigin(0.5);
+            button.add(text);
+            const zone = this.scene.add.zone(0, 0, buttonWidth, buttonHeight)
+                .setOrigin(0.5)
+                .setInteractive({ useHandCursor: true });
+            zone.on('pointerdown', onClick);
+            button.add(zone);
+            container.add(button);
+        };
+
+        const close = () => {
+            if (this.logWheelHandler) {
+                this.scene.input.off('wheel', this.logWheelHandler);
+                this.logWheelHandler = null;
+            }
+            container.destroy();
+            this.logPopup = null;
+            if (this.blurryBackground) {
+                this.blurryBackground.destroy();
+                this.blurryBackground = null;
+            }
+        };
+
+        this.logWheelHandler = (_pointer, _gameObjects, _deltaX, deltaY) => {
+            move(deltaY > 0 ? 3 : -3);
+        };
+
+        this.scene.input.on('wheel', this.logWheelHandler);
+        makeButton(panelX + panelWidth / 2 - 244, panelY + panelHeight / 2 - 38, 'Up', () => move(-visibleCount));
+        makeButton(panelX + panelWidth / 2 - 104, panelY + panelHeight / 2 - 38, 'Down', () => move(visibleCount));
+        makeButton(panelX - panelWidth / 2 + 94, panelY + panelHeight / 2 - 38, 'Close', close, 0x8a2222);
+
+        this.scene.tweens.add({
+            targets: [container, this.blurryBackground],
+            alpha: { from: 0, to: 1 },
+            duration: 180
+        });
+
+        render();
+        this.logPopup = container;
     }
 
     createButton(container, x, y, text, onClick, bgColor = 0xffa500) {

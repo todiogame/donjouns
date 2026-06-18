@@ -16,6 +16,7 @@ def test_solo_random_starts_with_bots_and_state():
     assert engine.phase == "GAME_LOOP"
     assert len(state["players"]) == 3
     assert state["dungeonLength"] == 57
+    assert isinstance(state["logs"], list)
     assert all(player["heroName"] for player in state["players"])
 
 

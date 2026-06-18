@@ -518,6 +518,7 @@ export function create() {
         cardGame.discardPile = Array.from(state.discardPile || []).map(cloneDungeonCard);
         cardGame.turnNumber = state.turnNumber;
         cardGame.trap = state.trap;
+        cardGame.logs = Array.from(state.logs || []);
 
         if (cardGame.phase !== "END") {
             displayManager.clearEndScreenPrompt();

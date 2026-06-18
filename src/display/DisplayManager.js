@@ -140,6 +140,7 @@ export class DisplayManager {
             this.popupManager?.numberInputPopup,
             this.popupManager?.creatureSelectionPopup,
             this.popupManager?.pickItemPopup,
+            this.popupManager?.logPopup,
             this.endScreenButton,
             this.endScreenButtonLabel
         ].filter(Boolean));
@@ -272,6 +273,7 @@ export class DisplayManager {
         this.gameInterface.displayCurrentCard(game);
         this.gameInterface.displayDungeon(game, localPlayerId);
         this.gameInterface.displayDiscardPile(game);
+        this.actionButtons.addLogButton(game);
 
         if (allowActions && game.isMyTurn(localPlayerId) && !game.isDiceRolling) {
             if (game.currentCard?.dungeonCardType === 'monster') {
@@ -371,6 +373,10 @@ export class DisplayManager {
 
     addSpecialEffectButton(game, card) {
         this.actionButtons.addSpecialEffectButton(game, card);
+    }
+
+    displayLogModal(logs) {
+        this.popupManager.displayLogModal(logs);
     }
 
     displayScoutInterface(cards, onPickCard) {
