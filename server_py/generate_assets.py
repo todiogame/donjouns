@@ -5,6 +5,8 @@ import re
 import sys
 from pathlib import Path
 
+from PIL import Image, ImageDraw, ImageFont
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from game.catalog import Catalog  # noqa: E402
@@ -13,6 +15,7 @@ from game.catalog import Catalog  # noqa: E402
 ROOT = Path(__file__).resolve().parents[1]
 ITEM_DIR = ROOT / "src" / "assets" / "pics" / "sim_items"
 MONSTER_DIR = ROOT / "src" / "assets" / "pics" / "monsters"
+CARD_SIZE = (750, 1050)
 
 
 def wrap_words(text: str, limit: int = 24, max_lines: int = 8) -> list[str]:
@@ -73,12 +76,79 @@ def write(path: Path, content: str):
     path.write_text(content, encoding="utf-8")
 
 
-def main():
+def load_font(size: int, bold: bool = False):
+    candidates = [
+        Path("C:/Windows/Fonts/arialbd.ttf" if bold else "C:/Windows/Fonts/arial.ttf"),
+        Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return ImageFont.truetype(str(candidate), size)
+    return ImageFont.load_default()
+
+
+def hex_to_rgb(color: str) -> tuple[int, int, int]:
+    value = color.lstrip("#")
+    return tuple(int(value[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def gradient_image(size: tuple[int, int], start: str, end: str) -> Image.Image:
+    width, height = size
+    start_rgb = hex_to_rgb(start)
+    end_rgb = hex_to_rgb(end)
+    image = Image.new("RGB", size, start_rgb)
+    pixels = image.load()
+    for y in range(height):
+        ratio = y / max(1, height - 1)
+        row = tuple(int(start_rgb[i] * (1 - ratio) + end_rgb[i] * ratio) for i in range(3))
+        for x in range(width):
+            pixels[x, y] = row
+    return image
+
+
+def draw_centered(draw: ImageDraw.ImageDraw, y: int, text: str, font, fill: str):
+    bbox = draw.textbbox((0, 0), text, font=font)
+    x = (CARD_SIZE[0] - (bbox[2] - bbox[0])) / 2
+    draw.text((x, y), text, font=font, fill=fill)
+
+
+def card_png(path: Path, title: str, subtitle: str, description: str, color: str = "#39424e"):
+    image = Image.new("RGB", CARD_SIZE, "#101010").convert("RGBA")
+    draw = ImageDraw.Draw(image)
+    draw.rounded_rectangle((0, 0, CARD_SIZE[0], CARD_SIZE[1]), radius=36, fill="#101010")
+
+    inner = gradient_image((694, 994), color, "#111820").convert("RGBA")
+    mask = Image.new("L", inner.size, 0)
+    ImageDraw.Draw(mask).rounded_rectangle((0, 0, inner.size[0], inner.size[1]), radius=28, fill=255)
+    image.paste(inner, (28, 28), mask)
+    draw.rounded_rectangle((28, 28, 722, 1022), radius=28, outline="#d6c38a", width=10)
+    draw.rounded_rectangle((70, 340, 680, 760), radius=18, fill=(255, 255, 255, 20), outline="#d6c38a", width=3)
+
+    kind_font = load_font(34, True)
+    title_font = load_font(42, True)
+    sigil_font = load_font(46, True)
+    body_font = load_font(28, True)
+
+    draw_centered(draw, 54, subtitle, kind_font, "#f8efd0")
+    for index, line in enumerate(wrap_words(title, 19, 3)):
+        draw_centered(draw, 112 + index * 46, line, title_font, "#ffffff")
+    draw_centered(draw, 262, "DONJOUNS", sigil_font, (255, 255, 255, 54))
+    for index, line in enumerate(wrap_words(description, 30, 9)):
+        draw_centered(draw, 490 + index * 34, line, body_font, "#f6f0dd")
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    image.convert("RGB").save(path, format="PNG", optimize=True, compress_level=6)
+
+
+def main(force: bool = False):
     catalog = Catalog()
     ITEM_DIR.mkdir(parents=True, exist_ok=True)
+    generated = 0
     for item in catalog.items:
-        path = ITEM_DIR / f"sim_item_{item.id:03d}.svg"
-        write(path, card_svg(item.name, "Objet", item.description, "#354753"))
+        path = ITEM_DIR / f"sim_item_{item.id:03d}.png"
+        if force or not path.exists():
+            card_png(path, item.name, "Objet", item.description, "#354753")
+            generated += 1
     monster_47 = next(
         (card for card in catalog.dungeon_template.cartes if getattr(card, "index", None) == 46),
         None,
@@ -88,8 +158,18 @@ def main():
             MONSTER_DIR / "monster_47.svg",
             card_svg(monster_47.titre, "Monstre", getattr(monster_47, "description", ""), "#552e35"),
         )
-    print(f"Generated {len(catalog.items)} item placeholders and monster_47.svg")
+        monster_png = MONSTER_DIR / "monster_47.png"
+        if force or not monster_png.exists():
+            card_png(
+                monster_png,
+                monster_47.titre,
+                "Monstre",
+                getattr(monster_47, "description", ""),
+                "#552e35",
+            )
+            generated += 1
+    print(f"Generated {generated} placeholder asset(s)")
 
 
 if __name__ == "__main__":
-    main()
+    main(force=True)

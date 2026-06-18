@@ -41,19 +41,12 @@ export function preload() {
         this.load.image('items_' + formattedNumber, `assets/pics/items/items_${formattedNumber}.jpg`);
     }
 
-    for (let i = 1; i <= 271; i++) {
-        const formattedNumber = String(i).padStart(3, '0');
-        this.load.svg('sim_item_' + formattedNumber, `assets/pics/sim_items/sim_item_${formattedNumber}.svg`, { width: 750, height: 1050 });
-    }
-
     this.load.image('back_dungeon', 'assets/pics/cardbacks/back_dungeon.jpg');
 
     for (let i = 1; i <= 46; i++) {
         const formattedNumber = String(i).padStart(2, '0');
         this.load.image('monster_' + formattedNumber, `assets/pics/monsters/monster_${formattedNumber}.jpg`);
     }
-    this.load.svg('monster_47', 'assets/pics/monsters/monster_47.svg', { width: 750, height: 1050 });
-
     for (let i = 1; i <= 10; i++) {
         const formattedNumber = String(i).padStart(2, '0');
         this.load.image('event_1' + formattedNumber, `assets/pics/events/event_${formattedNumber}.jpg`);

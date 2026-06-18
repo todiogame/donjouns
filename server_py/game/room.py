@@ -25,8 +25,16 @@ class GameRoom:
         await websocket.accept()
         session_id = f"c-{uuid.uuid4().hex[:8]}"
         async with self.lock:
-            self.clients[session_id] = websocket
+            if self.clients:
+                await self.broadcast_state_unlocked()
+            if self.engine.phase != "WAITING" and not self.clients:
+                self.reset_engine_unlocked()
+            if self.engine.phase != "WAITING":
+                await websocket.send_json({"type": "error", "message": "Game already in progress"})
+                await websocket.close(code=1013)
+                return session_id
             self.engine.add_human(session_id)
+            self.clients[session_id] = websocket
             await websocket.send_json({"type": "joined", "sessionId": session_id, "roomName": "room"})
             await self.broadcast_state_unlocked()
             self.ensure_automation_task_unlocked()
@@ -55,6 +63,13 @@ class GameRoom:
 
     def queue_action(self, action: dict):
         self.pending_actions.append(action)
+
+    def reset_engine_unlocked(self):
+        if self.automation_task and not self.automation_task.done():
+            self.automation_task.cancel()
+        self.engine = LiveGameEngine(self.catalog, self.queue_action)
+        self.pending_actions = []
+        self.automation_task = None
 
     async def broadcast_state_unlocked(self):
         await self.broadcast_unlocked({"type": "state", "state": self.engine.snapshot()})

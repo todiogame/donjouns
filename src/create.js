@@ -181,6 +181,7 @@ let localPlayerId;
 
 export function create() {
     console.log("Creating the scene...");
+    const scene = this;
     cardGame = new Game();
 
     this.playcardSound = this.sound.add('playcard');
@@ -207,6 +208,92 @@ export function create() {
         onReplay: resetToLobby,
         onExit: resetToLobby
     });
+    let lazyTextureLoadInProgress = false;
+    let lazyTextureCallbacks = [];
+    let pendingStateForTextureLoad = null;
+    const failedLazyTextures = new Set();
+
+    const lazyTexturePath = (texture) => {
+        if (/^sim_item_\d{3}$/.test(texture)) {
+            return `assets/pics/sim_items/${texture}.png`;
+        }
+        if (texture === "monster_47") {
+            return "assets/pics/monsters/monster_47.png";
+        }
+        return null;
+    };
+
+    const collectVisibleTextureKeys = (state) => {
+        const keys = new Set();
+        const addCard = (card) => {
+            if (card?.texture) keys.add(card.texture);
+        };
+        (state.players || []).forEach(player => {
+            (player.hand || []).forEach(addCard);
+            (player.stuff || []).forEach(addCard);
+            (player.defeatedMonstersPile || []).forEach(addCard);
+        });
+        addCard(state.currentCard);
+        (state.discardPile || []).slice(-1).forEach(addCard);
+        return keys;
+    };
+
+    const ensureTexturesLoaded = (textureKeys, onReady) => {
+        const missing = Array.from(textureKeys)
+            .filter(texture => texture && !scene.textures.exists(texture) && !failedLazyTextures.has(texture) && lazyTexturePath(texture));
+
+        if (!missing.length) {
+            return false;
+        }
+
+        lazyTextureCallbacks.push(onReady);
+        if (lazyTextureLoadInProgress) {
+            return true;
+        }
+
+        lazyTextureLoadInProgress = true;
+        const loadErrorHandler = (file) => {
+            if (file?.key) {
+                failedLazyTextures.add(file.key);
+            }
+            console.warn("Lazy asset failed to load:", file?.key, file?.src);
+        };
+
+        scene.load.on('loaderror', loadErrorHandler);
+        Array.from(new Set(missing)).forEach(texture => {
+            scene.load.image(texture, lazyTexturePath(texture));
+        });
+        scene.load.once('complete', () => {
+            scene.load.off('loaderror', loadErrorHandler);
+            lazyTextureLoadInProgress = false;
+            const callbacks = lazyTextureCallbacks.splice(0);
+            callbacks.forEach(callback => callback());
+        });
+        scene.load.start();
+        return true;
+    };
+
+    const ensureStateTextures = (state) => {
+        if (!ensureTexturesLoaded(collectVisibleTextureKeys(state), () => {
+            const nextState = pendingStateForTextureLoad;
+            pendingStateForTextureLoad = null;
+            if (nextState) {
+                updateGameState(nextState);
+            }
+        })) {
+            return false;
+        }
+        pendingStateForTextureLoad = state;
+        return true;
+    };
+
+    const displayScoutCards = (cards, onPickCard) => {
+        const keys = new Set((cards || []).map(card => card?.texture).filter(Boolean));
+        if (ensureTexturesLoaded(keys, () => displayScoutCards(cards, onPickCard))) {
+            return;
+        }
+        displayManager.displayScoutInterface(cards, onPickCard);
+    };
 
     const setupRoomListeners = (roomInstance) => {
         room = roomInstance;
@@ -279,12 +366,12 @@ export function create() {
                     if (cardGame.phase.includes("GAME")) displayManager.updateGameUI(cardGame, localPlayerId);
                     break;
                 case "scout":
-                    displayManager.displayScoutInterface(message.cards);
+                    displayScoutCards(message.cards);
                     break;
                 case "scout_pick":
                     console.log("Received scout cards, pick 1:", message);
                     const callback = (id) => room.send("scout_pick", { arg: id });
-                    displayManager.displayScoutInterface(message.cards, callback);
+                    displayScoutCards(message.cards, callback);
                     break;
                 case "soulstorm_pick": {
                     const cards = message.cards || [];
@@ -293,7 +380,7 @@ export function create() {
                         break;
                     }
                     const pickCard = (id) => room.send("soulstorm_pick", { cardId: id });
-                    displayManager.displayScoutInterface(cards, pickCard);
+                    displayScoutCards(cards, pickCard);
                     break;
                 }
                 default:
@@ -505,6 +592,10 @@ export function create() {
         return player;
     }
     function updateGameState(state) {
+        if (ensureStateTextures(state)) {
+            return;
+        }
+
         cardGame.phase = state.phase;
         cardGame.players = Array.from(state.players || []).map(copyPlayerState);
         console.log(`updateGameState: ${cardGame.players.length} players`);
