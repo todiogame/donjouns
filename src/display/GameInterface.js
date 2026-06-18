@@ -7,7 +7,6 @@ export class GameInterface {
         this.zoomedItemCard = null;
         this.blurryBackground = null;
         this.hoveredCardPreview = null;
-        this.itemUsageTrackers = new Map();
         this.pileStates = new Map();
         this.discardState = { length: 0, topTexture: null };
         this.currentCardDisplayInfo = {
@@ -108,23 +107,6 @@ export class GameInterface {
         itemCardImage.setData("player_id", player?.id);
         itemCardImage.setData("item_title", itemCard.title);
         itemCardImage.setData("item_texture", itemCard.texture);
-
-        const trackerKey = `${player?.id || "unknown"}:${itemCard.id}`;
-        const usageCounter = Number(itemCard.usageCounter || 0);
-        const tracker = this.itemUsageTrackers.get(trackerKey);
-        if (!tracker) {
-            this.itemUsageTrackers.set(trackerKey, { count: usageCounter });
-            return;
-        }
-        if (usageCounter > tracker.count) {
-            tracker.count = usageCounter;
-            this.playItemUseEffect({
-                playerId: player?.id,
-                itemId: itemCard.id,
-                title: itemCard.title,
-                texture: itemCard.texture
-            }, itemCardImage);
-        }
     }
 
     playItemUseEffect(message, targetSprite = null) {

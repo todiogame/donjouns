@@ -229,7 +229,6 @@ class LiveGameEngine:
 
     def _emit_item_used(self, seat: LiveSeat, objet, source: str):
         catalog_item = self.catalog.item_by_object(objet)
-        setattr(objet, "compteur", int(getattr(objet, "compteur", 0) or 0) + 1)
         self.emit_action(
             {
                 "action": "item_used",
@@ -242,8 +241,91 @@ class LiveGameEngine:
         )
 
     def _run_item_hook(self, seat: LiveSeat, objet, hook_name: str, source: str, *args):
-        self._emit_item_used(seat, objet, source)
+        before = self._effect_signature(extra_objects=[objet], extra_cards=self._cards_from_args(args))
         getattr(objet, hook_name)(*args)
+        after = self._effect_signature(extra_objects=[objet], extra_cards=self._cards_from_args(args))
+        if before != after:
+            self._emit_item_used(seat, objet, source)
+
+    def _cards_from_args(self, args) -> list:
+        return [arg for arg in args if isinstance(arg, (CarteMonstre, CarteEvent))]
+
+    def _item_signature(self, objet) -> tuple:
+        return (
+            id(objet),
+            type(objet).__name__,
+            getattr(objet, "nom", ""),
+            bool(getattr(objet, "intact", True)),
+            bool(getattr(objet, "actif", False)),
+            int(getattr(objet, "compteur", 0) or 0),
+            int(getattr(objet, "pv_bonus", 0) or 0),
+            int(getattr(objet, "modificateur_de", 0) or 0),
+            getattr(objet, "couleur", None),
+            tuple(getattr(objet, "types_tags", []) or []),
+            tuple(getattr(objet, "puissance_tags", []) or []),
+        )
+
+    def _card_signature(self, card) -> tuple | None:
+        if card is None:
+            return None
+        return (
+            id(card),
+            type(card).__name__,
+            getattr(card, "titre", ""),
+            getattr(card, "index", None),
+            getattr(card, "effet", ""),
+            int(getattr(card, "puissance", 0) or 0),
+            int(getattr(card, "dommages", 0) or 0),
+            int(getattr(card, "dommages_reference", 0) or 0),
+            int(getattr(card, "dommages_minimum", 0) or 0),
+            bool(getattr(card, "reduction_dommages_bloquee", False)),
+            bool(getattr(card, "executed", False)),
+            bool(getattr(card, "non_executable", False)),
+            tuple(getattr(card, "types", []) or []),
+            tuple(getattr(card, "types_initiaux", []) or []),
+        )
+
+    def _player_signature(self, joueur) -> tuple | None:
+        if joueur is None:
+            return None
+        return (
+            id(joueur),
+            getattr(joueur, "nom", ""),
+            int(getattr(joueur, "pv_total", 0) or 0),
+            int(getattr(joueur, "pv_base", 0) or 0),
+            bool(getattr(joueur, "vivant", True)),
+            bool(getattr(joueur, "dans_le_dj", False)),
+            bool(getattr(joueur, "fuite_reussie", False)),
+            bool(getattr(joueur, "doit_passer", False)),
+            bool(getattr(joueur, "rejoue", False)),
+            int(getattr(joueur, "jet_fuite", 0) or 0),
+            int(getattr(joueur, "tour", 0) or 0),
+            int(getattr(joueur, "score_final", 0) or 0),
+            int(getattr(joueur, "medailles", 0) or 0),
+            int(getattr(joueur, "monstres_ajoutes_ce_tour", 0) or 0),
+            tuple(self._item_signature(objet) for objet in getattr(joueur, "objets", []) or []),
+            tuple(self._card_signature(card) for card in getattr(joueur, "pile_monstres_vaincus", []) or []),
+        )
+
+    def _effect_signature(self, extra_objects=(), extra_cards=()) -> tuple:
+        donjon = getattr(self.jeu, "donjon", None)
+        return (
+            self.phase,
+            self.current_player_index,
+            bool(getattr(self.jeu, "execute_next_monster", False)),
+            bool(getattr(self.jeu, "carte_ignoree", False)),
+            bool(getattr(self.jeu, "traquenard_actif", False)),
+            bool(getattr(self.jeu, "traquenard_paye", False)),
+            bool(getattr(self.jeu, "kraken_vu", False)),
+            len(getattr(self.jeu, "defausse", []) or []),
+            tuple(id(card) for card in getattr(self.jeu, "defausse", []) or []),
+            len(getattr(self.jeu, "objets_dispo", []) or []),
+            len(self._remaining_dungeon_cards()) if donjon is not None else 0,
+            tuple(self._player_signature(seat.joueur) for seat in self.players),
+            self._card_signature(self.current_card),
+            tuple(self._item_signature(objet) for objet in extra_objects),
+            tuple(self._card_signature(card) for card in extra_cards),
+        )
 
     def use_item(self, session_id: str, item_id: int, arg=None):
         seat = self.find_seat(session_id)
@@ -610,20 +692,44 @@ class LiveGameEngine:
 
     def _prepare_current_monster(self, seat: LiveSeat):
         try:
+            skipped_heroes = {
+                type(owner.joueur.perso_obj)
+                for owner in self.players
+                if owner.joueur and owner.joueur.perso_obj
+            }
+            skipped_items = {
+                type(objet)
+                for owner in self.players
+                if owner.joueur
+                for objet in owner.joueur.objets
+            }
             _preparer_monstre_pour_combat(
                 seat.joueur,
                 self.current_card,
                 self.jeu,
                 self.logs,
-                self.hooks.p_rencontre,
-                self.hooks.o_rencontre,
+                skipped_heroes,
+                skipped_items,
             )
             for owner in self.players:
                 if not owner.joueur:
                     continue
+                if type(owner.joueur.perso_obj) not in self.hooks.p_rencontre:
+                    owner.joueur.perso_obj.en_rencontre(owner.joueur, seat.joueur, self.current_card, self.jeu, self.logs)
                 for objet in list(owner.joueur.objets):
                     if type(objet) not in self.hooks.o_rencontre:
-                        self._emit_item_used(owner, objet, "encounter")
+                        self._run_item_hook(
+                            owner,
+                            objet,
+                            "en_rencontre",
+                            "encounter",
+                            owner.joueur,
+                            seat.joueur,
+                            self.current_card,
+                            self.jeu,
+                            self.logs,
+                        )
+            self.current_card.dommages_reference = self.current_card.dommages
         except Exception as exc:
             self.logs.append(f"prepare monster failed: {exc}")
             self.current_card.dommages = getattr(self.current_card, "puissance", 0)

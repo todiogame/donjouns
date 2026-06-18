@@ -42,3 +42,36 @@ def test_autoplay_advances_one_step_at_a_time():
     engine.advance_automation_step()
     after = engine.snapshot()["dungeonLength"]
     assert after <= before
+
+
+def test_item_hook_animation_only_emits_on_real_change():
+    actions = []
+    engine = LiveGameEngine(Catalog(), actions.append)
+    seat = engine.add_human("p1")
+
+    class NoopItem:
+        nom = "Noop"
+        intact = True
+        actif = False
+        compteur = 0
+        pv_bonus = 0
+        modificateur_de = 0
+        couleur = None
+        types_tags = []
+        puissance_tags = []
+
+        def en_combat(self, *args):
+            return None
+
+    class ChangingItem(NoopItem):
+        nom = "Changing"
+
+        def en_combat(self, *args):
+            self.intact = False
+
+    engine._run_item_hook(seat, NoopItem(), "en_combat", "combat")
+    assert actions == []
+
+    engine._run_item_hook(seat, ChangingItem(), "en_combat", "combat")
+    assert len(actions) == 1
+    assert actions[0]["action"] == "item_used"
