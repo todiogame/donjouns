@@ -103,6 +103,120 @@ export class GameInterface {
         });
     }
 
+    markItemSprite(itemCardImage, itemCard, player) {
+        itemCardImage.setData("item_id", itemCard.id);
+        itemCardImage.setData("player_id", player?.id);
+        itemCardImage.setData("item_title", itemCard.title);
+        itemCardImage.setData("item_texture", itemCard.texture);
+
+        const trackerKey = `${player?.id || "unknown"}:${itemCard.id}`;
+        const usageCounter = Number(itemCard.usageCounter || 0);
+        const tracker = this.itemUsageTrackers.get(trackerKey);
+        if (!tracker) {
+            this.itemUsageTrackers.set(trackerKey, { count: usageCounter });
+            return;
+        }
+        if (usageCounter > tracker.count) {
+            tracker.count = usageCounter;
+            this.playItemUseEffect({
+                playerId: player?.id,
+                itemId: itemCard.id,
+                title: itemCard.title,
+                texture: itemCard.texture
+            }, itemCardImage);
+        }
+    }
+
+    playItemUseEffect(message, targetSprite = null) {
+        const itemId = Number(message?.itemId);
+        const playerId = message?.playerId;
+        const children = this.scene.children.list || [];
+        const candidates = children.filter(child => {
+            if (!child?.getData) return false;
+            if (Number(child.getData("item_id")) !== itemId) return false;
+            return !playerId || child.getData("player_id") === playerId;
+        });
+        const sprite = targetSprite || candidates[0];
+        const x = sprite?.x ?? this.scene.sys.game.config.width / 2;
+        const y = sprite?.y ?? this.scene.sys.game.config.height / 2;
+        const title = message?.title || sprite?.getData?.("item_title") || "Objet";
+
+        if (sprite?.active) {
+            const originalScaleX = sprite.scaleX;
+            const originalScaleY = sprite.scaleY;
+            let glow;
+            if (sprite.preFX?.addGlow) {
+                glow = sprite.preFX.addGlow(0xffd24a, 0, 0, false, 0.2, 18);
+            }
+            this.scene.tweens.add({
+                targets: sprite,
+                scaleX: originalScaleX * 1.18,
+                scaleY: originalScaleY * 1.18,
+                duration: 180,
+                yoyo: true,
+                ease: 'Back.Out',
+                onComplete: () => {
+                    if (sprite?.active && glow && sprite.preFX?.remove) {
+                        sprite.preFX.remove(glow);
+                    }
+                }
+            });
+        }
+
+        const labelY = Math.max(34, y - 110);
+        const label = this.scene.add.text(x, labelY, title, {
+            fontSize: '24px',
+            fill: '#fff4a8',
+            fontStyle: 'bold',
+            align: 'center',
+            wordWrap: { width: 280 }
+        }).setOrigin(0.5).setDepth(8).setStroke('#000000', 5);
+
+        this.scene.tweens.add({
+            targets: label,
+            y: labelY - 36,
+            alpha: 0,
+            duration: 950,
+            ease: 'Cubic.easeOut',
+            onComplete: () => label.destroy()
+        });
+
+        if (message?.texture && this.scene.textures.exists(message.texture)) {
+            const ghost = this.scene.add.image(x, y, message.texture)
+                .setOrigin(0.5)
+                .setScale(sprite?.scaleX || 0.18, sprite?.scaleY || 0.18)
+                .setDepth(7)
+                .setAlpha(0.78);
+            this.scene.tweens.add({
+                targets: ghost,
+                y: y - 48,
+                alpha: 0,
+                scaleX: ghost.scaleX * 1.25,
+                scaleY: ghost.scaleY * 1.25,
+                duration: 850,
+                ease: 'Cubic.easeOut',
+                onComplete: () => ghost.destroy()
+            });
+        }
+
+        for (let i = 0; i < 18; i++) {
+            const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+            const distance = Phaser.Math.Between(32, 92);
+            const dot = this.scene.add.circle(x, y, Phaser.Math.Between(3, 7), 0xffd24a, 0.9)
+                .setDepth(7);
+            this.scene.tweens.add({
+                targets: dot,
+                x: x + Math.cos(angle) * distance,
+                y: y + Math.sin(angle) * distance,
+                alpha: 0,
+                scale: 0.15,
+                duration: Phaser.Math.Between(450, 800),
+                ease: 'Cubic.easeOut',
+                onComplete: () => dot.destroy()
+            });
+        }
+    }
+
     displayStuff(stuff, isPlayer, position, player, game) {
         const playerName = this.displayManager.formatPlayerName(player);
         this.scene.playcardSound.play();
@@ -149,25 +263,7 @@ export class GameInterface {
                         .setScale(scaleX, scaleY)
                         .setInteractive({ useHandCursor: true, pixelPerfect: true, alphaTolerance: 1 });
                     itemCardImage.setData("type", "opponent_item");
-
-                    // Handle usage visual effect
-                    if (!this.itemUsageTrackers.has(itemCard.id)) {
-                        this.itemUsageTrackers.set(itemCard.id, { count: itemCard.usageCounter, endTime: 0 });
-                    }
-                    const tracker = this.itemUsageTrackers.get(itemCard.id);
-                    if (itemCard.usageCounter > tracker.count) {
-                        tracker.count = itemCard.usageCounter;
-                        tracker.endTime = Date.now() + 1000;
-                    }
-
-                    if (Date.now() < tracker.endTime) {
-                        const glow = itemCardImage.preFX.addGlow(0xff0000);
-                        this.scene.time.delayedCall(tracker.endTime - Date.now(), () => {
-                            if (itemCardImage.active) {
-                                itemCardImage.preFX.remove(glow);
-                            }
-                        });
-                    }
+                    this.markItemSprite(itemCardImage, itemCard, player);
 
                     if (itemCard.broken) {
                         itemCardImage.setRotation(Math.PI / 2);
@@ -226,8 +322,8 @@ export class GameInterface {
                     itemCardImage.setData("broken", itemCard.broken);
                 }
                 itemCardImage.setData("type", "my_item");
-                itemCardImage.setData("item_id", itemCard.id);
                 itemCardImage.setData("ui", itemCard.ui);
+                this.markItemSprite(itemCardImage, itemCard, player);
 
                 if (itemCard.indication) {
                     let fontSize = 60, indicationText;

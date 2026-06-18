@@ -5,7 +5,11 @@
   "main": "index.js",
   "scripts": {
     "start": "webpack serve --open",
-    "server": "node server/index.js"
+    "build": "webpack --mode development",
+    "server": "python -m uvicorn app:app --app-dir server_py --host 0.0.0.0 --port 2567",
+    "server:node": "node server/index.js",
+    "server:py": "python -m uvicorn app:app --app-dir server_py --host 0.0.0.0 --port 2567",
+    "test:py": "python -m pytest server_py/tests"
   },
   "keywords": [],
   "author": "",

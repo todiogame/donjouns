@@ -37,7 +37,8 @@ export class DisplayManager {
         const medalCountLabel = includeMedalCount
             ? ` (${medalCount} Médaille${medalCount > 1 ? 's' : ''})`
             : '';
-        return `${player.name || 'Joueur'}${medalEmojis}${medalCountLabel}`;
+        const heroName = player.heroName ? ` - ${player.heroName}` : '';
+        return `${player.name || 'Joueur'}${heroName}${medalEmojis}${medalCountLabel}`;
     }
 
     displayTitle(message, duration, onComplete) {
@@ -48,6 +49,10 @@ export class DisplayManager {
     displayDice(position) {
         const diceScene = this.scene.scene?.get('DiceScene');
         diceScene?.startDiceAnimation(position);
+    }
+
+    playItemUseEffect(message) {
+        this.gameInterface.playItemUseEffect(message);
     }
 
     initializeBackground() {
@@ -503,7 +508,13 @@ export class DisplayManager {
         }).setOrigin(0.5).setInteractive().setAlpha(0);
 
         exitButton.on('pointerdown', () => {
-            this.scene.scene.start('MainMenu');
+            if (typeof options.onExit === 'function') {
+                options.onExit();
+            } else if (typeof options.onReplay === 'function') {
+                options.onReplay();
+            } else {
+                this.scene.scene.restart();
+            }
         });
 
         this.scene.tweens.add({

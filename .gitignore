@@ -1,2 +1,7 @@
 node_modules
 cut.py
+dist/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.log

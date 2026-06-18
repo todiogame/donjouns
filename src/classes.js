@@ -31,6 +31,7 @@ export class Player {
         this.id = id;
         this.name = name;
         this.isBot = isBot;
+        this.heroName = "";
         this.hand = [];
         this.stuff = [];
         this.selectedItemCardIndex = -1;

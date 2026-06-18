@@ -1,19 +1,129 @@
-import { Client } from "colyseus.js";
 import { Game, Player } from './classes';
 import { DisplayManager } from './display';
 
 const GAME_MODE_OPTIONS = [
     {
-        key: "random",
-        label: "Random",
-        description: "Jeu classique avec objets aleatoires."
+        key: "live:random",
+        label: "Live Random",
+        description: "Table multijoueur, objets aleatoires."
     },
     {
-        key: "draft",
-        label: "Draft",
-        description: "Phase de draft avant d'entrer dans le donjon."
+        key: "live:draft",
+        label: "Live Draft",
+        description: "Table multijoueur avec draft."
+    },
+    {
+        key: "solo:random",
+        label: "Solo + Bots",
+        description: "Un joueur humain avec bots, objets aleatoires."
+    },
+    {
+        key: "solo:draft",
+        label: "Solo Draft",
+        description: "Un joueur humain avec bots et draft."
+    },
+    {
+        key: "autoplay:random",
+        label: "Autoplay",
+        description: "Simulation visuelle pilotee par l'IA."
+    },
+    {
+        key: "autoplay:draft",
+        label: "Autoplay Draft",
+        description: "Draft et partie pilotes par l'IA."
     }
 ];
+
+class NativeRoom {
+    constructor(socket) {
+        this.socket = socket;
+        this.sessionId = "";
+        this.name = "room";
+        this.stateHandlers = [];
+        this.messageHandlers = new Map();
+        this.pendingStates = [];
+        this.pendingMessages = [];
+    }
+
+    send(type, message = {}) {
+        if (this.socket.readyState === WebSocket.OPEN) {
+            this.socket.send(JSON.stringify({ type, message }));
+        }
+    }
+
+    onStateChange(callback) {
+        this.stateHandlers.push(callback);
+        while (this.pendingStates.length) {
+            callback(this.pendingStates.shift());
+        }
+    }
+
+    onMessage(type, callback) {
+        if (!this.messageHandlers.has(type)) {
+            this.messageHandlers.set(type, []);
+        }
+        this.messageHandlers.get(type).push(callback);
+        const remaining = [];
+        this.pendingMessages.forEach((entry) => {
+            if (entry.type === type) callback(entry.message);
+            else remaining.push(entry);
+        });
+        this.pendingMessages = remaining;
+    }
+
+    dispatch(payload) {
+        if (payload.type === "state") {
+            const state = payload.state;
+            if (this.stateHandlers.length) this.stateHandlers.forEach(callback => callback(state));
+            else this.pendingStates.push(state);
+            return;
+        }
+
+        const messageType = payload.type;
+        const message = payload.message ?? {
+            winner: payload.winner,
+            finalPlayers: payload.finalPlayers
+        };
+        const handlers = this.messageHandlers.get(messageType) || [];
+        if (handlers.length) handlers.forEach(callback => callback(message));
+        else this.pendingMessages.push({ type: messageType, message });
+    }
+}
+
+class NativeBackendClient {
+    constructor(endpoint) {
+        this.endpoint = endpoint;
+    }
+
+    joinOrCreate() {
+        return new Promise((resolve, reject) => {
+            const socket = new WebSocket(this.endpoint);
+            const room = new NativeRoom(socket);
+            let joined = false;
+
+            socket.onmessage = (event) => {
+                const payload = JSON.parse(event.data);
+                if (payload.type === "joined") {
+                    room.sessionId = payload.sessionId;
+                    room.name = payload.roomName || "room";
+                    joined = true;
+                    resolve(room);
+                    return;
+                }
+                room.dispatch(payload);
+            };
+
+            socket.onerror = (event) => {
+                if (!joined) reject(event);
+                else console.error("WebSocket error", event);
+            };
+
+            socket.onclose = () => {
+                console.log("WebSocket closed");
+            };
+        });
+    }
+}
 
 const PLAYER_NAME_STORAGE_KEY = "donjouns_player_name";
 let cachedStoredPlayerName;
@@ -81,19 +191,21 @@ export function create() {
 
     this.shuffleSound.play();
 
-    client = new Client("ws://localhost:2567");
+    client = new NativeBackendClient("ws://localhost:2567/ws");
 
     displayManager = new DisplayManager(this);
     displayManager.initializeBackground();
 
-    const openEndScreen = () => displayManager.updateEndUI(cardGame.winner, cardGame.finalPlayers, localPlayerId, {
-        onReplay: () => {
-            if (room) {
-                room.send("replay");
-            } else {
-                this.scene.restart();
-            }
+    const resetToLobby = () => {
+        if (room) {
+            room.send("replay");
+        } else {
+            this.scene.restart();
         }
+    };
+    const openEndScreen = () => displayManager.updateEndUI(cardGame.winner, cardGame.finalPlayers, localPlayerId, {
+        onReplay: resetToLobby,
+        onExit: resetToLobby
     });
 
     const setupRoomListeners = (roomInstance) => {
@@ -155,6 +267,9 @@ export function create() {
                 case "animate_execute":
                     const animScene = this.game.scene.getScene('AnimScene');
                     if (animScene) animScene.executeAnimation();
+                    break;
+                case "item_used":
+                    displayManager.playItemUseEffect(message);
                     break;
                 case "roll_result":
                     const diceScene = this.game.scene.getScene('DiceScene');
@@ -236,7 +351,7 @@ export function create() {
                 } else if (clickedElement.getData("type") === "take_damage") {
                     console.log(`Player takes ${cardGame.currentCard.damage} damage.`);
                     // special case for GLUTTONOUS_OOZE: have to destroy 1 item
-                    if (cardGame.currentCard.effect === "GLUTTONOUS_OOZE"
+                    if ((cardGame.currentCard.effect === "GLUTTONOUS_OOZE" || cardGame.currentCard.effect === "LIMON")
                         && (cardGame.players.find(p => p.id === localPlayerId).stuff.filter(i => !i.broken).length)) {
                         console.log("Pick an item to ooze:");
                         const callback = (number) => room.send("take_damage", { arg: number });
@@ -269,14 +384,14 @@ export function create() {
                     room.send("escape_roll")
                 } else if (clickedElement.getData("type") === "accept_event") {
                     // special case for SECRET_SHOP: have to discard 1 item
-                    if (cardGame.currentCard.effect === "SECRET_SHOP"
+                    if ((cardGame.currentCard.effect === "SECRET_SHOP" || cardGame.currentCard.effect === "SHOP")
                         && (cardGame.players.find(p => p.id === localPlayerId).stuff.filter(i => !i.broken).length > 3)) {
                         console.log("Pick an item to discard:");
                         const callback = (number) => room.send("accept_event", { arg: number });
                         displayManager.displayPickItemInterface(cardGame, localPlayerId, (i) => !i.broken, callback, true)
                     }
                     // special case for HANDYMAN: have to fix 1 item
-                    else if (cardGame.currentCard.effect === "HANDYMAN"
+                    else if ((cardGame.currentCard.effect === "HANDYMAN" || cardGame.currentCard.effect === "REPAIR")
                         && (cardGame.players.find(p => p.id === localPlayerId).stuff.filter(i => i.broken).length)) {
                         console.log("Pick an item to fix:");
                         const callback = (number) => room.send("accept_event", { arg: number });
@@ -374,6 +489,7 @@ export function create() {
 
     function copyPlayerState(playerState) {
         const player = new Player(playerState.id, playerState.name, playerState.isBot);
+        player.heroName = playerState.heroName || "";
         player.hand = Array.from(playerState.hand || []).map(cloneItemCard);
         player.stuff = Array.from(playerState.stuff || []).map(cloneItemCard);
         player.selectedItemCardIndex = playerState.selectedItemCardIndex ?? -1;
